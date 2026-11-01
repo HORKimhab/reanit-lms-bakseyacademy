@@ -1,0 +1,14 @@
+# Optional: Postgres in Docker. Not required if you run Postgres locally (e.g. Homebrew).
+services:
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: reanit
+      POSTGRES_PASSWORD: reanit
+      POSTGRES_DB: reanit_lms
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+volumes:
+  pgdata:
