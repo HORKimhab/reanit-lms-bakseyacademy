@@ -30,6 +30,33 @@ bun install
 bun run dev                    # http://localhost:5173
 ```
 
+## Telegram channel storage
+
+Lesson videos and ebook files can live as posts in a private Telegram channel instead of Bunny / R2. The bot stores and fetches them; the API streams every byte through signed, expiring `/media/{token}` links, so the bot token and Telegram file URLs never reach the browser.
+
+1. **Bot + channel.** Create a bot with [@BotFather](https://t.me/BotFather), create a **private** channel, and add the bot as an admin that can post. The channel id is the `-100…` number (e.g. forward a channel post to [@userinfobot](https://t.me/userinfobot)).
+2. **API env** (`backend/.env`): `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHANNEL_ID`, `MEDIA_SIGNING_KEY` (any long random string; without it links break on every restart), `TELEGRAM_WEBHOOK_SECRET`.
+3. **Large files: self-hosted Bot API.** The public API only uploads ≤ 50 MB and downloads ≤ 20 MB, too small for course videos. Run the `--local` server (uploads ≤ 2000 MB) with `api_id` / `api_hash` from <https://my.telegram.org>:
+   ```sh
+   TELEGRAM_API_ID=… TELEGRAM_API_HASH=… docker compose --profile telegram up -d telegram-bot-api
+   ```
+   then point the API at it, and at the shared data directory it reads files from:
+   ```sh
+   TELEGRAM_API_URL=http://127.0.0.1:8081
+   TELEGRAM_LOCAL_DIR=/absolute/path/to/repo/.telegram-bot-api   # mounted in the container as /var/lib/telegram-bot-api
+   ```
+   A bot can only use one server at a time: call `logOut` on the public API once before switching (`curl https://api.telegram.org/bot$TOKEN/logOut`).
+4. **Import channel posts (optional).** Point the bot's webhook at the site; videos/documents posted in the channel then show up in **Admin → ឯកសារ**:
+   ```sh
+   curl "$TELEGRAM_API_URL/bot$TOKEN/setWebhook" -d url=https://<site>/telegram/webhook \
+        -d secret_token=$TELEGRAM_WEBHOOK_SECRET -d 'allowed_updates=["channel_post"]'
+   ```
+5. **Upload size on the web side.** Uploads stream through SvelteKit (`/admin/media/upload`). adapter-node rejects bodies over `BODY_SIZE_LIMIT` (default 512 KB): start the built frontend with e.g. `BODY_SIZE_LIMIT=2200M node build`, and raise any reverse-proxy limit too (nginx `client_max_body_size 2200m`).
+6. **Disk.** The local server keeps a copy of every file it serves under `.telegram-bot-api/<bot>/`. Prune old copies, e.g. daily: `find .telegram-bot-api -type f -mtime +7 -delete`; a pruned file is fetched from Telegram again on the next request.
+7. **Check it:** `SITE=http://localhost:5173 API=http://127.0.0.1:8080 SESSION=<admin session cookie> scripts/telegram-smoke.sh` uploads a 25 MB file, streams it back and seeks (`SIZE_MB=` to change).
+
+Admins upload from the lesson / ebook editors ("ផ្ទុកឡើង Telegram") or pick from the library; uploaded media wins over a Bunny video id / S3 file key. Telegram is not a CDN (rate limits, slower first byte), so keep Bunny / R2 for heavy traffic and check Telegram's terms for this use before launch.
+
 ## i18n
 
 Khmer by default; the header button switches to English (cookie `PARAGLIDE_LOCALE`). Copy lives in `frontend/messages/km.json` / `en.json`; Paraglide compiles it into `src/lib/paraglide/` on `bun run dev` / `build` (it fetches its inlang plugins from jsDelivr on first compile). The admin area is Khmer-only.

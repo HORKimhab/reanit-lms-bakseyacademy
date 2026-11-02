@@ -328,4 +328,6 @@ export interface AdminMedia {
 	size_bytes: number | null;
 	duration_seconds: number | null;
 	created_at: string;
+	/** Signed `/media/…` link (1 h) for admins to open the file. */
+	preview_url: string | null;
 }

@@ -1,4 +1,6 @@
-# Optional: Postgres in Docker. Not required if you run Postgres locally (e.g. Homebrew).
+# Optional services. Not required if you run Postgres locally (e.g. Homebrew).
+#   docker compose up -d db                        # Postgres only
+#   docker compose --profile telegram up -d        # + self-hosted Telegram Bot API (see README)
 services:
   db:
     image: postgres:18-alpine
@@ -10,5 +12,21 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+
+  # Self-hosted Bot API in --local mode: uploads up to 2000 MB, and getFile returns paths on its
+  # disk, which the API reads through the same directory (TELEGRAM_LOCAL_DIR=<repo>/.telegram-bot-api).
+  telegram-bot-api:
+    profiles: ["telegram"]
+    image: aiogram/telegram-bot-api:latest
+    environment:
+      TELEGRAM_API_ID: ${TELEGRAM_API_ID:?api_id from https://my.telegram.org}
+      TELEGRAM_API_HASH: ${TELEGRAM_API_HASH:?api_hash from https://my.telegram.org}
+      TELEGRAM_LOCAL: "1"
+    ports:
+      - "127.0.0.1:8081:8081"
+    volumes:
+      - ./.telegram-bot-api:/var/lib/telegram-bot-api
+    restart: unless-stopped
+
 volumes:
   pgdata:

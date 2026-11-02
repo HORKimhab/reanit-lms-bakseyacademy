@@ -39,7 +39,10 @@
 		<tbody class="divide-y divide-slate-100">
 			{#each data.media.items as f (f.id)}
 				<tr>
-					<td class="px-4 py-2">{f.file_name ?? '—'}<p class="font-mono text-xs text-slate-400">{f.id}</p></td>
+					<td class="px-4 py-2">
+						{#if f.preview_url}<a href={f.preview_url} target="_blank" class="hover:text-brand-600">{f.file_name ?? '—'} ↗</a>{:else}{f.file_name ?? '—'}{/if}
+						<p class="font-mono text-xs text-slate-400">{f.id}</p>
+					</td>
 					<td class="px-4 py-2 text-xs">{f.mime_type ?? '—'}</td>
 					<td class="px-4 py-2">{size(f.size_bytes)}</td>
 					<td class="px-4 py-2">{f.duration_seconds ? formatClock(f.duration_seconds) : '—'}</td>

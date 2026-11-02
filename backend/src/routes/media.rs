@@ -84,7 +84,7 @@ pub async fn upload(State(st): State<AppState>, _: AdminUser, mut form: Multipar
                     tracing::error!(error = %e, "telegram upload failed");
                     AppError::Unavailable("telegram_failed")
                 })?;
-                let media = insert_telegram(&st.db, &stored).await?;
+                let media = with_preview(&st, insert_telegram(&st.db, &stored).await?);
                 return Ok((StatusCode::CREATED, Json(media)));
             }
             _ => {}
@@ -135,7 +135,15 @@ pub async fn list(State(st): State<AppState>, _: AdminUser, Query(p): Query<List
             .bind(pattern.as_deref())
             .fetch_one(&st.db),
     )?;
+    let items = items.into_iter().map(|m| with_preview(&st, m)).collect();
     Ok(Json(Page { items, total, page: p.page(), per_page: p.per_page() }))
+}
+
+fn with_preview(st: &AppState, mut media: AdminMedia) -> AdminMedia {
+    if st.telegram.is_some() && media.provider == "telegram" {
+        media.preview_url = Some(signed_url(st, media.id, Duration::hours(1), false).0);
+    }
+    media
 }
 
 /// `POST /api/telegram/webhook`: Telegram delivers channel posts here (`setWebhook` with

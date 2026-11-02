@@ -228,6 +228,9 @@ pub struct AdminMedia {
     pub size_bytes: Option<i64>,
     pub duration_seconds: Option<i32>,
     pub created_at: DateTime<Utc>,
+    /// Signed `/media/…` link (1 h) so admins can open the file; set by the media routes.
+    #[sqlx(default)]
+    pub preview_url: Option<String>,
 }
 
 /// Lessons carry the raw `video_id` here: admin-only, so editors can see what is attached.

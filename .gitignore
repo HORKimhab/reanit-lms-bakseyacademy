@@ -11,3 +11,6 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+
+# Self-hosted Telegram Bot API data (docker compose --profile telegram)
+/.telegram-bot-api/
