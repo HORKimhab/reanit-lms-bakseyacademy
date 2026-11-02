@@ -44,6 +44,8 @@ bun run dev                    # http://localhost:5173
 
 ## Roadmap
 
+Task-level breakdown: [`TODO.md`](TODO.md).
+
 1. ~~Catalog: schema, courses, ebooks, categories, ratings~~
 2. Auth (argon2 + session cookies), account page
 3. Cart → orders → ABA PayWay / Bakong KHQR webhook → enrollments
