@@ -2,6 +2,7 @@ mod config;
 mod error;
 mod models;
 mod routes;
+mod web;
 
 use sqlx::postgres::PgPoolOptions;
 use tower_http::{compression::CompressionLayer, trace::TraceLayer};
