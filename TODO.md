@@ -33,7 +33,7 @@ Payment now: the user picks Bakong KHQR or ABA PayWay, scans that method's stati
 - [x] E1 Reviews write API (owners only) + form on detail pages
 - [x] E2 `/for-you` recommendations (same category + co-purchase, server-side)
 - [x] E3 Admin CRUD: courses, sections, lessons, ebooks, banners, categories, publish toggle
-- [ ] E4 Search upgrade (Postgres trigram first, Meilisearch if needed)
+- [x] E4 Search upgrade (Postgres trigram first, Meilisearch if needed) — trigram is enough for now; `/search` covers courses + ebooks
 
 ## F. i18n (roadmap 6)
 - [ ] F1 Paraglide km/en + header language switcher

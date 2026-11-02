@@ -51,12 +51,12 @@ Authenticated routes take `Authorization: Bearer <token>` (the token from regist
 | GET | `/api/health` | DB ping |
 | GET | `/api/home` | published banners + 8 newest courses + ebooks |
 | GET | `/api/categories` | |
-| GET | `/api/courses?q=&category=&page=&per_page=` | paged, search title/instructor |
+| GET | `/api/courses?q=&category=&page=&per_page=` | paged; `q` matches title/instructor by substring or typo-tolerant trigram similarity (`pg_trgm`), best match first |
 | GET | `/api/courses/{slug}` | detail + curriculum (video id only for preview lessons); `reviews` (latest 10); optional Bearer → `owned`, `my_review`, `completed_lesson_ids` (enrolled users also see unpublished courses) |
 | PUT / DELETE | `/api/courses/{slug}/review` | Bearer, owners only; PUT `{rating: 1–5, comment?}` → review (upsert), DELETE → 204; 403 not enrolled, 422 `invalid_rating` / `invalid_comment` |
 | GET | `/api/courses/{slug}/lessons/{id}` | optional Bearer → lesson + signed Bunny Stream `video_url` (`expires_at`), `completed`; enrolled users (even if unpublished) or preview lessons; 401 signed out, 403 not enrolled |
 | PUT / DELETE | `/api/courses/{slug}/lessons/{id}/complete` | Bearer → 204; mark / unmark complete (PUT needs enrollment, 403 otherwise) |
-| GET | `/api/ebooks?q=&category=&page=&per_page=` | paged, search title/author |
+| GET | `/api/ebooks?q=&category=&page=&per_page=` | paged; `q` matches title/author like courses |
 | GET | `/api/ebooks/{slug}` | detail (file key never exposed), `reviews`; optional Bearer → `owned`, `my_review` (owners also see unpublished ebooks) |
 | PUT / DELETE | `/api/ebooks/{slug}/review` | same as course reviews, for buyers |
 | GET | `/api/ebooks/{slug}/file?disposition=inline\|attachment` | Bearer, owners only → `{url, expires_at}` presigned (1 h) S3/R2 link; 403 not bought, 404 no file, 503 `storage_unavailable` |
@@ -102,6 +102,6 @@ Task-level breakdown: [`TODO.md`](TODO.md).
 1. ~~Catalog: schema, courses, ebooks, categories, ratings~~
 2. ~~Auth (phone + argon2, session cookies), account page~~
 3. ~~Cart → orders → QR payment (Bakong KHQR / ABA PayWay) + admin approval → enrollments~~ (automatic confirmation: see TODO "Later")
-4. Lesson player (Bunny/Cloudflare Stream signed URLs), progress tracking, ebook signed downloads
-5. Reviews write API, search upgrade (Meilisearch), "for you" recommendations, admin
+4. ~~Lesson player (Bunny Stream signed URLs), progress tracking, ebook signed downloads~~
+5. ~~Reviews write API, search upgrade (Postgres trigram), "for you" recommendations, admin~~
 6. i18n (Paraglide: km/en)

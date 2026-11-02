@@ -22,8 +22,8 @@ pub async fn home(State(st): State<AppState>) -> AppResult<Json<Home>> {
              WHERE published ORDER BY position, created_at",
         )
         .fetch_all(&st.db),
-        courses::query_cards(&st.db, None, None, 8, 0),
-        ebooks::query_cards(&st.db, None, None, 8, 0),
+        courses::query_cards(&st.db, None, None, None, 8, 0),
+        ebooks::query_cards(&st.db, None, None, None, 8, 0),
     )?;
     Ok(Json(Home { banners, new_courses, new_ebooks }))
 }

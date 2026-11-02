@@ -49,12 +49,13 @@
 			{/each}
 		</nav>
 
-		<form action="/courses" method="get" class="relative ml-auto hidden w-full max-w-xs sm:block">
+		<form action="/search" method="get" class="relative ml-auto hidden w-full max-w-xs sm:block">
 			<input
 				bind:this={searchInput}
 				name="q"
+				value={page.url.pathname === '/search' ? (page.url.searchParams.get('q') ?? '') : ''}
 				type="search"
-				placeholder="ស្វែងរកវគ្គសិក្សា..."
+				placeholder="ស្វែងរកវគ្គសិក្សា ឬសៀវភៅ..."
 				class="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pr-12 pl-3 text-sm outline-none focus:border-brand-500 focus:bg-white"
 			/>
 			<kbd class="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded border border-slate-200 px-1.5 text-xs text-slate-400">⌘K</kbd>
@@ -127,8 +128,8 @@
 			{:else}
 				<a href={loginHref} class="block py-2 font-semibold text-brand-600" onclick={() => (menuOpen = false)}>ចូលគណនី</a>
 			{/if}
-			<form action="/courses" method="get" class="py-2 sm:hidden">
-				<input name="q" type="search" placeholder="ស្វែងរកវគ្គសិក្សា..." class="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm" />
+			<form action="/search" method="get" class="py-2 sm:hidden">
+				<input name="q" type="search" placeholder="ស្វែងរកវគ្គសិក្សា ឬសៀវភៅ..." class="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm" />
 			</form>
 		</nav>
 	{/if}

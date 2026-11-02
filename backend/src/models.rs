@@ -461,12 +461,14 @@ pub struct ListParams {
 }
 
 impl ListParams {
+    /// Trimmed search term; blank → `None`.
+    pub fn query(&self) -> Option<&str> {
+        self.q.as_deref().map(str::trim).filter(|q| !q.is_empty())
+    }
+
     /// ILIKE pattern for the search term, with LIKE wildcards in user input escaped.
     pub fn search_pattern(&self) -> Option<String> {
-        let q = self.q.as_deref()?.trim();
-        if q.is_empty() {
-            return None;
-        }
+        let q = self.query()?;
         let escaped = q.replace('\\', "\\\\").replace('%', "\\%").replace('_', "\\_");
         Some(format!("%{escaped}%"))
     }

@@ -30,22 +30,30 @@ LEFT JOIN LATERAL (
 
 const FILTER: &str = r#"
 WHERE e.published
-  AND ($1::text IS NULL OR e.title ILIKE $1 OR e.author_name ILIKE $1)
+  AND ($1::text IS NULL OR e.title ILIKE $1 OR e.author_name ILIKE $1 OR $3 <% e.title OR $3 <% e.author_name)
   AND ($2::text IS NULL OR cat.slug = $2)
 "#;
 
+/// Best matches first when searching (`$3` = raw query), newest first otherwise.
+const ORDER: &str = "ORDER BY CASE WHEN $3::text IS NULL THEN 0
+    ELSE GREATEST(word_similarity($3, e.title), word_similarity($3, e.author_name)) END DESC, e.created_at DESC";
+
+/// Published cards matching `q` (substring, or typo-tolerant via trigram word similarity) and
+/// `category`; best matches first when searching.
 pub async fn query_cards(
     db: &PgPool,
+    q: Option<&str>,
     pattern: Option<&str>,
     category: Option<&str>,
     limit: i64,
     offset: i64,
 ) -> sqlx::Result<Vec<EbookCard>> {
     sqlx::query_as::<_, EbookCard>(&format!(
-        "{CARD_SELECT} {FILTER} ORDER BY e.created_at DESC LIMIT $3 OFFSET $4"
+        "{CARD_SELECT} {FILTER} {ORDER} LIMIT $4 OFFSET $5"
     ))
     .bind(pattern)
     .bind(category)
+    .bind(q)
     .bind(limit)
     .bind(offset)
     .fetch_all(db)
@@ -63,10 +71,11 @@ pub async fn list(
         "SELECT COUNT(*) FROM ebooks e LEFT JOIN categories cat ON cat.id = e.category_id {FILTER}"
     );
     let (items, total) = tokio::try_join!(
-        query_cards(&st.db, pattern.as_deref(), category, p.per_page(), p.offset()),
+        query_cards(&st.db, p.query(), pattern.as_deref(), category, p.per_page(), p.offset()),
         sqlx::query_scalar::<_, i64>(&count_sql)
             .bind(pattern.as_deref())
             .bind(category)
+            .bind(p.query())
             .fetch_one(&st.db),
     )?;
 
