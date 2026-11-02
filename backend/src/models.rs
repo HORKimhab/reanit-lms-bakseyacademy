@@ -218,6 +218,18 @@ pub struct AdminCourseFields {
     pub updated_at: DateTime<Utc>,
 }
 
+/// An uploaded media file (admin view; Telegram ids stay server-side).
+#[derive(Serialize, FromRow)]
+pub struct AdminMedia {
+    pub id: Uuid,
+    pub provider: String,
+    pub file_name: Option<String>,
+    pub mime_type: Option<String>,
+    pub size_bytes: Option<i64>,
+    pub duration_seconds: Option<i32>,
+    pub created_at: DateTime<Utc>,
+}
+
 /// Lessons carry the raw `video_id` here: admin-only, so editors can see what is attached.
 #[derive(Serialize, FromRow)]
 pub struct AdminLesson {
@@ -227,6 +239,8 @@ pub struct AdminLesson {
     pub title: String,
     pub position: i32,
     pub video_id: Option<String>,
+    pub media_id: Option<Uuid>,
+    pub media_file_name: Option<String>,
     pub duration_seconds: i32,
     pub is_preview: bool,
 }
@@ -277,6 +291,8 @@ pub struct AdminEbook {
     pub sale_price_cents: Option<i32>,
     pub published: bool,
     pub has_file: bool,
+    pub media_id: Option<Uuid>,
+    pub media_file_name: Option<String>,
     pub updated_at: DateTime<Utc>,
 }
 

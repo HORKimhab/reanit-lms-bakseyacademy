@@ -32,7 +32,7 @@ pub async fn list(
     let pattern = p.search_pattern();
     let list_sql = format!(
         "SELECT e.id, e.slug, e.title, e.author_name, e.published, e.price_cents, e.sale_price_cents,
-                cat.name_km AS category_name_km, e.file_key IS NOT NULL AS has_file,
+                cat.name_km AS category_name_km, (e.file_key IS NOT NULL OR e.media_id IS NOT NULL) AS has_file,
                 (SELECT COUNT(*) FROM ebook_purchases p WHERE p.ebook_id = e.id) AS purchase_count,
                 e.updated_at
          {LIST_FROM} ORDER BY e.updated_at DESC LIMIT $2 OFFSET $3"
@@ -71,6 +71,8 @@ pub struct EbookInput {
     /// Detach the current file.
     #[serde(default)]
     remove_file: bool,
+    /// Uploaded media (Telegram); wins over `file_key` when set. `null` detaches it.
+    media_id: Option<Uuid>,
 }
 
 struct EbookFields {
@@ -87,6 +89,7 @@ struct EbookFields {
     published: bool,
     file_key: Option<String>,
     remove_file: bool,
+    media_id: Option<Uuid>,
 }
 
 impl EbookInput {
@@ -109,6 +112,7 @@ impl EbookInput {
             published: self.published,
             file_key: validate::optional(self.file_key.as_deref(), 500, "invalid_file_key")?,
             remove_file: self.remove_file,
+            media_id: self.media_id,
         })
     }
 }
@@ -129,8 +133,8 @@ pub async fn create(
     let f = input.validated()?;
     let id: Uuid = sqlx::query_scalar(
         "INSERT INTO ebooks (slug, title, author_name, summary, description, cover_url, page_count,
-                             category_id, price_cents, sale_price_cents, published, file_key)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id",
+                             category_id, price_cents, sale_price_cents, published, file_key, media_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING id",
     )
     .bind(f.slug)
     .bind(f.title)
@@ -144,6 +148,7 @@ pub async fn create(
     .bind(f.sale_price_cents)
     .bind(f.published)
     .bind(f.file_key)
+    .bind(f.media_id)
     .fetch_one(&st.db)
     .await
     .map_err(map_write_error)?;
@@ -166,7 +171,7 @@ pub async fn update(
                 cover_url = $7, page_count = $8, category_id = $9, price_cents = $10,
                 sale_price_cents = $11, published = $12,
                 file_key = CASE WHEN $14 THEN NULL ELSE COALESCE($13, file_key) END,
-                updated_at = now()
+                media_id = $15, updated_at = now()
          WHERE id = $1",
     )
     .bind(id)
@@ -183,6 +188,7 @@ pub async fn update(
     .bind(f.published)
     .bind(f.file_key)
     .bind(f.remove_file)
+    .bind(f.media_id)
     .execute(&st.db)
     .await
     .map_err(map_write_error)?
@@ -225,9 +231,11 @@ pub async fn delete(State(st): State<AppState>, _: AdminUser, Path(id): Path<Uui
 
 async fn load(db: &PgPool, id: Uuid) -> AppResult<AdminEbook> {
     sqlx::query_as::<_, AdminEbook>(
-        "SELECT id, slug, title, author_name, summary, description, cover_url, page_count, category_id,
-                price_cents, sale_price_cents, published, file_key IS NOT NULL AS has_file, updated_at
-         FROM ebooks WHERE id = $1",
+        "SELECT e.id, e.slug, e.title, e.author_name, e.summary, e.description, e.cover_url, e.page_count,
+                e.category_id, e.price_cents, e.sale_price_cents, e.published,
+                (e.file_key IS NOT NULL OR e.media_id IS NOT NULL) AS has_file,
+                e.media_id, m.file_name AS media_file_name, e.updated_at
+         FROM ebooks e LEFT JOIN media_files m ON m.id = e.media_id WHERE e.id = $1",
     )
     .bind(id)
     .fetch_optional(db)

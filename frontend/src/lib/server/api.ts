@@ -58,3 +58,27 @@ export function listQuery(url: URL): string {
 	}
 	return params.toString();
 }
+
+/**
+ * Raw streaming call to the Rust API (uploads in, media bytes out): the body and response are
+ * piped, never parsed or buffered. Only for `+server.ts` proxy routes; everything else uses `api()`.
+ */
+export async function apiStream(
+	fetchFn: typeof fetch,
+	path: string,
+	init: { method: 'GET' | 'POST'; token?: string | null; headers?: Record<string, string>; body?: ReadableStream<Uint8Array> | null }
+): Promise<Response> {
+	const headers: Record<string, string> = { ...init.headers };
+	if (init.token) headers.authorization = `Bearer ${init.token}`;
+	try {
+		return await fetchFn(`${base()}${path}`, {
+			method: init.method,
+			headers,
+			body: init.body ?? undefined,
+			// Node's fetch needs this to stream a request body.
+			...(init.body ? { duplex: 'half' } : {})
+		} as RequestInit);
+	} catch {
+		return new Response(JSON.stringify({ error: 'unavailable' }), { status: 503, headers: { 'content-type': 'application/json' } });
+	}
+}

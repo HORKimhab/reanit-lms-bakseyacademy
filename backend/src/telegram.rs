@@ -54,6 +54,11 @@ impl Telegram {
         Self { api_url: api_url.trim_end_matches('/').to_owned(), token, channel_id, local, http: reqwest::Client::new() }
     }
 
+    /// Largest file `upload` accepts: 2000 MB through a `--local` server, 50 MB on the public API.
+    pub fn max_upload_bytes(&self) -> u64 {
+        if self.local.is_some() { 2000 * 1024 * 1024 } else { 50 * 1024 * 1024 }
+    }
+
     /// Posts a file of `len` bytes to the channel, streaming `body` (not buffered in memory).
     pub async fn upload(
         &self,

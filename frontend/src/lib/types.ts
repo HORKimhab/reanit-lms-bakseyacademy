@@ -253,6 +253,9 @@ export interface AdminLesson {
 	title: string;
 	position: number;
 	video_id: string | null;
+	/** Uploaded (Telegram) media; wins over `video_id`. */
+	media_id: string | null;
+	media_file_name: string | null;
 	duration_seconds: number;
 	is_preview: boolean;
 }
@@ -309,5 +312,18 @@ export interface AdminEbook {
 	sale_price_cents: number | null;
 	published: boolean;
 	has_file: boolean;
+	/** Uploaded (Telegram) media; wins over the S3 file key. */
+	media_id: string | null;
+	media_file_name: string | null;
 	updated_at: string;
+}
+
+export interface AdminMedia {
+	id: string;
+	provider: 'bunny' | 's3' | 'telegram';
+	file_name: string | null;
+	mime_type: string | null;
+	size_bytes: number | null;
+	duration_seconds: number | null;
+	created_at: string;
 }

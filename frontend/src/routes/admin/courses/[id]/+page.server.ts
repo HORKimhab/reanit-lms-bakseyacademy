@@ -19,6 +19,7 @@ export const load: PageServerLoad = async ({ locals, fetch, url, params }) => {
 const lessonBody = (d: FormData) => ({
 	title: text(d, 'title'),
 	video_id: text(d, 'video_id'),
+	media_id: text(d, 'media_id') || null,
 	duration_seconds: seconds(d, 'duration'),
 	is_preview: checked(d, 'is_preview')
 });

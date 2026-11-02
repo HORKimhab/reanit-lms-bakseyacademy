@@ -10,13 +10,14 @@ mod ebooks;
 mod home;
 mod lessons;
 mod library;
+mod media;
 mod orders;
 mod recommendations;
 mod reviews;
 
 use axum::{
     Json, Router,
-    extract::State,
+    extract::{DefaultBodyLimit, State},
     routing::{delete, get, post, put},
 };
 use serde_json::{Value, json};
@@ -45,6 +46,10 @@ pub fn router(state: AppState) -> Router {
         .route("/api/admin/orders", get(admin::list_orders))
         .route("/api/admin/orders/{id}/approve", post(admin::approve))
         .route("/api/admin/orders/{id}/reject", post(admin::reject))
+        .route(
+            "/api/admin/media",
+            post(media::upload).layer(DefaultBodyLimit::max(2100 * 1024 * 1024)),
+        )
         .route("/api/admin/categories", get(admin_catalog::list_categories).post(admin_catalog::create_category))
         .route(
             "/api/admin/categories/{id}",

@@ -17,8 +17,6 @@ pub struct AppState {
     pub db: sqlx::PgPool,
     pub video: Option<video::BunnyStream>,
     pub storage: Option<storage::ObjectStorage>,
-    // Read by the media upload / streaming routes (TODO G3, G5).
-    #[allow(dead_code)]
     pub telegram: Option<telegram::Telegram>,
 }
 

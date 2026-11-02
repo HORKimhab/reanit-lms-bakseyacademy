@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import CourseForm from '$lib/components/admin/CourseForm.svelte';
+	import MediaField from '$lib/components/admin/MediaField.svelte';
 	import { confirmClick, dangerButton, inputClass, primaryButton, secondaryButton } from '$lib/admin-ui';
 	import { errorMessage } from '$lib/errors';
 	import { formatClock, formatDateTime, formatNumber } from '$lib/format';
@@ -44,7 +45,7 @@
 <section class="mt-8">
 	<h2 class="text-xl font-bold">មាតិកា</h2>
 	<p class="text-sm text-slate-500">
-		Video ID = Bunny Stream video GUID · រយៈពេលជា នាទី:វិនាទី (ឧ. 12:30) · "មើលសាកល្បង" អនុញ្ញាតឲ្យអ្នកមិនទាន់ទិញមើលបាន
+		Video ID = Bunny Stream video GUID ឬ ផ្ទុកឡើង Telegram (ឈ្នះលើ Video ID) · រយៈពេលជា នាទី:វិនាទី (ឧ. 12:30) · "មើលសាកល្បង" អនុញ្ញាតឲ្យអ្នកមិនទាន់ទិញមើលបាន
 	</p>
 
 	<div class="mt-4 space-y-4">
@@ -81,6 +82,7 @@
 								<input type="hidden" name="id" value={lesson.id} />
 								<input name="title" required value={lesson.title} class="{inputClass} min-w-48 flex-1" aria-label="ចំណងជើងមេរៀន" />
 								<input name="video_id" value={lesson.video_id ?? ''} placeholder="Video ID" class="{inputClass} w-56 font-mono" aria-label="Video ID" />
+								<MediaField mediaId={lesson.media_id} mediaName={lesson.media_file_name} accept="video/*" />
 								<input name="duration" value={formatClock(lesson.duration_seconds)} class="{inputClass} w-20" aria-label="រយៈពេល" />
 								<label class="flex items-center gap-1 text-xs whitespace-nowrap">
 									<input type="checkbox" name="is_preview" checked={lesson.is_preview} /> មើលសាកល្បង
@@ -110,6 +112,7 @@
 					<input type="hidden" name="id" value={section.id} />
 					<input name="title" required placeholder="មេរៀនថ្មី" class="{inputClass} min-w-48 flex-1" />
 					<input name="video_id" placeholder="Video ID" class="{inputClass} w-56 font-mono" />
+					<MediaField accept="video/*" />
 					<input name="duration" placeholder="0:00" class="{inputClass} w-20" />
 					<label class="flex items-center gap-1 text-xs whitespace-nowrap"><input type="checkbox" name="is_preview" /> មើលសាកល្បង</label>
 					<button class={primaryButton}>+ បន្ថែមមេរៀន</button>

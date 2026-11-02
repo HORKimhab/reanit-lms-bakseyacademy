@@ -31,6 +31,7 @@ export function ebookBody(d: FormData) {
 		sale_price_cents: cents(d, 'sale_price'),
 		published: checked(d, 'published'),
 		file_key: text(d, 'file_key'),
-		remove_file: checked(d, 'remove_file')
+		remove_file: checked(d, 'remove_file'),
+		media_id: text(d, 'media_id') || null
 	};
 }

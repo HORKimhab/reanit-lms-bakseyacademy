@@ -181,5 +181,11 @@
 	"error_forbidden": "អ្នកមិនមានសិទ្ធិទេ",
 	"error_unauthorized": "សូមចូលគណនីម្តងទៀត",
 	"error_unavailable": "មិនអាចភ្ជាប់ទៅម៉ាស៊ីនមេបានទេ",
-	"error_generic": "មានបញ្ហា សូមព្យាយាមម្តងទៀត"
+	"error_generic": "មានបញ្ហា សូមព្យាយាមម្តងទៀត",
+	"error_invalid_size": "ទំហំឯកសារមិនត្រូវគ្នា សូមព្យាយាមម្តងទៀត",
+	"error_file_too_large": "ឯកសារធំពេក (Bot API សាធារណៈ ≤ ៥០ MB, server ផ្ទាល់ខ្លួន ≤ ២០០០ MB)",
+	"error_missing_file": "សូមជ្រើសរើសឯកសារ",
+	"error_invalid_form": "ទម្រង់មិនត្រឹមត្រូវ",
+	"error_telegram_unavailable": "មិនទាន់កំណត់ Telegram storage ទេ",
+	"error_telegram_failed": "ផ្ទុកឡើង Telegram មិនបានសម្រេច"
 }

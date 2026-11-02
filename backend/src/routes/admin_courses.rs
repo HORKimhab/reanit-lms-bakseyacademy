@@ -101,7 +101,7 @@ impl CourseInput {
     }
 }
 
-/// Unknown instructor/category ids surface as `422 invalid_reference`.
+/// Unknown instructor/category/media ids surface as `422 invalid_reference`.
 fn map_write_error(e: sqlx::Error) -> AppError {
     match &e {
         sqlx::Error::Database(d) if d.is_unique_violation() => AppError::Conflict("slug_taken"),
@@ -242,8 +242,10 @@ async fn load(db: &PgPool, id: Uuid) -> AppResult<AdminCourse> {
         .bind(id)
         .fetch_all(db),
         sqlx::query_as::<_, AdminLesson>(
-            "SELECT l.id, l.section_id, l.title, l.position, l.video_id, l.duration_seconds, l.is_preview
+            "SELECT l.id, l.section_id, l.title, l.position, l.video_id, l.media_id, m.file_name AS media_file_name,
+                    l.duration_seconds, l.is_preview
              FROM lessons l JOIN course_sections s ON s.id = l.section_id
+             LEFT JOIN media_files m ON m.id = l.media_id
              WHERE s.course_id = $1 ORDER BY l.position",
         )
         .bind(id)
@@ -348,23 +350,34 @@ pub async fn move_section(
 pub struct LessonInput {
     title: String,
     video_id: Option<String>,
+    /// Uploaded media (Telegram); wins over `video_id` when set.
+    media_id: Option<Uuid>,
     #[serde(default)]
     duration_seconds: i32,
     #[serde(default)]
     is_preview: bool,
 }
 
+struct LessonFields {
+    title: String,
+    video_id: Option<String>,
+    media_id: Option<Uuid>,
+    duration_seconds: i32,
+    is_preview: bool,
+}
+
 impl LessonInput {
-    fn validated(self) -> AppResult<(String, Option<String>, i32, bool)> {
+    fn validated(self) -> AppResult<LessonFields> {
         if self.duration_seconds < 0 {
             return Err(AppError::Validation("invalid_duration"));
         }
-        Ok((
-            validate::required(&self.title, 200, "invalid_title")?,
-            validate::optional(self.video_id.as_deref(), 200, "invalid_video_id")?,
-            self.duration_seconds,
-            self.is_preview,
-        ))
+        Ok(LessonFields {
+            title: validate::required(&self.title, 200, "invalid_title")?,
+            video_id: validate::optional(self.video_id.as_deref(), 200, "invalid_video_id")?,
+            media_id: self.media_id,
+            duration_seconds: self.duration_seconds,
+            is_preview: self.is_preview,
+        })
     }
 }
 
@@ -375,21 +388,23 @@ pub async fn create_lesson(
     Path(section_id): Path<Uuid>,
     Json(input): Json<LessonInput>,
 ) -> AppResult<(StatusCode, Json<AdminCourse>)> {
-    let (title, video_id, duration, preview) = input.validated()?;
+    let f = input.validated()?;
     let mut tx = st.db.begin().await?;
     let course_id = section_course(&mut tx, section_id).await?;
     lock_course(&mut tx, course_id).await?;
     sqlx::query(
-        "INSERT INTO lessons (section_id, title, position, video_id, duration_seconds, is_preview)
-         SELECT $1, $2, COALESCE(MAX(position), 0) + 1, $3, $4, $5 FROM lessons WHERE section_id = $1",
+        "INSERT INTO lessons (section_id, title, position, video_id, media_id, duration_seconds, is_preview)
+         SELECT $1, $2, COALESCE(MAX(position), 0) + 1, $3, $4, $5, $6 FROM lessons WHERE section_id = $1",
     )
     .bind(section_id)
-    .bind(title)
-    .bind(video_id)
-    .bind(duration)
-    .bind(preview)
+    .bind(f.title)
+    .bind(f.video_id)
+    .bind(f.media_id)
+    .bind(f.duration_seconds)
+    .bind(f.is_preview)
     .execute(&mut *tx)
-    .await?;
+    .await
+    .map_err(map_write_error)?;
     tx.commit().await?;
     Ok((StatusCode::CREATED, Json(load(&st.db, course_id).await?)))
 }
@@ -400,19 +415,21 @@ pub async fn update_lesson(
     Path(id): Path<Uuid>,
     Json(input): Json<LessonInput>,
 ) -> AppResult<Json<AdminCourse>> {
-    let (title, video_id, duration, preview) = input.validated()?;
+    let f = input.validated()?;
     let course_id: Uuid = sqlx::query_scalar(
-        "UPDATE lessons l SET title = $2, video_id = $3, duration_seconds = $4, is_preview = $5
+        "UPDATE lessons l SET title = $2, video_id = $3, media_id = $4, duration_seconds = $5, is_preview = $6
          FROM course_sections s WHERE l.id = $1 AND s.id = l.section_id
          RETURNING s.course_id",
     )
     .bind(id)
-    .bind(title)
-    .bind(video_id)
-    .bind(duration)
-    .bind(preview)
+    .bind(f.title)
+    .bind(f.video_id)
+    .bind(f.media_id)
+    .bind(f.duration_seconds)
+    .bind(f.is_preview)
     .fetch_optional(&st.db)
-    .await?
+    .await
+    .map_err(map_write_error)?
     .ok_or(AppError::NotFound)?;
     Ok(Json(load(&st.db, course_id).await?))
 }

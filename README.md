@@ -95,6 +95,7 @@ Authenticated routes take `Authorization: Bearer <token>` (the token from regist
 | GET / POST | `/api/admin/ebooks?q=&page=` | admin → paged ebooks incl. drafts (`has_file`) / create (same fields as courses minus instructor, plus `author_name`, `page_count?`, `file_key?`) |
 | GET / PUT / DELETE | `/api/admin/ebooks/{id}` | admin; `file_key` is write-only (blank keeps, `remove_file: true` clears); DELETE 409 `has_buyers` |
 | POST | `/api/admin/ebooks/{id}/publish` | admin, `{published}` → 204 |
+| POST | `/api/admin/media` | admin, multipart `size` then `file` → 201 media; the file is streamed to the Telegram storage channel (≤ 50 MB public Bot API, ≤ 2000 MB with a `--local` server); 422 `invalid_size` / `file_too_large` / `missing_file`, 503 `telegram_unavailable` / `telegram_failed`. Lessons / ebooks take `media_id`, which wins over `video_id` / `file_key` |
 | GET / POST, PUT / DELETE `/{id}` | `/api/admin/categories` | admin, `{slug, name_km, name_en, position}`; 409 `slug_taken` |
 | GET / POST, PUT / DELETE `/{id}` | `/api/admin/instructors` | admin, `{name, bio?, avatar_url?}`; DELETE 409 `in_use` while courses reference it |
 | GET / POST, PUT / DELETE `/{id}` | `/api/admin/banners` | admin, `{title, subtitle?, image_url?, link_url?, position, published}`; URLs must be `/path` or `http(s)://` |
