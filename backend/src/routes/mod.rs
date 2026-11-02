@@ -1,4 +1,5 @@
 mod auth;
+mod cart;
 mod categories;
 mod courses;
 mod ebooks;
@@ -7,7 +8,7 @@ mod home;
 use axum::{
     Json, Router,
     extract::State,
-    routing::{get, post},
+    routing::{delete, get, post},
 };
 use serde_json::{Value, json};
 
@@ -22,6 +23,8 @@ pub fn router(state: AppState) -> Router {
         .route("/api/auth/logout", post(auth::logout))
         .route("/api/me", get(auth::me).patch(auth::update_me))
         .route("/api/me/password", post(auth::change_password))
+        .route("/api/cart", get(cart::get).post(cart::add))
+        .route("/api/cart/{id}", delete(cart::remove))
         .route("/api/categories", get(categories::list))
         .route("/api/courses", get(courses::list))
         .route("/api/courses/{slug}", get(courses::detail))

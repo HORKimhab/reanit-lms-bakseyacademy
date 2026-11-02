@@ -49,6 +49,9 @@ Authenticated routes take `Authorization: Bearer <token>` (the token from regist
 | GET | `/api/me` | Bearer → user; 401 `unauthorized` |
 | PATCH | `/api/me` | Bearer, `{full_name, email}` (empty email clears it) → user; 409 `email_taken`, 422 `invalid_email` / `invalid_name` |
 | POST | `/api/me/password` | Bearer, `{current_password, new_password}` → 204, signs out other sessions; 422 `wrong_password` / `weak_password` |
+| GET | `/api/cart` | Bearer → `{items, total_cents}` (published items; total uses sale price) |
+| POST | `/api/cart` | Bearer, `{course_id}` or `{ebook_id}` → cart; 404, 409 `already_owned`, 422 `invalid_item` |
+| DELETE | `/api/cart/{id}` | Bearer → cart |
 
 ## Roadmap
 

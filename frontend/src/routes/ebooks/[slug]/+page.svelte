@@ -1,10 +1,11 @@
 <script lang="ts">
+	import BuyButtons from '$lib/components/BuyButtons.svelte';
 	import Price from '$lib/components/Price.svelte';
 	import Rating from '$lib/components/Rating.svelte';
 	import { khmerNumber } from '$lib/format';
-	import type { PageData } from './$types';
+	import type { ActionData, PageData } from './$types';
 
-	let { data }: { data: PageData } = $props();
+	let { data, form }: { data: PageData; form: ActionData } = $props();
 	const ebook = $derived(data.ebook);
 </script>
 
@@ -28,9 +29,7 @@
 			{#if ebook.page_count}<span>{khmerNumber(ebook.page_count)} ទំព័រ</span>{/if}
 		</div>
 		<div class="mt-6"><Price price={ebook.price_cents} sale={ebook.sale_price_cents} size="lg" /></div>
-		<button disabled class="mt-4 cursor-not-allowed rounded-lg bg-brand-600 px-6 py-2.5 font-semibold text-white opacity-60">
-			បន្ថែមទៅកន្ត្រក
-		</button>
+		<div class="mt-4"><BuyButtons {form} /></div>
 		{#if ebook.summary}<p class="mt-8 text-lg text-slate-700">{ebook.summary}</p>{/if}
 		{#if ebook.description}<p class="mt-4 whitespace-pre-line text-slate-700">{ebook.description}</p>{/if}
 	</div>

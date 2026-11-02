@@ -89,3 +89,20 @@ export interface AuthResponse {
 	max_age: number;
 	user: User;
 }
+
+export interface CartItem {
+	id: string;
+	kind: 'course' | 'ebook';
+	item_id: string;
+	slug: string;
+	title: string;
+	cover_url: string | null;
+	byline: string;
+	price_cents: number;
+	sale_price_cents: number | null;
+}
+
+export interface Cart {
+	items: CartItem[];
+	total_cents: number;
+}

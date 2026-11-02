@@ -1,10 +1,11 @@
 <script lang="ts">
+	import BuyButtons from '$lib/components/BuyButtons.svelte';
 	import Price from '$lib/components/Price.svelte';
 	import Rating from '$lib/components/Rating.svelte';
 	import { formatClock, formatDuration, khmerNumber } from '$lib/format';
-	import type { PageData } from './$types';
+	import type { ActionData, PageData } from './$types';
 
-	let { data }: { data: PageData } = $props();
+	let { data, form }: { data: PageData; form: ActionData } = $props();
 	const course = $derived(data.course);
 </script>
 
@@ -78,10 +79,7 @@
 			</div>
 			<div class="space-y-4 p-5">
 				<Price price={course.price_cents} sale={course.sale_price_cents} size="lg" />
-				<!-- TODO: wire to cart once orders/payments land -->
-				<button disabled class="w-full cursor-not-allowed rounded-lg bg-brand-600 py-2.5 font-semibold text-white opacity-60">
-					បន្ថែមទៅកន្ត្រក
-				</button>
+				<BuyButtons {form} full />
 			</div>
 		</div>
 	</aside>

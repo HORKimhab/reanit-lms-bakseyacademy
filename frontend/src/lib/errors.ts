@@ -9,6 +9,8 @@ const messages: Record<string, string> = {
 	weak_password: 'ពាក្យសម្ងាត់ត្រូវមានយ៉ាងហោចណាស់ ៨ តួអក្សរ',
 	wrong_password: 'ពាក្យសម្ងាត់បច្ចុប្បន្នមិនត្រឹមត្រូវ',
 	password_mismatch: 'ពាក្យសម្ងាត់មិនដូចគ្នាទេ',
+	already_owned: 'អ្នកមានវារួចហើយ',
+	invalid_item: 'ទំនិញមិនត្រឹមត្រូវ',
 	unauthorized: 'សូមចូលគណនីម្តងទៀត',
 	unavailable: 'មិនអាចភ្ជាប់ទៅម៉ាស៊ីនមេបានទេ'
 };

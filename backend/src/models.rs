@@ -28,6 +28,41 @@ pub struct AuthResponse {
 }
 
 #[derive(Serialize, FromRow)]
+pub struct CartItem {
+    pub id: Uuid,
+    /// `course` or `ebook`
+    pub kind: String,
+    pub item_id: Uuid,
+    pub slug: String,
+    pub title: String,
+    pub cover_url: Option<String>,
+    /// Instructor (course) or author (ebook)
+    pub byline: String,
+    pub price_cents: i32,
+    pub sale_price_cents: Option<i32>,
+}
+
+impl CartItem {
+    /// What the buyer pays: the sale price when there is one.
+    pub fn effective_price_cents(&self) -> i32 {
+        self.sale_price_cents.unwrap_or(self.price_cents)
+    }
+}
+
+#[derive(Serialize)]
+pub struct Cart {
+    pub items: Vec<CartItem>,
+    pub total_cents: i64,
+}
+
+impl Cart {
+    pub fn new(items: Vec<CartItem>) -> Self {
+        let total_cents = items.iter().map(|i| i64::from(i.effective_price_cents())).sum();
+        Self { items, total_cents }
+    }
+}
+
+#[derive(Serialize, FromRow)]
 pub struct Banner {
     pub id: Uuid,
     pub title: String,

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { khmerNumber } from '$lib/format';
 
 	const links = [
 		{ href: '/', label: 'ទំព័រដើម' },
@@ -11,6 +12,7 @@
 	let searchInput: HTMLInputElement | undefined = $state();
 
 	const user = $derived(page.data.user ?? null);
+	const cartCount = $derived(page.data.cartCount ?? 0);
 	const loginHref = $derived(
 		page.url.pathname.startsWith('/auth')
 			? '/auth'
@@ -57,7 +59,19 @@
 			<kbd class="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded border border-slate-200 px-1.5 text-xs text-slate-400">⌘K</kbd>
 		</form>
 
-		<!-- TODO: cart icon once orders land (C2) -->
+		{#if user}
+			<a href="/cart" class="relative ml-auto rounded-lg p-2 hover:bg-slate-100 sm:ml-0" aria-label="កន្ត្រក">
+				<svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+					<path d="M3 4h2l2.4 11.2a1 1 0 0 0 1 .8h9.2a1 1 0 0 0 1-.8L20.5 8H6.2" stroke-linecap="round" stroke-linejoin="round" />
+					<circle cx="9" cy="20" r="1.3" /><circle cx="17" cy="20" r="1.3" />
+				</svg>
+				{#if cartCount}
+					<span class="absolute -top-0.5 -right-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-red-600 px-1 text-xs text-white">
+						{khmerNumber(cartCount)}
+					</span>
+				{/if}
+			</a>
+		{/if}
 
 		<div class="hidden md:block">
 			{#if user}
@@ -83,7 +97,7 @@
 		</div>
 
 		<button
-			class="ml-auto rounded-lg p-2 hover:bg-slate-100 sm:ml-0 md:hidden"
+			class="rounded-lg p-2 hover:bg-slate-100 sm:ml-0 md:hidden {user ? '' : 'ml-auto'}"
 			aria-label="Menu"
 			aria-expanded={menuOpen}
 			onclick={() => (menuOpen = !menuOpen)}
