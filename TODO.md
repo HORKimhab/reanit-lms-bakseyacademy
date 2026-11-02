@@ -12,7 +12,7 @@ Login: phone (+855) + password, email optional. SvelteKit keeps the session toke
 - [x] B2 `POST /api/auth/register` (name, phone, password; argon2); `AppError::Validation`, `AppError::Conflict`
 - [x] B3 `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/me` (Bearer token; `AppError::Unauthorized`)
 - [x] B4 `/auth` page (login / register tabs, +855 prefix, logout action); `hooks.server.ts` resolves the `session` cookie via `/api/me` into `locals.user`
-- [ ] B5 Header account menu + logout; `/account` (profile, change password)
+- [x] B5 Header account menu + logout; `/account` (profile, change password)
 - [ ] B6 Forgot password: Telegram support link first, SMS/OTP reset later
 
 ## C. Commerce (roadmap 3)

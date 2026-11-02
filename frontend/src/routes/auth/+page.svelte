@@ -1,23 +1,13 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { errorMessage } from '$lib/errors';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
-	const messages: Record<string, string> = {
-		invalid_credentials: 'លេខទូរស័ព្ទ ឬពាក្យសម្ងាត់មិនត្រឹមត្រូវ',
-		phone_taken: 'លេខទូរស័ព្ទនេះបានចុះឈ្មោះរួចហើយ',
-		invalid_phone: 'លេខទូរស័ព្ទមិនត្រឹមត្រូវ',
-		invalid_name: 'សូមបញ្ចូលឈ្មោះពេញ',
-		weak_password: 'ពាក្យសម្ងាត់ត្រូវមានយ៉ាងហោចណាស់ ៨ តួអក្សរ',
-		password_mismatch: 'ពាក្យសម្ងាត់មិនដូចគ្នាទេ',
-		unavailable: 'មិនអាចភ្ជាប់ទៅម៉ាស៊ីនមេបានទេ'
-	};
-	const message = (code: string) => messages[code] ?? 'មានបញ្ហា សូមព្យាយាមម្តងទៀត';
-
 	// After a failed submit, stay on the tab that was submitted.
 	const tab = $derived(form?.form ?? data.tab);
-	const error = $derived(form?.form === tab ? message(form.code) : null);
+	const error = $derived(form?.form === tab ? errorMessage(form.code) : null);
 	const query = $derived(data.redirectTo === '/' ? '' : `redirectTo=${encodeURIComponent(data.redirectTo)}`);
 	const tabHref = (t: string) => `/auth?${[t === 'register' ? 'tab=register' : '', query].filter(Boolean).join('&')}`;
 	const action = (name: string) => `?/${name}${query ? `&${query}` : ''}`;

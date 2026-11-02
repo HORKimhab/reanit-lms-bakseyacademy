@@ -10,6 +10,13 @@
 	let menuOpen = $state(false);
 	let searchInput: HTMLInputElement | undefined = $state();
 
+	const user = $derived(page.data.user ?? null);
+	const loginHref = $derived(
+		page.url.pathname.startsWith('/auth')
+			? '/auth'
+			: `/auth?redirectTo=${encodeURIComponent(page.url.pathname + page.url.search)}`
+	);
+
 	const isActive = (href: string) =>
 		href === '/' ? page.url.pathname === '/' : page.url.pathname.startsWith(href);
 
@@ -50,7 +57,30 @@
 			<kbd class="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded border border-slate-200 px-1.5 text-xs text-slate-400">⌘K</kbd>
 		</form>
 
-		<!-- TODO: cart + account once auth/orders land -->
+		<!-- TODO: cart icon once orders land (C2) -->
+
+		<div class="hidden md:block">
+			{#if user}
+				<details class="relative">
+					<summary class="flex cursor-pointer list-none items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium hover:bg-slate-100">
+						<span class="grid h-7 w-7 place-items-center rounded-full bg-brand-600 text-xs text-white">
+							{user.full_name.slice(0, 1)}
+						</span>
+						<span class="max-w-32 truncate">{user.full_name}</span>
+					</summary>
+					<div class="absolute right-0 mt-2 w-48 rounded-xl border border-slate-200 bg-white p-1 text-sm shadow-lg">
+						<a href="/account" class="block rounded-lg px-3 py-2 hover:bg-slate-100">គណនីរបស់ខ្ញុំ</a>
+						<form method="POST" action="/auth?/logout">
+							<button class="w-full rounded-lg px-3 py-2 text-left text-red-600 hover:bg-red-50">ចាកចេញ</button>
+						</form>
+					</div>
+				</details>
+			{:else}
+				<a href={loginHref} class="rounded-lg bg-brand-600 px-4 py-1.5 text-sm font-semibold whitespace-nowrap text-white hover:bg-brand-700">
+					ចូលគណនី
+				</a>
+			{/if}
+		</div>
 
 		<button
 			class="ml-auto rounded-lg p-2 hover:bg-slate-100 sm:ml-0 md:hidden"
@@ -67,6 +97,14 @@
 			{#each links as link}
 				<a href={link.href} class="block py-2" onclick={() => (menuOpen = false)}>{link.label}</a>
 			{/each}
+			{#if user}
+				<a href="/account" class="block py-2" onclick={() => (menuOpen = false)}>គណនីរបស់ខ្ញុំ ({user.full_name})</a>
+				<form method="POST" action="/auth?/logout">
+					<button class="block py-2 text-red-600">ចាកចេញ</button>
+				</form>
+			{:else}
+				<a href={loginHref} class="block py-2 font-semibold text-brand-600" onclick={() => (menuOpen = false)}>ចូលគណនី</a>
+			{/if}
 			<form action="/courses" method="get" class="py-2 sm:hidden">
 				<input name="q" type="search" placeholder="ស្វែងរកវគ្គសិក្សា..." class="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm" />
 			</form>
