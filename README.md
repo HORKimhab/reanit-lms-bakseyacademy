@@ -17,7 +17,7 @@ createdb reanit_lms            # skip if it already exists
 
 # 2. API — applies migrations on start
 cd backend
-cp .env.example .env           # adjust DATABASE_URL; BUNNY_* for lesson videos, STORAGE_* for ebook files
+cp .env.example .env           # adjust DATABASE_URL; BUNNY_* lesson videos, STORAGE_* ebook files, TELEGRAM_* channel storage
 cargo run                      # http://127.0.0.1:8080/api/health
 
 # 3. demo data (dev only — truncates tables!)

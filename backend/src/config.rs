@@ -1,6 +1,10 @@
 use anyhow::Context;
 
-use crate::{storage::ObjectStorage, video::BunnyStream};
+use crate::{
+    storage::ObjectStorage,
+    telegram::{LocalDir, Telegram},
+    video::BunnyStream,
+};
 
 pub struct Config {
     pub database_url: String,
@@ -9,6 +13,8 @@ pub struct Config {
     pub video: Option<BunnyStream>,
     /// Ebook file bucket; `None` (no `STORAGE_BUCKET`) means downloads are unavailable.
     pub storage: Option<ObjectStorage>,
+    /// Telegram channel storage; `None` without `TELEGRAM_BOT_TOKEN`.
+    pub telegram: Option<Telegram>,
 }
 
 /// Unset or blank → `None`.
@@ -25,6 +31,18 @@ impl Config {
                 library_id,
                 token_key: optional("BUNNY_TOKEN_KEY"),
             }),
+            telegram: match optional("TELEGRAM_BOT_TOKEN") {
+                None => None,
+                Some(token) => Some(Telegram::new(
+                    &optional("TELEGRAM_API_URL").unwrap_or_else(|| "https://api.telegram.org".into()),
+                    token,
+                    optional("TELEGRAM_CHANNEL_ID").context("TELEGRAM_CHANNEL_ID must be set with TELEGRAM_BOT_TOKEN")?,
+                    optional("TELEGRAM_LOCAL_DIR").map(|host_dir| LocalDir {
+                        server_dir: optional("TELEGRAM_SERVER_DIR").unwrap_or_else(|| "/var/lib/telegram-bot-api".into()),
+                        host_dir: host_dir.into(),
+                    }),
+                )),
+            },
             storage: match optional("STORAGE_BUCKET") {
                 None => None,
                 Some(bucket) => Some(ObjectStorage {

@@ -4,6 +4,7 @@ mod error;
 mod models;
 mod routes;
 mod storage;
+mod telegram;
 mod validate;
 mod video;
 
@@ -16,6 +17,9 @@ pub struct AppState {
     pub db: sqlx::PgPool,
     pub video: Option<video::BunnyStream>,
     pub storage: Option<storage::ObjectStorage>,
+    // Read by the media upload / streaming routes (TODO G3, G5).
+    #[allow(dead_code)]
+    pub telegram: Option<telegram::Telegram>,
 }
 
 #[tokio::main]
@@ -38,6 +42,9 @@ async fn main() -> anyhow::Result<()> {
     if config.storage.is_none() {
         tracing::warn!("STORAGE_BUCKET not set: ebook downloads return 503");
     }
+    if config.telegram.is_none() {
+        tracing::warn!("TELEGRAM_BOT_TOKEN not set: Telegram channel storage is off");
+    }
 
     let db = PgPoolOptions::new()
         .max_connections(10)
@@ -45,7 +52,7 @@ async fn main() -> anyhow::Result<()> {
         .await?;
     sqlx::migrate!("./migrations").run(&db).await?;
 
-    let app = routes::router(AppState { db, video: config.video, storage: config.storage })
+    let app = routes::router(AppState { db, video: config.video, storage: config.storage, telegram: config.telegram })
         .layer(CompressionLayer::new())
         .layer(TraceLayer::new_for_http());
 
