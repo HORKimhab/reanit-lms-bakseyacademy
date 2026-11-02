@@ -12,7 +12,7 @@ mod orders;
 use axum::{
     Json, Router,
     extract::State,
-    routing::{delete, get, post},
+    routing::{delete, get, post, put},
 };
 use serde_json::{Value, json};
 
@@ -43,6 +43,10 @@ pub fn router(state: AppState) -> Router {
         .route("/api/courses", get(courses::list))
         .route("/api/courses/{slug}", get(courses::detail))
         .route("/api/courses/{slug}/lessons/{id}", get(lessons::lesson))
+        .route(
+            "/api/courses/{slug}/lessons/{id}/complete",
+            put(lessons::complete).delete(lessons::uncomplete),
+        )
         .route("/api/ebooks", get(ebooks::list))
         .route("/api/ebooks/{slug}", get(ebooks::detail))
         .with_state(state)

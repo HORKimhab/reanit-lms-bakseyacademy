@@ -1,5 +1,6 @@
 <script lang="ts">
 	import BuyButtons from '$lib/components/BuyButtons.svelte';
+	import ProgressBar from '$lib/components/ProgressBar.svelte';
 	import Price from '$lib/components/Price.svelte';
 	import Rating from '$lib/components/Rating.svelte';
 	import { formatClock, formatDuration, khmerNumber } from '$lib/format';
@@ -50,7 +51,11 @@
 									class="flex items-center justify-between px-4 py-2.5 text-sm {watchable ? 'hover:bg-slate-50' : ''}"
 								>
 									<span class="flex items-center gap-2">
-										<span class="text-slate-400">{watchable ? '▶' : '🔒'}</span>
+										{#if course.completed_lesson_ids.includes(lesson.id)}
+											<span class="text-green-600" aria-label="បានបញ្ចប់">✓</span>
+										{:else}
+											<span class="text-slate-400">{watchable ? '▶' : '🔒'}</span>
+										{/if}
 										{lesson.title}
 										{#if lesson.is_preview && !course.owned}
 											<span class="rounded bg-brand-50 px-1.5 text-xs text-brand-700">មើលសាកល្បង</span>
@@ -88,6 +93,7 @@
 				<Price price={course.price_cents} sale={course.sale_price_cents} size="lg" />
 				{#if course.owned}
 					<p class="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">✓ អ្នកបានចុះឈ្មោះក្នុងវគ្គនេះរួចហើយ</p>
+					<ProgressBar done={course.completed_lesson_ids.length} total={course.lesson_count} />
 					<a
 						href="/courses/{course.slug}/learn"
 						class="block rounded-lg bg-brand-600 px-6 py-2.5 text-center font-semibold text-white hover:bg-brand-700"

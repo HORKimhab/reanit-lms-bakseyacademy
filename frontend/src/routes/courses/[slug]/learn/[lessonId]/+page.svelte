@@ -1,14 +1,18 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
+	import ProgressBar from '$lib/components/ProgressBar.svelte';
+	import { errorMessage } from '$lib/errors';
 	import { formatClock, khmerNumber } from '$lib/format';
-	import type { PageData } from './$types';
+	import type { ActionData, PageData } from './$types';
 
-	let { data }: { data: PageData } = $props();
+	let { data, form }: { data: PageData; form: ActionData } = $props();
 	const course = $derived(data.course);
 	const lesson = $derived(data.lesson);
 	const lessons = $derived(course.sections.flatMap((s) => s.lessons));
 	const index = $derived(lessons.findIndex((l) => l.id === lesson.id));
 	const prev = $derived(index > 0 ? lessons[index - 1] : null);
 	const next = $derived(index >= 0 && index < lessons.length - 1 ? lessons[index + 1] : null);
+	const done = $derived(new Set(course.completed_lesson_ids));
 	const canWatch = (l: { is_preview: boolean }) => course.owned || l.is_preview;
 	const href = (id: string) => `/courses/${course.slug}/learn/${id}`;
 </script>
@@ -41,7 +45,19 @@
 				<p class="text-sm text-slate-500">មេរៀនទី {khmerNumber(index + 1)} / {khmerNumber(lessons.length)}</p>
 				<h1 class="text-2xl font-bold">{lesson.title}</h1>
 			</div>
-			<div class="flex gap-2">
+			<div class="flex flex-wrap gap-2">
+				{#if course.owned}
+					<form method="POST" action={lesson.completed ? '?/uncomplete' : '?/complete'} use:enhance>
+						{#if lesson.completed}
+							<button class="rounded-lg border border-green-600 px-4 py-2 text-sm text-green-700 hover:bg-green-50">✓ បានបញ្ចប់</button>
+						{:else}
+							{#if next}<input type="hidden" name="next" value={next.id} />{/if}
+							<button class="rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700">
+								{next ? 'បញ្ចប់ ហើយបន្ត →' : 'សម្គាល់ថាបានបញ្ចប់'}
+							</button>
+						{/if}
+					</form>
+				{/if}
 				{#if prev && canWatch(prev)}
 					<a href={href(prev.id)} class="rounded-lg border border-slate-200 px-4 py-2 text-sm hover:border-brand-500">← មុន</a>
 				{/if}
@@ -51,6 +67,10 @@
 			</div>
 		</div>
 
+		{#if form?.code}
+			<p class="mt-3 text-sm text-red-700" role="alert">{errorMessage(form.code)}</p>
+		{/if}
+
 		{#if !course.owned}
 			<p class="mt-6 rounded-lg bg-brand-50 px-4 py-3 text-sm text-brand-700">
 				នេះជាមេរៀនមើលសាកល្បង។ <a href="/courses/{course.slug}" class="font-semibold underline">ទិញវគ្គសិក្សា</a> ដើម្បីមើលមេរៀនទាំងអស់។
@@ -59,6 +79,12 @@
 	</div>
 
 	<aside class="lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:self-start lg:overflow-y-auto">
+		{#if course.owned}
+			<div class="mb-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
+				<p class="mb-1 text-sm font-semibold">វឌ្ឍនភាព · {khmerNumber(done.size)}/{khmerNumber(lessons.length)} មេរៀន</p>
+				<ProgressBar done={done.size} total={lessons.length} />
+			</div>
+		{/if}
 		<div class="divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white">
 			{#each course.sections as section (section.id)}
 				<div>
@@ -75,7 +101,10 @@
 											? 'bg-brand-50 font-semibold text-brand-700'
 											: ''}"
 									>
-										<span class="flex items-center gap-2"><span class="text-slate-400">▶</span>{l.title}</span>
+										<span class="flex items-center gap-2">
+											{#if done.has(l.id)}<span class="text-green-600" aria-label="បានបញ្ចប់">✓</span>{:else}<span class="text-slate-400">▶</span>{/if}
+											{l.title}
+										</span>
 										<span class="text-slate-400">{formatClock(l.duration_seconds)}</span>
 									</a>
 								{:else}

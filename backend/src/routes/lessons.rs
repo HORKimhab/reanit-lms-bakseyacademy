@@ -1,6 +1,7 @@
 use axum::{
     Json,
     extract::{Path, State},
+    http::StatusCode,
 };
 use chrono::{Duration, Utc};
 use uuid::Uuid;
@@ -34,20 +35,7 @@ pub async fn lesson(
     current: Option<CurrentUser>,
     Path((slug, id)): Path<(String, Uuid)>,
 ) -> AppResult<Json<LessonPlayback>> {
-    let row = sqlx::query_as::<_, LessonAccessRow>(
-        "SELECT l.id, l.section_id, l.title, l.duration_seconds, l.is_preview, l.video_id, c.published,
-                EXISTS (SELECT 1 FROM enrollments e WHERE e.course_id = c.id AND e.user_id = $3) AS enrolled
-         FROM lessons l
-         JOIN course_sections s ON s.id = l.section_id
-         JOIN courses c ON c.id = s.course_id
-         WHERE c.slug = $1 AND l.id = $2",
-    )
-    .bind(&slug)
-    .bind(id)
-    .bind(current.as_ref().map(|c| c.user.id))
-    .fetch_optional(&st.db)
-    .await?
-    .ok_or(AppError::NotFound)?;
+    let row = load_lesson(&st, &slug, id, current.as_ref()).await?;
     check_access(row.published, row.is_preview, current.is_some(), row.enrolled)?;
 
     let expires = Utc::now() + VIDEO_URL_TTL;
@@ -63,7 +51,65 @@ pub async fn lesson(
         is_preview: row.is_preview,
         video_url,
         expires_at,
+        completed: row.completed,
     }))
+}
+
+/// A lesson of the course `slug`, with the caller's enrollment and completion.
+async fn load_lesson(
+    st: &AppState,
+    slug: &str,
+    id: Uuid,
+    current: Option<&CurrentUser>,
+) -> AppResult<LessonAccessRow> {
+    sqlx::query_as::<_, LessonAccessRow>(
+        "SELECT l.id, l.section_id, l.title, l.duration_seconds, l.is_preview, l.video_id, c.published,
+                EXISTS (SELECT 1 FROM enrollments e WHERE e.course_id = c.id AND e.user_id = $3) AS enrolled,
+                EXISTS (SELECT 1 FROM lesson_progress p WHERE p.lesson_id = l.id AND p.user_id = $3) AS completed
+         FROM lessons l
+         JOIN course_sections s ON s.id = l.section_id
+         JOIN courses c ON c.id = s.course_id
+         WHERE c.slug = $1 AND l.id = $2",
+    )
+    .bind(slug)
+    .bind(id)
+    .bind(current.map(|c| c.user.id))
+    .fetch_optional(&st.db)
+    .await?
+    .ok_or(AppError::NotFound)
+}
+
+/// Marks a lesson complete for an enrolled user (idempotent).
+pub async fn complete(
+    State(st): State<AppState>,
+    current: CurrentUser,
+    Path((slug, id)): Path<(String, Uuid)>,
+) -> AppResult<StatusCode> {
+    let row = load_lesson(&st, &slug, id, Some(&current)).await?;
+    if !row.enrolled {
+        return Err(AppError::Forbidden);
+    }
+    sqlx::query("INSERT INTO lesson_progress (user_id, lesson_id) VALUES ($1, $2) ON CONFLICT DO NOTHING")
+        .bind(current.user.id)
+        .bind(id)
+        .execute(&st.db)
+        .await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+/// Clears a lesson's completion (idempotent).
+pub async fn uncomplete(
+    State(st): State<AppState>,
+    current: CurrentUser,
+    Path((slug, id)): Path<(String, Uuid)>,
+) -> AppResult<StatusCode> {
+    load_lesson(&st, &slug, id, Some(&current)).await?;
+    sqlx::query("DELETE FROM lesson_progress WHERE user_id = $1 AND lesson_id = $2")
+        .bind(current.user.id)
+        .bind(id)
+        .execute(&st.db)
+        .await?;
+    Ok(StatusCode::NO_CONTENT)
 }
 
 #[cfg(test)]

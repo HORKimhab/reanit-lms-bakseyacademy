@@ -123,9 +123,18 @@ pub struct OrderWithItems {
     pub items: Vec<OrderItem>,
 }
 
+/// An enrolled course with the learner's progress.
+#[derive(Serialize)]
+pub struct LibraryCourse {
+    #[serde(flatten)]
+    pub card: CourseCard,
+    pub lesson_count: i64,
+    pub completed_lessons: i64,
+}
+
 #[derive(Serialize)]
 pub struct Library {
-    pub courses: Vec<CourseCard>,
+    pub courses: Vec<LibraryCourse>,
     pub ebooks: Vec<EbookCard>,
 }
 
@@ -207,6 +216,7 @@ pub struct LessonAccessRow {
     pub video_id: Option<String>,
     pub published: bool,
     pub enrolled: bool,
+    pub completed: bool,
 }
 
 /// A lesson the caller may watch. `video_url` is a signed embed URL (`None` when the lesson has
@@ -220,6 +230,8 @@ pub struct LessonPlayback {
     pub is_preview: bool,
     pub video_url: Option<String>,
     pub expires_at: Option<DateTime<Utc>>,
+    /// The caller marked it complete (false when signed out).
+    pub completed: bool,
 }
 
 #[derive(Serialize)]
@@ -240,6 +252,8 @@ pub struct CourseDetail {
     pub total_duration_seconds: i64,
     /// The signed-in user is enrolled (false when signed out).
     pub owned: bool,
+    /// Lessons the signed-in user completed, in curriculum order (empty when signed out).
+    pub completed_lesson_ids: Vec<Uuid>,
 }
 
 #[derive(Serialize, FromRow)]

@@ -78,18 +78,19 @@ pub async fn detail(
     current: Option<CurrentUser>,
     Path(slug): Path<String>,
 ) -> AppResult<Json<CourseDetail>> {
+    let user_id = current.as_ref().map(|c| c.user.id);
     // Enrolled users keep seeing (and learning) a course after it is unpublished.
     let card = sqlx::query_as::<_, CourseCard>(&format!(
         "{CARD_SELECT} WHERE c.slug = $1 AND (c.published OR EXISTS (
              SELECT 1 FROM enrollments en WHERE en.course_id = c.id AND en.user_id = $2))"
     ))
     .bind(&slug)
-    .bind(current.as_ref().map(|c| c.user.id))
+    .bind(user_id)
     .fetch_optional(&st.db)
     .await?
     .ok_or(AppError::NotFound)?;
 
-    let (extra, section_rows, lesson_rows, owned) = tokio::try_join!(
+    let (extra, section_rows, lesson_rows, owned, completed) = tokio::try_join!(
         sqlx::query_as::<_, CourseExtra>(
             "SELECT c.description, i.bio AS instructor_bio, i.avatar_url AS instructor_avatar_url
              FROM courses c JOIN instructors i ON i.id = c.instructor_id
@@ -111,13 +112,30 @@ pub async fn detail(
         .bind(card.id)
         .fetch_all(&st.db),
         owns(&st.db, current.as_ref(), card.id),
+        sqlx::query_scalar::<_, Uuid>(
+            "SELECT p.lesson_id FROM lesson_progress p
+             JOIN lessons l ON l.id = p.lesson_id JOIN course_sections s ON s.id = l.section_id
+             WHERE p.user_id = $1 AND s.course_id = $2
+             ORDER BY s.position, l.position",
+        )
+        .bind(user_id)
+        .bind(card.id)
+        .fetch_all(&st.db),
     )?;
 
     let lesson_count = lesson_rows.len();
     let total_duration_seconds = lesson_rows.iter().map(|l| i64::from(l.duration_seconds)).sum();
     let sections = group_lessons(section_rows, lesson_rows);
 
-    Ok(Json(CourseDetail { card, extra, sections, lesson_count, total_duration_seconds, owned }))
+    Ok(Json(CourseDetail {
+        card,
+        extra,
+        sections,
+        lesson_count,
+        total_duration_seconds,
+        owned,
+        completed_lesson_ids: completed,
+    }))
 }
 
 fn group_lessons(sections: Vec<SectionRow>, lessons: Vec<LessonRow>) -> Vec<SectionOut> {

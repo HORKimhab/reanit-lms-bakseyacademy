@@ -50,8 +50,9 @@ Authenticated routes take `Authorization: Bearer <token>` (the token from regist
 | GET | `/api/home` | published banners + 8 newest courses + ebooks |
 | GET | `/api/categories` | |
 | GET | `/api/courses?q=&category=&page=&per_page=` | paged, search title/instructor |
-| GET | `/api/courses/{slug}` | detail + curriculum (video id only for preview lessons); optional Bearer → `owned` (enrolled users also see unpublished courses) |
-| GET | `/api/courses/{slug}/lessons/{id}` | optional Bearer → lesson + signed Bunny Stream `video_url` (`expires_at`); enrolled users (even if unpublished) or preview lessons; 401 signed out, 403 not enrolled |
+| GET | `/api/courses/{slug}` | detail + curriculum (video id only for preview lessons); optional Bearer → `owned`, `completed_lesson_ids` (enrolled users also see unpublished courses) |
+| GET | `/api/courses/{slug}/lessons/{id}` | optional Bearer → lesson + signed Bunny Stream `video_url` (`expires_at`), `completed`; enrolled users (even if unpublished) or preview lessons; 401 signed out, 403 not enrolled |
+| PUT / DELETE | `/api/courses/{slug}/lessons/{id}/complete` | Bearer → 204; mark / unmark complete (PUT needs enrollment, 403 otherwise) |
 | GET | `/api/ebooks?q=&category=&page=&per_page=` | paged, search title/author |
 | GET | `/api/ebooks/{slug}` | detail (file key never exposed); optional Bearer → `owned` |
 | POST | `/api/auth/register` | `{full_name, phone, password}` → 201 `{token, max_age, user}`; 409 `phone_taken`, 422 `invalid_phone` / `invalid_name` / `weak_password` |
@@ -61,7 +62,7 @@ Authenticated routes take `Authorization: Bearer <token>` (the token from regist
 | PATCH | `/api/me` | Bearer, `{full_name, email}` (empty email clears it) → user; 409 `email_taken`, 422 `invalid_email` / `invalid_name` |
 | POST | `/api/me/password` | Bearer, `{current_password, new_password}` → 204, signs out other sessions; 422 `wrong_password` / `weak_password` |
 | GET | `/api/me/orders` | Bearer → own orders with items, newest first |
-| GET | `/api/me/library` | Bearer → `{courses, ebooks}` the user owns (card shape) |
+| GET | `/api/me/library` | Bearer → `{courses, ebooks}` the user owns (card shape; courses add `lesson_count`, `completed_lessons`) |
 | GET | `/api/cart` | Bearer → `{items, total_cents}` (published items; total uses sale price) |
 | POST | `/api/cart` | Bearer, `{course_id}` or `{ebook_id}` → cart; 404, 409 `already_owned`, 422 `invalid_item` |
 | DELETE | `/api/cart/{id}` | Bearer → cart |

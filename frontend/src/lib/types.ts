@@ -40,6 +40,7 @@ export interface LessonPlayback {
 	is_preview: boolean;
 	video_url: string | null;
 	expires_at: string | null;
+	completed: boolean;
 }
 
 export interface Section {
@@ -56,6 +57,8 @@ export interface CourseDetail extends CourseCard {
 	lesson_count: number;
 	total_duration_seconds: number;
 	owned: boolean;
+	/** In curriculum order; empty when signed out. */
+	completed_lesson_ids: string[];
 }
 
 export interface EbookCard extends ProductBase {
@@ -166,7 +169,12 @@ export interface OrderWithItems extends OrderSummary {
 	items: OrderItem[];
 }
 
+export interface LibraryCourse extends CourseCard {
+	lesson_count: number;
+	completed_lessons: number;
+}
+
 export interface Library {
-	courses: CourseCard[];
+	courses: LibraryCourse[];
 	ebooks: EbookCard[];
 }

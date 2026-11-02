@@ -2,7 +2,7 @@
 -- Run after the API has applied migrations:  psql "$DATABASE_URL" -f seeds/dev.sql
 BEGIN;
 
-TRUNCATE enrollments, ebook_purchases, order_items, orders, cart_items, payment_methods, sessions, banners, reviews, lessons, course_sections, courses, ebooks, categories, instructors, users CASCADE;
+TRUNCATE lesson_progress, enrollments, ebook_purchases, order_items, orders, cart_items, payment_methods, sessions, banners, reviews, lessons, course_sections, courses, ebooks, categories, instructors, users CASCADE;
 
 -- Demo users have no password; register a new account to log in.
 INSERT INTO users (phone, email, full_name) VALUES
