@@ -16,12 +16,12 @@ Login: phone (+855) + password, email optional. SvelteKit keeps the session toke
 - [x] B6 Forgot password: Telegram support link (`site.supportUrl`)
 
 ## C. Commerce (roadmap 3)
-Open question: Bakong KHQR or ABA PayWay first?
-- [ ] C1 Migration: `cart_items`, `orders`, `order_items` (price snapshot in cents), `enrollments`, `ebook_purchases`
-- [ ] C2 Cart API (`GET/POST/DELETE /api/cart`) + header cart icon with count
-- [ ] C3 `/cart` page + checkout creating a `pending` order
-- [ ] C4 Payment QR + webhook: mark order `paid`, grant enrollment / ebook (idempotent)
-- [ ] C5 `/account/orders`, "My courses / My ebooks", "Continue learning" on owned items
+Payment now: the user picks Bakong KHQR or ABA PayWay, scans that method's static QR image, and submits the transaction reference; an admin approves, which grants access. Orders: `pending_payment` → `awaiting_approval` → `paid` | `rejected` (resubmittable); `cancelled` from `pending_payment`; a free order is `paid` at checkout.
+- [ ] C1 Migration: `payment_methods` (QR image, account), `cart_items`, `orders`, `order_items` (price snapshot), `enrollments`, `ebook_purchases`
+- [ ] C2 Cart API (`GET/POST/DELETE /api/cart`), add-to-cart on detail pages, header cart icon with count
+- [ ] C3 `/cart` + payment-method picker → `POST /api/orders`; `/orders/{id}` shows QR + amount, reference form, cancel, status banners
+- [ ] C4 Admin approval: `AdminUser` extractor (`AppError::Forbidden`), `/api/admin/orders` list / approve / reject, `/admin/orders` page
+- [ ] C5 `/account/orders`, `/account/library`, `owned` flag on detail pages ("Continue learning" / "Read")
 
 ## D. Learning (roadmap 4)
 - [ ] D1 `GET /api/courses/{slug}/lessons/{id}`: signed video URL for enrolled users only
@@ -39,5 +39,7 @@ Open question: Bakong KHQR or ABA PayWay first?
 - [ ] F1 Paraglide km/en + header language switcher
 
 ## Later
+- [ ] Automatic payment confirmation: Bakong KHQR dynamic QR + status check, ABA PayWay checkout + pushback webhook (same grant path as admin approval)
+- [ ] Payment screenshot upload (needs object storage)
 - [ ] Self-service password reset (SMS OTP)
 - [ ] Google sign-in (server-side OAuth; `users.google_sub`)
