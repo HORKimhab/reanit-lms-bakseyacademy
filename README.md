@@ -55,7 +55,7 @@ Authenticated routes take `Authorization: Bearer <token>` (the token from regist
 Task-level breakdown: [`TODO.md`](TODO.md).
 
 1. ~~Catalog: schema, courses, ebooks, categories, ratings~~
-2. Auth (argon2 + session cookies), account page
+2. ~~Auth (phone + argon2, session cookies), account page~~
 3. Cart → orders → ABA PayWay / Bakong KHQR webhook → enrollments
 4. Lesson player (Bunny/Cloudflare Stream signed URLs), progress tracking, ebook signed downloads
 5. Reviews write API, search upgrade (Meilisearch), "for you" recommendations, admin
