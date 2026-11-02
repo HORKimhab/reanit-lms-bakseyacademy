@@ -13,7 +13,7 @@ Login: phone (+855) + password, email optional. SvelteKit keeps the session toke
 - [x] B3 `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/me` (Bearer token; `AppError::Unauthorized`)
 - [x] B4 `/auth` page (login / register tabs, +855 prefix, logout action); `hooks.server.ts` resolves the `session` cookie via `/api/me` into `locals.user`
 - [x] B5 Header account menu + logout; `/account` (profile, change password)
-- [ ] B6 Forgot password: Telegram support link first, SMS/OTP reset later
+- [x] B6 Forgot password: Telegram support link (`site.supportUrl`)
 
 ## C. Commerce (roadmap 3)
 Open question: Bakong KHQR or ABA PayWay first?
@@ -39,4 +39,5 @@ Open question: Bakong KHQR or ABA PayWay first?
 - [ ] F1 Paraglide km/en + header language switcher
 
 ## Later
+- [ ] Self-service password reset (SMS OTP)
 - [ ] Google sign-in (server-side OAuth; `users.google_sub`)

@@ -7,6 +7,8 @@ export const site = {
 	mapUrl: '',
 	email: 'contact@example.com',
 	phones: ['+855 12 345 678'],
+	/** Where "forgot password" sends users until self-service reset exists. Empty hides the link. */
+	supportUrl: 'https://t.me/',
 	social: {
 		facebook: 'https://facebook.com/',
 		telegram: 'https://t.me/',

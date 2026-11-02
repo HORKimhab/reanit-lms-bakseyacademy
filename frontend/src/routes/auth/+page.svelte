@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { errorMessage } from '$lib/errors';
+	import { site } from '$lib/site';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -47,6 +48,11 @@
 					<span class="mb-1 block text-sm font-medium">ពាក្យសម្ងាត់</span>
 					<input name="password" type="password" required autocomplete="current-password" class={input} />
 				</label>
+				{#if site.supportUrl}
+					<p class="-mt-2 text-right text-sm">
+						<a href={site.supportUrl} target="_blank" rel="noopener" class="text-brand-600 hover:underline">ភ្លេចពាក្យសម្ងាត់?</a>
+					</p>
+				{/if}
 				<button disabled={pending} class="w-full rounded-lg bg-brand-600 py-2.5 font-semibold text-white hover:bg-brand-700 disabled:opacity-60">
 					ចូល
 				</button>
