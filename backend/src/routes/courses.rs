@@ -5,6 +5,7 @@ use axum::{
 use sqlx::PgPool;
 use uuid::Uuid;
 
+use super::reviews;
 use crate::{
     AppState,
     auth::CurrentUser,
@@ -90,7 +91,7 @@ pub async fn detail(
     .await?
     .ok_or(AppError::NotFound)?;
 
-    let (extra, section_rows, lesson_rows, owned, completed) = tokio::try_join!(
+    let (extra, section_rows, lesson_rows, owned, completed, (reviews, my_review)) = tokio::try_join!(
         sqlx::query_as::<_, CourseExtra>(
             "SELECT c.description, i.bio AS instructor_bio, i.avatar_url AS instructor_avatar_url
              FROM courses c JOIN instructors i ON i.id = c.instructor_id
@@ -121,6 +122,7 @@ pub async fn detail(
         .bind(user_id)
         .bind(card.id)
         .fetch_all(&st.db),
+        reviews::for_item(&st.db, reviews::Target::Course, card.id, user_id),
     )?;
 
     let lesson_count = lesson_rows.len();
@@ -135,6 +137,8 @@ pub async fn detail(
         total_duration_seconds,
         owned,
         completed_lesson_ids: completed,
+        reviews,
+        my_review,
     }))
 }
 

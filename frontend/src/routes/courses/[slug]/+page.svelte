@@ -3,6 +3,7 @@
 	import ProgressBar from '$lib/components/ProgressBar.svelte';
 	import Price from '$lib/components/Price.svelte';
 	import Rating from '$lib/components/Rating.svelte';
+	import Reviews from '$lib/components/Reviews.svelte';
 	import { formatClock, formatDuration, khmerNumber } from '$lib/format';
 	import type { ActionData, PageData } from './$types';
 
@@ -82,6 +83,8 @@
 				</div>
 			</div>
 		{/if}
+
+		<Reviews reviews={course.reviews} myReview={course.my_review} owned={course.owned} {form} />
 	</div>
 
 	<aside class="lg:sticky lg:top-24 lg:self-start">

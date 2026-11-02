@@ -158,6 +158,15 @@ pub struct Banner {
 }
 
 #[derive(Serialize, FromRow)]
+pub struct Review {
+    pub id: Uuid,
+    pub user_name: String,
+    pub rating: i16,
+    pub comment: Option<String>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Serialize, FromRow)]
 pub struct CourseCard {
     pub id: Uuid,
     pub slug: String,
@@ -254,6 +263,10 @@ pub struct CourseDetail {
     pub owned: bool,
     /// Lessons the signed-in user completed, in curriculum order (empty when signed out).
     pub completed_lesson_ids: Vec<Uuid>,
+    /// Latest reviews, commented ones first (at most 10).
+    pub reviews: Vec<Review>,
+    /// The signed-in user's own review.
+    pub my_review: Option<Review>,
 }
 
 #[derive(Serialize, FromRow)]
@@ -286,6 +299,10 @@ pub struct EbookDetail {
     pub extra: EbookExtra,
     /// The signed-in user bought it (false when signed out).
     pub owned: bool,
+    /// Latest reviews, commented ones first (at most 10).
+    pub reviews: Vec<Review>,
+    /// The signed-in user's own review.
+    pub my_review: Option<Review>,
 }
 
 /// A short-lived presigned link to an owned ebook's file.

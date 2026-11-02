@@ -8,6 +8,7 @@ mod home;
 mod lessons;
 mod library;
 mod orders;
+mod reviews;
 
 use axum::{
     Json, Router,
@@ -42,6 +43,7 @@ pub fn router(state: AppState) -> Router {
         .route("/api/categories", get(categories::list))
         .route("/api/courses", get(courses::list))
         .route("/api/courses/{slug}", get(courses::detail))
+        .route("/api/courses/{slug}/review", put(reviews::put_course).delete(reviews::delete_course))
         .route("/api/courses/{slug}/lessons/{id}", get(lessons::lesson))
         .route(
             "/api/courses/{slug}/lessons/{id}/complete",
@@ -50,6 +52,7 @@ pub fn router(state: AppState) -> Router {
         .route("/api/ebooks", get(ebooks::list))
         .route("/api/ebooks/{slug}", get(ebooks::detail))
         .route("/api/ebooks/{slug}/file", get(ebooks::file))
+        .route("/api/ebooks/{slug}/review", put(reviews::put_ebook).delete(reviews::delete_ebook))
         .with_state(state)
 }
 

@@ -7,6 +7,7 @@ use serde::Deserialize;
 use sqlx::PgPool;
 use uuid::Uuid;
 
+use super::reviews;
 use crate::{
     AppState,
     auth::CurrentUser,
@@ -88,14 +89,16 @@ pub async fn detail(
     .await?
     .ok_or(AppError::NotFound)?;
 
-    let (extra, owned) = tokio::try_join!(
+    let user_id = current.as_ref().map(|c| c.user.id);
+    let (extra, owned, (reviews, my_review)) = tokio::try_join!(
         sqlx::query_as::<_, EbookExtra>("SELECT description, page_count FROM ebooks WHERE id = $1")
             .bind(card.id)
             .fetch_one(&st.db),
         owns(&st.db, current.as_ref(), card.id),
+        reviews::for_item(&st.db, reviews::Target::Ebook, card.id, user_id),
     )?;
 
-    Ok(Json(EbookDetail { card, extra, owned }))
+    Ok(Json(EbookDetail { card, extra, owned, reviews, my_review }))
 }
 
 /// Whether the signed-in user (if any) owns this ebook.

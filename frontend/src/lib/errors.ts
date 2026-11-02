@@ -16,6 +16,8 @@ const messages: Record<string, string> = {
 	invalid_payment_ref: 'សូមបញ្ចូលលេខប្រតិបត្តិការ (យ៉ាងហោចណាស់ ៣ តួ)',
 	invalid_status: 'ការបញ្ជាទិញនេះមិនអាចកែប្រែបានទៀតទេ',
 	invalid_note: 'សូមបញ្ចូលមូលហេតុ',
+	invalid_rating: 'សូមជ្រើសរើសផ្កាយពី ១ ដល់ ៥',
+	invalid_comment: 'មតិវែងពេក (អតិបរមា ២០០០ តួអក្សរ)',
 	forbidden: 'អ្នកមិនមានសិទ្ធិទេ',
 	not_found: 'រកមិនឃើញ',
 	unauthorized: 'សូមចូលគណនីម្តងទៀត',

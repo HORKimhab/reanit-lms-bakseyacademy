@@ -19,6 +19,20 @@ interface ProductBase {
 	rating_count: number;
 }
 
+export interface Review {
+	id: string;
+	user_name: string;
+	rating: number;
+	comment: string | null;
+	updated_at: string;
+}
+
+interface Reviewed {
+	/** Latest reviews, commented ones first (at most 10). */
+	reviews: Review[];
+	my_review: Review | null;
+}
+
 export interface CourseCard extends ProductBase {
 	instructor_name: string;
 }
@@ -49,7 +63,7 @@ export interface Section {
 	lessons: Lesson[];
 }
 
-export interface CourseDetail extends CourseCard {
+export interface CourseDetail extends CourseCard, Reviewed {
 	description: string;
 	instructor_bio: string | null;
 	instructor_avatar_url: string | null;
@@ -65,7 +79,7 @@ export interface EbookCard extends ProductBase {
 	author_name: string;
 }
 
-export interface EbookDetail extends EbookCard {
+export interface EbookDetail extends EbookCard, Reviewed {
 	description: string;
 	page_count: number | null;
 	owned: boolean;

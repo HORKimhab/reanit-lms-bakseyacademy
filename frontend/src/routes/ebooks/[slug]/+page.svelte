@@ -2,6 +2,7 @@
 	import BuyButtons from '$lib/components/BuyButtons.svelte';
 	import Price from '$lib/components/Price.svelte';
 	import Rating from '$lib/components/Rating.svelte';
+	import Reviews from '$lib/components/Reviews.svelte';
 	import { khmerNumber } from '$lib/format';
 	import type { ActionData, PageData } from './$types';
 
@@ -50,5 +51,6 @@
 		</div>
 		{#if ebook.summary}<p class="mt-8 text-lg text-slate-700">{ebook.summary}</p>{/if}
 		{#if ebook.description}<p class="mt-4 whitespace-pre-line text-slate-700">{ebook.description}</p>{/if}
+		<Reviews reviews={ebook.reviews} myReview={ebook.my_review} owned={ebook.owned} {form} />
 	</div>
 </div>

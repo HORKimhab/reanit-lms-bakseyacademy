@@ -52,11 +52,13 @@ Authenticated routes take `Authorization: Bearer <token>` (the token from regist
 | GET | `/api/home` | published banners + 8 newest courses + ebooks |
 | GET | `/api/categories` | |
 | GET | `/api/courses?q=&category=&page=&per_page=` | paged, search title/instructor |
-| GET | `/api/courses/{slug}` | detail + curriculum (video id only for preview lessons); optional Bearer → `owned`, `completed_lesson_ids` (enrolled users also see unpublished courses) |
+| GET | `/api/courses/{slug}` | detail + curriculum (video id only for preview lessons); `reviews` (latest 10); optional Bearer → `owned`, `my_review`, `completed_lesson_ids` (enrolled users also see unpublished courses) |
+| PUT / DELETE | `/api/courses/{slug}/review` | Bearer, owners only; PUT `{rating: 1–5, comment?}` → review (upsert), DELETE → 204; 403 not enrolled, 422 `invalid_rating` / `invalid_comment` |
 | GET | `/api/courses/{slug}/lessons/{id}` | optional Bearer → lesson + signed Bunny Stream `video_url` (`expires_at`), `completed`; enrolled users (even if unpublished) or preview lessons; 401 signed out, 403 not enrolled |
 | PUT / DELETE | `/api/courses/{slug}/lessons/{id}/complete` | Bearer → 204; mark / unmark complete (PUT needs enrollment, 403 otherwise) |
 | GET | `/api/ebooks?q=&category=&page=&per_page=` | paged, search title/author |
-| GET | `/api/ebooks/{slug}` | detail (file key never exposed); optional Bearer → `owned` (owners also see unpublished ebooks) |
+| GET | `/api/ebooks/{slug}` | detail (file key never exposed), `reviews`; optional Bearer → `owned`, `my_review` (owners also see unpublished ebooks) |
+| PUT / DELETE | `/api/ebooks/{slug}/review` | same as course reviews, for buyers |
 | GET | `/api/ebooks/{slug}/file?disposition=inline\|attachment` | Bearer, owners only → `{url, expires_at}` presigned (1 h) S3/R2 link; 403 not bought, 404 no file, 503 `storage_unavailable` |
 | POST | `/api/auth/register` | `{full_name, phone, password}` → 201 `{token, max_age, user}`; 409 `phone_taken`, 422 `invalid_phone` / `invalid_name` / `weak_password` |
 | POST | `/api/auth/login` | `{phone, password}` → `{token, max_age, user}`; 401 `invalid_credentials` |
