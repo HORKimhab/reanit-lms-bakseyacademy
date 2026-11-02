@@ -133,6 +133,14 @@ pub struct LibraryCourse {
 }
 
 #[derive(Serialize)]
+pub struct Recommendations {
+    pub courses: Vec<CourseCard>,
+    pub ebooks: Vec<EbookCard>,
+    /// Ranked from the user's own purchases; false → popular items (signed out or nothing owned yet).
+    pub personalized: bool,
+}
+
+#[derive(Serialize)]
 pub struct Library {
     pub courses: Vec<LibraryCourse>,
     pub ebooks: Vec<EbookCard>,

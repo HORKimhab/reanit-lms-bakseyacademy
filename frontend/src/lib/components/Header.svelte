@@ -5,7 +5,8 @@
 	const links = [
 		{ href: '/', label: 'ទំព័រដើម' },
 		{ href: '/courses', label: 'វគ្គសិក្សា' },
-		{ href: '/ebooks', label: 'សៀវភៅ' }
+		{ href: '/ebooks', label: 'សៀវភៅ' },
+		{ href: '/for-you', label: 'សម្រាប់អ្នក' }
 	];
 
 	let menuOpen = $state(false);

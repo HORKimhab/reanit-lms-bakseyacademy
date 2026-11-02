@@ -68,6 +68,7 @@ Authenticated routes take `Authorization: Bearer <token>` (the token from regist
 | POST | `/api/me/password` | Bearer, `{current_password, new_password}` → 204, signs out other sessions; 422 `wrong_password` / `weak_password` |
 | GET | `/api/me/orders` | Bearer → own orders with items, newest first |
 | GET | `/api/me/library` | Bearer → `{courses, ebooks}` the user owns (card shape; courses add `lesson_count`, `completed_lessons`) |
+| GET | `/api/recommendations` | optional Bearer → `{courses, ebooks, personalized}`: 8 unowned published items each, ranked by co-purchase, then shared category, then popularity (signed out: popularity) |
 | GET | `/api/cart` | Bearer → `{items, total_cents}` (published items; total uses sale price) |
 | POST | `/api/cart` | Bearer, `{course_id}` or `{ebook_id}` → cart; 404, 409 `already_owned`, 422 `invalid_item` |
 | DELETE | `/api/cart/{id}` | Bearer → cart |

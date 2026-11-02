@@ -188,6 +188,13 @@ export interface OrderWithItems extends OrderSummary {
 	items: OrderItem[];
 }
 
+export interface Recommendations {
+	courses: CourseCard[];
+	ebooks: EbookCard[];
+	/** false → popular items (signed out or nothing owned yet). */
+	personalized: boolean;
+}
+
 export interface LibraryCourse extends CourseCard {
 	lesson_count: number;
 	completed_lessons: number;
