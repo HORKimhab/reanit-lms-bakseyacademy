@@ -19,13 +19,30 @@ services:
     profiles: ["telegram"]
     image: aiogram/telegram-bot-api:latest
     environment:
-      TELEGRAM_API_ID: ${TELEGRAM_API_ID:?api_id from https://my.telegram.org}
-      TELEGRAM_API_HASH: ${TELEGRAM_API_HASH:?api_hash from https://my.telegram.org}
+      # api_id / api_hash from https://my.telegram.org (required by this service only).
+      TELEGRAM_API_ID: ${TELEGRAM_API_ID:-}
+      TELEGRAM_API_HASH: ${TELEGRAM_API_HASH:-}
       TELEGRAM_LOCAL: "1"
     ports:
       - "127.0.0.1:8081:8081"
     volumes:
       - ./.telegram-bot-api:/var/lib/telegram-bot-api
+    restart: unless-stopped
+
+  # Bounds the local server's disk use: deletes cached copies not touched for TELEGRAM_CACHE_DAYS
+  # (default 7). A pruned file is fetched from Telegram again on its next request.
+  telegram-cache-prune:
+    profiles: ["telegram"]
+    image: alpine:3
+    command: >
+      sh -c 'while true; do
+               find /data -type f -mtime +$${TELEGRAM_CACHE_DAYS:-7} -delete;
+               sleep 3600;
+             done'
+    environment:
+      TELEGRAM_CACHE_DAYS: ${TELEGRAM_CACHE_DAYS:-7}
+    volumes:
+      - ./.telegram-bot-api:/data
     restart: unless-stopped
 
 volumes:

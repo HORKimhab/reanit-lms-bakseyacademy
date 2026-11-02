@@ -1,14 +1,18 @@
 import { redirect } from '@sveltejs/kit';
-import { adminCall } from '$lib/server/admin';
+import { adminCall, mediaPickerPath } from '$lib/server/admin';
 import { api } from '$lib/server/api';
 import { ebookBody } from '$lib/server/catalog-forms';
 import { requireToken } from '$lib/server/guard';
-import type { AdminCategory, AdminEbook } from '$lib/types';
+import type { AdminCategory, AdminEbook, AdminMedia, Paged } from '$lib/types';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals, fetch, url }) => {
 	const token = requireToken(locals, url.pathname);
-	return { categories: await api<AdminCategory[]>(fetch, '/api/admin/categories', { token }) };
+	const [categories, media] = await Promise.all([
+		api<AdminCategory[]>(fetch, '/api/admin/categories', { token }),
+		api<Paged<AdminMedia>>(fetch, mediaPickerPath(url, 'document'), { token })
+	]);
+	return { categories, documents: media.items, mediaq: url.searchParams.get('mediaq') ?? '' };
 };
 
 export const actions: Actions = {

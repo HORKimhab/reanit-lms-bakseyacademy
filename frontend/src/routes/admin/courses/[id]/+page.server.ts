@@ -1,5 +1,5 @@
 import { redirect } from '@sveltejs/kit';
-import { adminCall, checked, seconds, text } from '$lib/server/admin';
+import { adminCall, checked, mediaPickerPath, seconds, text } from '$lib/server/admin';
 import { api } from '$lib/server/api';
 import { courseBody } from '$lib/server/catalog-forms';
 import { requireToken } from '$lib/server/guard';
@@ -12,9 +12,9 @@ export const load: PageServerLoad = async ({ locals, fetch, url, params }) => {
 		api<AdminCourse>(fetch, `/api/admin/courses/${encodeURIComponent(params.id)}`, { token }),
 		api<AdminInstructor[]>(fetch, '/api/admin/instructors', { token }),
 		api<AdminCategory[]>(fetch, '/api/admin/categories', { token }),
-		api<Paged<AdminMedia>>(fetch, '/api/admin/media?kind=video&per_page=200', { token })
+		api<Paged<AdminMedia>>(fetch, mediaPickerPath(url, 'video'), { token })
 	]);
-	return { course, instructors, categories, videos: media.items };
+	return { course, instructors, categories, videos: media.items, mediaq: url.searchParams.get('mediaq') ?? '' };
 };
 
 const lessonBody = (d: FormData) => ({

@@ -2,6 +2,7 @@
 	import { enhance } from '$app/forms';
 	import CourseForm from '$lib/components/admin/CourseForm.svelte';
 	import MediaField from '$lib/components/admin/MediaField.svelte';
+	import MediaSearch from '$lib/components/admin/MediaSearch.svelte';
 	import { confirmClick, dangerButton, inputClass, primaryButton, secondaryButton } from '$lib/admin-ui';
 	import { errorMessage } from '$lib/errors';
 	import { formatClock, formatDateTime, formatNumber } from '$lib/format';
@@ -43,7 +44,10 @@
 </section>
 
 <section class="mt-8">
-	<h2 class="text-xl font-bold">មាតិកា</h2>
+	<div class="flex flex-wrap items-center justify-between gap-2">
+		<h2 class="text-xl font-bold">មាតិកា</h2>
+		<MediaSearch q={data.mediaq} />
+	</div>
 	<p class="text-sm text-slate-500">
 		Video ID = Bunny Stream video GUID ឬ ផ្ទុកឡើង Telegram (ឈ្នះលើ Video ID) · រយៈពេលជា នាទី:វិនាទី (ឧ. 12:30) · "មើលសាកល្បង" អនុញ្ញាតឲ្យអ្នកមិនទាន់ទិញមើលបាន
 	</p>

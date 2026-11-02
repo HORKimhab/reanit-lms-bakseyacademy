@@ -40,7 +40,7 @@ Lesson videos and ebook files can live as posts in a private Telegram channel in
    ```sh
    TELEGRAM_API_ID=… TELEGRAM_API_HASH=… docker compose --profile telegram up -d telegram-bot-api
    ```
-   then point the API at it, and at the shared data directory it reads files from:
+   then point the API at it, and at the shared data directory it reads files from (the 2000 MB upload cap only applies once `TELEGRAM_LOCAL_DIR` is set; without it the API assumes the public API's 20 MB):
    ```sh
    TELEGRAM_API_URL=http://127.0.0.1:8081
    TELEGRAM_LOCAL_DIR=/absolute/path/to/repo/.telegram-bot-api   # mounted in the container as /var/lib/telegram-bot-api
@@ -52,7 +52,7 @@ Lesson videos and ebook files can live as posts in a private Telegram channel in
         -d secret_token=$TELEGRAM_WEBHOOK_SECRET -d 'allowed_updates=["channel_post"]'
    ```
 5. **Upload size on the web side.** Uploads stream through SvelteKit (`/admin/media/upload`; payment screenshots ≤ 10 MB go through the order page's form action). adapter-node rejects bodies over `BODY_SIZE_LIMIT` (default 512 KB): start the built frontend with e.g. `BODY_SIZE_LIMIT=2200M node build`, and raise any reverse-proxy limit too (nginx `client_max_body_size 2200m`). `hooks.server.ts` still caps every other route at 12 MB, so only the admin upload route accepts large bodies.
-6. **Disk.** The local server keeps a copy of every file it serves under `.telegram-bot-api/<bot>/`. Prune old copies, e.g. daily: `find .telegram-bot-api -type f -mtime +7 -delete`; a pruned file is fetched from Telegram again on the next request.
+6. **Disk.** The local server keeps a copy of every file it serves under `.telegram-bot-api/<bot>/`. The `telegram-cache-prune` service (same compose profile) deletes copies older than `TELEGRAM_CACHE_DAYS` (default 7) every hour; a pruned file is fetched from Telegram again on its next request.
 7. **Check it:** `SITE=http://localhost:5173 API=http://127.0.0.1:8080 SESSION=<admin session cookie> scripts/telegram-smoke.sh` uploads a 25 MB file, streams it back and seeks (`SIZE_MB=` to change).
 
 Admins upload from the lesson / ebook editors ("ផ្ទុកឡើង Telegram") or pick from the library; uploaded media wins over a Bunny video id / S3 file key. Telegram is not a CDN (rate limits, slower first byte), so keep Bunny / R2 for heavy traffic and check Telegram's terms for this use before launch.
@@ -106,12 +106,12 @@ Authenticated routes take `Authorization: Bearer <token>` (the token from regist
 | GET | `/api/payment-methods` | active methods with QR image and account |
 | POST | `/api/orders` | Bearer, `{payment_method}` → 201 order (cart → `pending_payment`; free → `paid` + granted); 409 `already_ordered`, 422 `cart_empty` / `invalid_payment_method` |
 | GET | `/api/orders/{id}` | Bearer, own orders only → order with items + payment method |
-| POST | `/api/orders/{id}/submit` | Bearer, `{payment_ref}` → `awaiting_approval` (from `pending_payment` or `rejected`); 409 `invalid_status` |
+| POST | `/api/orders/{id}/submit` | Bearer, `{payment_ref}` → `awaiting_approval` (from `pending_payment` or `rejected`); 409 `invalid_status`, 422 `invalid_payment_ref` |
 | POST | `/api/orders/{id}/proof` | Bearer, own order in `pending_payment` / `awaiting_approval` / `rejected`; multipart `size` then `file` (PNG/JPEG/WebP ≤ 10 MB) → `awaiting_approval` order with `payment_proof_url` (a screenshot counts as submitting, like a reference); the screenshot is posted with the order details to `TELEGRAM_ADMIN_CHAT_ID`; 409 `invalid_status`, 422 `invalid_image` / `invalid_size` / `file_too_large` / `invalid_form`, 503 `telegram_unavailable` / `telegram_failed` |
 | POST | `/api/orders/{id}/cancel` | Bearer → `cancelled` (from `pending_payment` only) |
 | GET | `/api/admin/orders?status=&q=&page=&per_page=` | admin → paged orders with buyer + items; `awaiting_approval` oldest first; 403 `forbidden` |
 | POST | `/api/admin/orders/{id}/approve` | admin → `paid` + grants enrollments / ebooks (idempotent; also from `pending_payment` / `rejected`) |
-| POST | `/api/admin/orders/{id}/reject` | admin, `{note}` → `rejected` (from `awaiting_approval`); user sees the note and can resubmit |
+| POST | `/api/admin/orders/{id}/reject` | admin, `{note}` → `rejected` (from `awaiting_approval`); user sees the note and can resubmit; 409 `invalid_status`, 422 `invalid_note` |
 | GET / POST | `/api/admin/courses?q=&page=` | admin → paged courses incl. drafts / create `{slug, title, summary?, description, cover_url?, instructor_id, category_id?, price_cents, sale_price_cents?, published}` → 201; 409 `slug_taken`, 422 `invalid_slug` / `invalid_price` / `invalid_url` / `invalid_reference` |
 | GET / PUT / DELETE | `/api/admin/courses/{id}` | admin → course + curriculum (lessons include `video_id`); DELETE 409 `has_buyers` once enrolled/ordered |
 | POST | `/api/admin/courses/{id}/publish` | admin, `{published}` → 204 |
@@ -125,7 +125,7 @@ Authenticated routes take `Authorization: Bearer <token>` (the token from regist
 | POST | `/api/admin/ebooks/{id}/publish` | admin, `{published}` → 204 |
 | GET | `/api/media/{token}` | streams a Telegram-stored file; `token` (from the lesson / ebook-file endpoints) is HMAC-signed with `MEDIA_SIGNING_KEY` and expires (4 h video, 1 h files); honors `Range` → 206 / 416; 404 for bad or expired tokens. Only video/audio/PDF/raster images render inline (anything else downloads); responses carry `Content-Security-Policy: sandbox` |
 | GET | `/api/admin/media?q=&kind=video\|document&page=&per_page=` | admin → paged media library of course content (newest first, ≤ 200 per page; payment screenshots never listed) |
-| POST | `/api/telegram/webhook` | Telegram only (`X-Telegram-Bot-Api-Secret-Token` = `TELEGRAM_WEBHOOK_SECRET`, else 401): videos/documents posted in the storage channel are imported as media (idempotent) |
+| POST | `/api/telegram/webhook` | Telegram only (`X-Telegram-Bot-Api-Secret-Token` = `TELEGRAM_WEBHOOK_SECRET`, else 401; always 401 while no secret is set; 404 without Telegram): videos/documents posted in the storage channel are imported as media (idempotent) |
 | POST | `/api/admin/media` | admin, multipart `size` then `file` → 201 media; the file is streamed to the Telegram storage channel (≤ 20 MB public Bot API, ≤ 2000 MB with a `--local` server); 422 `invalid_size` / `file_too_large` / `missing_file`, 503 `telegram_unavailable` / `telegram_failed`. Lessons / ebooks take `media_id`, which wins over `video_id` / `file_key` |
 | GET / POST, PUT / DELETE `/{id}` | `/api/admin/categories` | admin, `{slug, name_km, name_en, position}`; 409 `slug_taken` |
 | GET / POST, PUT / DELETE `/{id}` | `/api/admin/instructors` | admin, `{name, bio?, avatar_url?}`; DELETE 409 `in_use` while courses reference it |

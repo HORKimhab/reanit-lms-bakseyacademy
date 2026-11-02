@@ -1,5 +1,5 @@
 import { redirect } from '@sveltejs/kit';
-import { adminCall } from '$lib/server/admin';
+import { adminCall, mediaPickerPath } from '$lib/server/admin';
 import { api } from '$lib/server/api';
 import { ebookBody } from '$lib/server/catalog-forms';
 import { requireToken } from '$lib/server/guard';
@@ -11,9 +11,9 @@ export const load: PageServerLoad = async ({ locals, fetch, url, params }) => {
 	const [ebook, categories, media] = await Promise.all([
 		api<AdminEbook>(fetch, `/api/admin/ebooks/${encodeURIComponent(params.id)}`, { token }),
 		api<AdminCategory[]>(fetch, '/api/admin/categories', { token }),
-		api<Paged<AdminMedia>>(fetch, '/api/admin/media?kind=document&per_page=200', { token })
+		api<Paged<AdminMedia>>(fetch, mediaPickerPath(url, 'document'), { token })
 	]);
-	return { ebook, categories, documents: media.items };
+	return { ebook, categories, documents: media.items, mediaq: url.searchParams.get('mediaq') ?? '' };
 };
 
 export const actions: Actions = {

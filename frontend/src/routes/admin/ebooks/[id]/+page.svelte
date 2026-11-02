@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import EbookForm from '$lib/components/admin/EbookForm.svelte';
+	import MediaSearch from '$lib/components/admin/MediaSearch.svelte';
 	import { confirmClick, dangerButton, secondaryButton } from '$lib/admin-ui';
 	import { errorMessage } from '$lib/errors';
 	import { formatDateTime } from '$lib/format';
@@ -35,6 +36,7 @@
 {/if}
 
 <section class="mt-4 rounded-xl border border-slate-200 bg-white p-5">
+	<MediaSearch q={data.mediaq} />
 	{#key ebook.updated_at}
 		<EbookForm {ebook} categories={data.categories} library={data.documents} action="?/save" />
 	{/key}
