@@ -1179,6 +1179,7 @@ dependencies = [
  "base64",
  "chrono",
  "dotenvy",
+ "hmac",
  "serde",
  "serde_json",
  "sha2",

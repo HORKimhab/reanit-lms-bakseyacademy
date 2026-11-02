@@ -17,7 +17,7 @@ createdb reanit_lms            # skip if it already exists
 
 # 2. API — applies migrations on start
 cd backend
-cp .env.example .env           # adjust DATABASE_URL; BUNNY_* for lesson videos
+cp .env.example .env           # adjust DATABASE_URL; BUNNY_* for lesson videos, STORAGE_* for ebook files
 cargo run                      # http://127.0.0.1:8080/api/health
 
 # 3. demo data (dev only — truncates tables!)
@@ -38,6 +38,8 @@ Make an account an admin (it then sees **ផ្ទាំងគ្រប់គ្
 psql postgres://localhost/reanit_lms -c "UPDATE users SET role = 'admin' WHERE phone = '+85512345678'"
 ```
 
+Ebook files live in the S3-compatible bucket from `STORAGE_*` (e.g. Cloudflare R2); set `ebooks.file_key` to the object key. Lesson `video_id` is the Bunny Stream video GUID.
+
 Payment QR images and account details live in `payment_methods` (`qr_image_url` can be a path under `frontend/static/` or any URL); the dev seed points at placeholders.
 
 ## API
@@ -54,7 +56,8 @@ Authenticated routes take `Authorization: Bearer <token>` (the token from regist
 | GET | `/api/courses/{slug}/lessons/{id}` | optional Bearer → lesson + signed Bunny Stream `video_url` (`expires_at`), `completed`; enrolled users (even if unpublished) or preview lessons; 401 signed out, 403 not enrolled |
 | PUT / DELETE | `/api/courses/{slug}/lessons/{id}/complete` | Bearer → 204; mark / unmark complete (PUT needs enrollment, 403 otherwise) |
 | GET | `/api/ebooks?q=&category=&page=&per_page=` | paged, search title/author |
-| GET | `/api/ebooks/{slug}` | detail (file key never exposed); optional Bearer → `owned` |
+| GET | `/api/ebooks/{slug}` | detail (file key never exposed); optional Bearer → `owned` (owners also see unpublished ebooks) |
+| GET | `/api/ebooks/{slug}/file?disposition=inline\|attachment` | Bearer, owners only → `{url, expires_at}` presigned (1 h) S3/R2 link; 403 not bought, 404 no file, 503 `storage_unavailable` |
 | POST | `/api/auth/register` | `{full_name, phone, password}` → 201 `{token, max_age, user}`; 409 `phone_taken`, 422 `invalid_phone` / `invalid_name` / `weak_password` |
 | POST | `/api/auth/login` | `{phone, password}` → `{token, max_age, user}`; 401 `invalid_credentials` |
 | POST | `/api/auth/logout` | Bearer → 204, deletes the session |

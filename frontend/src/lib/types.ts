@@ -71,6 +71,11 @@ export interface EbookDetail extends EbookCard {
 	owned: boolean;
 }
 
+export interface EbookFile {
+	url: string;
+	expires_at: string;
+}
+
 export interface Paged<T> {
 	items: T[];
 	total: number;

@@ -27,7 +27,7 @@ Payment now: the user picks Bakong KHQR or ABA PayWay, scans that method's stati
 - [x] D1 `GET /api/courses/{slug}/lessons/{id}`: signed video URL for enrolled users only
 - [x] D2 Lesson player page + curriculum sidebar
 - [x] D3 Progress tracking (`lesson_progress`, mark complete, % on cards)
-- [ ] D4 Ebook signed download / reader for owners
+- [x] D4 Ebook signed download / reader for owners
 
 ## E. Discovery & admin (roadmap 5)
 - [ ] E1 Reviews write API (owners only) + form on detail pages

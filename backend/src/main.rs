@@ -3,6 +3,7 @@ mod config;
 mod error;
 mod models;
 mod routes;
+mod storage;
 mod video;
 
 use sqlx::postgres::PgPoolOptions;
@@ -13,6 +14,7 @@ use tracing_subscriber::EnvFilter;
 pub struct AppState {
     pub db: sqlx::PgPool,
     pub video: Option<video::BunnyStream>,
+    pub storage: Option<storage::ObjectStorage>,
 }
 
 #[tokio::main]
@@ -32,7 +34,7 @@ async fn main() -> anyhow::Result<()> {
         .await?;
     sqlx::migrate!("./migrations").run(&db).await?;
 
-    let app = routes::router(AppState { db, video: config.video })
+    let app = routes::router(AppState { db, video: config.video, storage: config.storage })
         .layer(CompressionLayer::new())
         .layer(TraceLayer::new_for_http());
 

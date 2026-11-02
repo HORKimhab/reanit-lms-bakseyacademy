@@ -23,6 +23,9 @@ pub enum AppError {
     /// Signed in but not allowed (e.g. not an admin).
     #[error("forbidden")]
     Forbidden,
+    /// A dependency the request needs isn't configured or reachable (e.g. `storage_unavailable`).
+    #[error("unavailable: {0}")]
+    Unavailable(&'static str),
     #[error(transparent)]
     Db(#[from] sqlx::Error),
     #[error(transparent)]
@@ -37,6 +40,7 @@ impl IntoResponse for AppError {
             AppError::Conflict(code) => (StatusCode::CONFLICT, *code),
             AppError::Unauthorized(code) => (StatusCode::UNAUTHORIZED, *code),
             AppError::Forbidden => (StatusCode::FORBIDDEN, "forbidden"),
+            AppError::Unavailable(code) => (StatusCode::SERVICE_UNAVAILABLE, *code),
             AppError::Db(e) => {
                 tracing::error!(error = %e, "database error");
                 (StatusCode::INTERNAL_SERVER_ERROR, "internal_error")

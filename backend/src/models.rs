@@ -288,6 +288,13 @@ pub struct EbookDetail {
     pub owned: bool,
 }
 
+/// A short-lived presigned link to an owned ebook's file.
+#[derive(Serialize)]
+pub struct EbookFile {
+    pub url: String,
+    pub expires_at: DateTime<Utc>,
+}
+
 #[derive(Serialize)]
 pub struct Page<T> {
     pub items: Vec<T>,

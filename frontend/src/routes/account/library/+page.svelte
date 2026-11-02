@@ -38,7 +38,7 @@
 	<h2 class="mt-10 text-xl font-bold">សៀវភៅរបស់ខ្ញុំ</h2>
 	<div class="mt-4 grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-5">
 		{#each ebooks as e (e.id)}
-			<a href="/ebooks/{e.slug}" class="group overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm hover:shadow-md">
+			<a href="/ebooks/{e.slug}/read" class="group overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm hover:shadow-md">
 				<div class="aspect-[3/4] bg-gradient-to-br from-brand-500 to-sky-400">
 					{#if e.cover_url}<img src={e.cover_url} alt="" class="h-full w-full object-cover" />{/if}
 				</div>

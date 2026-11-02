@@ -49,6 +49,7 @@ pub fn router(state: AppState) -> Router {
         )
         .route("/api/ebooks", get(ebooks::list))
         .route("/api/ebooks/{slug}", get(ebooks::detail))
+        .route("/api/ebooks/{slug}/file", get(ebooks::file))
         .with_state(state)
 }
 

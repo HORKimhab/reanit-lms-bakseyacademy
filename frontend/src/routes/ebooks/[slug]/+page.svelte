@@ -32,7 +32,18 @@
 		<div class="mt-4">
 			{#if ebook.owned}
 				<p class="text-sm text-green-700">✓ អ្នកបានទិញសៀវភៅនេះរួចហើយ</p>
-				<!-- D4: link to the reader / download -->
+				<div class="mt-3 flex flex-wrap gap-2">
+					<a href="/ebooks/{ebook.slug}/read" class="rounded-lg bg-brand-600 px-6 py-2.5 font-semibold text-white hover:bg-brand-700">
+						អានឥឡូវ
+					</a>
+					<a
+						href="/ebooks/{ebook.slug}/download"
+						data-sveltekit-reload
+						class="rounded-lg border border-brand-600 px-6 py-2.5 font-semibold text-brand-600 hover:bg-brand-50"
+					>
+						ទាញយក
+					</a>
+				</div>
 			{:else}
 				<BuyButtons {form} />
 			{/if}
