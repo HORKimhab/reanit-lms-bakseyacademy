@@ -13,6 +13,7 @@ const messages: Record<string, () => string> = {
 	wrong_password: m.error_wrong_password,
 	password_mismatch: m.error_password_mismatch,
 	already_owned: m.error_already_owned,
+	already_ordered: m.error_already_ordered,
 	invalid_item: m.error_invalid_item,
 	cart_empty: m.error_cart_empty,
 	invalid_payment_method: m.error_invalid_payment_method,

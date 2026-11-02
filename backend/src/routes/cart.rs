@@ -6,6 +6,7 @@ use serde::Deserialize;
 use sqlx::PgExecutor;
 use uuid::Uuid;
 
+use super::orders::{IN_OPEN_ORDER, PAYABLE_STATUSES};
 use crate::{
     AppState,
     auth::CurrentUser,
@@ -49,7 +50,7 @@ pub struct AddBody {
 }
 
 /// Adds a published course or ebook. Adding an item already in the cart is a no-op;
-/// adding one the user already owns is 409 `already_owned`.
+/// adding one the user already owns is 409 `already_owned`, one in an unpaid order 409 `already_ordered`.
 pub async fn add(
     State(st): State<AppState>,
     current: CurrentUser,
@@ -70,7 +71,7 @@ pub async fn add(
         _ => return Err(AppError::Validation("invalid_item")),
     };
 
-    let (exists, owned) = tokio::try_join!(
+    let (exists, owned, ordered) = tokio::try_join!(
         sqlx::query_scalar::<_, bool>(exists_sql)
             .bind(id)
             .fetch_one(&st.db),
@@ -78,12 +79,21 @@ pub async fn add(
             .bind(id)
             .bind(user_id)
             .fetch_one(&st.db),
+        sqlx::query_scalar::<_, bool>(IN_OPEN_ORDER)
+            .bind(user_id)
+            .bind(&PAYABLE_STATUSES[..])
+            .bind(body.course_id)
+            .bind(body.ebook_id)
+            .fetch_one(&st.db),
     )?;
     if !exists {
         return Err(AppError::NotFound);
     }
     if owned {
         return Err(AppError::Conflict("already_owned"));
+    }
+    if ordered {
+        return Err(AppError::Conflict("already_ordered"));
     }
 
     sqlx::query(

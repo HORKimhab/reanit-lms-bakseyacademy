@@ -17,6 +17,19 @@ use crate::{
     models::{OrderDetail, OrderItem, OrderSummary, OrderWithItems, PaymentMethod},
 };
 
+/// Orders that can still be paid (or resubmitted): a buyer may submit a reference or screenshot,
+/// and their items count as "already ordered".
+pub(crate) const PAYABLE_STATUSES: [&str; 3] = ["pending_payment", "awaiting_approval", "rejected"];
+
+pub(crate) fn is_payable(status: &str) -> bool {
+    PAYABLE_STATUSES.contains(&status)
+}
+
+/// The item (`$3` course / `$4` ebook) already sits in one of the user's (`$1`) payable orders
+/// (`$2` = `PAYABLE_STATUSES`).
+pub(crate) const IN_OPEN_ORDER: &str = "SELECT EXISTS (SELECT 1 FROM order_items oi JOIN orders o ON o.id = oi.order_id \
+     WHERE o.user_id = $1 AND o.status = ANY($2) AND (oi.course_id = $3 OR oi.ebook_id = $4))";
+
 pub(crate) const ORDER_COLUMNS: &str = "o.id, o.status, o.total_cents, o.payment_method AS payment_method_code, \
      o.payment_ref, o.admin_note, o.created_at, o.submitted_at, o.paid_at, o.payment_proof_media_id";
 const METHOD_COLUMNS: &str = "code, name_km, name_en, account_name, account_number, qr_image_url";
@@ -149,7 +162,21 @@ pub async fn checkout(
         .execute(&mut *tx)
         .await?;
     drop_owned_items(&mut *tx, user_id).await?;
+    // Don't let the same item be ordered (and paid for) twice while an earlier order is open.
     let cart = load_cart(&mut *tx, user_id).await?;
+    for item in &cart.items {
+        let is_course = item.kind == "course";
+        let ordered: bool = sqlx::query_scalar(IN_OPEN_ORDER)
+            .bind(user_id)
+            .bind(&PAYABLE_STATUSES[..])
+            .bind(is_course.then_some(item.item_id))
+            .bind((!is_course).then_some(item.item_id))
+            .fetch_one(&mut *tx)
+            .await?;
+        if ordered {
+            return Err(AppError::Conflict("already_ordered"));
+        }
+    }
     if cart.items.is_empty() {
         return Err(AppError::Validation("cart_empty"));
     }

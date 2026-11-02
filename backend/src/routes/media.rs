@@ -279,8 +279,11 @@ pub async fn stream(State(st): State<AppState>, Path(token): Path<String>, heade
     let safe = mime.as_deref().is_some_and(inline_safe);
     let content_type = mime.as_deref().filter(|_| safe).and_then(|m| HeaderValue::from_str(m).ok());
     h.insert(header::CONTENT_TYPE, content_type.unwrap_or(HeaderValue::from_static("application/octet-stream")));
-    // Even passive types get no script/plugin/origin powers if a browser ever renders them as a page.
-    h.insert(header::CONTENT_SECURITY_POLICY, HeaderValue::from_static("sandbox; default-src 'none'; media-src 'self'; img-src 'self'"));
+    // Unsafe types are forced to download; if a browser renders one anyway, it gets no script or
+    // origin powers. (Not on inline media: a sandboxed document blocks Chrome's built-in PDF viewer.)
+    if !safe {
+        h.insert(header::CONTENT_SECURITY_POLICY, HeaderValue::from_static("sandbox; default-src 'none'"));
+    }
     h.insert(header::ACCEPT_RANGES, HeaderValue::from_static("bytes"));
     h.insert(header::CACHE_CONTROL, HeaderValue::from_static("private, max-age=3600"));
     h.insert(header::X_CONTENT_TYPE_OPTIONS, HeaderValue::from_static("nosniff"));

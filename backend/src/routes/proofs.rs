@@ -10,7 +10,7 @@ use uuid::Uuid;
 
 use super::{
     media::{Purpose, insert_telegram, signed_url, upload_form_to_telegram},
-    orders::load_order,
+    orders::{PAYABLE_STATUSES, is_payable, load_order},
 };
 use crate::{
     AppState,
@@ -23,8 +23,9 @@ use crate::{
 const MAX_PROOF_BYTES: u64 = 10 * 1024 * 1024;
 
 /// `POST /api/orders/{id}/proof`, multipart `size` then `file` (PNG/JPEG/WebP ≤ 10 MB): attaches a
-/// payment screenshot to the buyer's own unpaid order and posts it, captioned with the order details,
-/// to the admins' Telegram chat. Replaces an earlier screenshot.
+/// payment screenshot to the buyer's own unpaid order, posts it (captioned with the order details) to
+/// the admins' Telegram chat, and queues the order for approval like a submitted reference.
+/// Replaces an earlier screenshot.
 /// 404 not their order, 409 `invalid_status` once paid/cancelled, 422 `invalid_image` / `invalid_size`
 /// / `file_too_large`, 503 `telegram_unavailable` / `telegram_failed`.
 pub async fn upload(
@@ -35,7 +36,7 @@ pub async fn upload(
 ) -> AppResult<Json<OrderDetail>> {
     let tg = st.telegram.as_ref().ok_or(AppError::Unavailable("telegram_unavailable"))?;
     let order = load_order(&st, id, Some(current.user.id)).await?;
-    if !matches!(order.order.status.as_str(), "pending_payment" | "awaiting_approval" | "rejected") {
+    if !is_payable(&order.order.status) {
         return Err(AppError::Conflict("invalid_status"));
     }
     let caption = proof_caption(&ProofContext {
@@ -49,13 +50,17 @@ pub async fn upload(
     let stored = upload_form_to_telegram(tg, form, validate_proof, tg.admin_chat_id(), Some(&caption)).await?;
     let media = insert_telegram(&st.db, &stored, Purpose::PaymentProof).await?;
     // Re-check the status: an admin may have approved or the buyer cancelled during the upload.
+    // A screenshot counts as "I have paid": like a submitted reference, it queues the order for
+    // approval. Re-checks the status (an admin may have approved / the buyer cancelled meanwhile).
     let attached = sqlx::query(
-        "UPDATE orders SET payment_proof_media_id = $2 WHERE id = $1 AND user_id = $3
-           AND status IN ('pending_payment', 'awaiting_approval', 'rejected')",
+        "UPDATE orders SET payment_proof_media_id = $2,
+                status = 'awaiting_approval', submitted_at = now(), admin_note = NULL
+         WHERE id = $1 AND user_id = $3 AND status = ANY($4)",
     )
     .bind(id)
     .bind(media.id)
     .bind(current.user.id)
+    .bind(&PAYABLE_STATUSES[..])
     .execute(&st.db)
     .await?
     .rows_affected();
