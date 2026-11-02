@@ -4,6 +4,7 @@ mod error;
 mod models;
 mod routes;
 mod storage;
+mod validate;
 mod video;
 
 use sqlx::postgres::PgPoolOptions;

@@ -32,7 +32,7 @@ Payment now: the user picks Bakong KHQR or ABA PayWay, scans that method's stati
 ## E. Discovery & admin (roadmap 5)
 - [x] E1 Reviews write API (owners only) + form on detail pages
 - [x] E2 `/for-you` recommendations (same category + co-purchase, server-side)
-- [ ] E3 Admin CRUD: courses, sections, lessons, ebooks, banners, categories, publish toggle
+- [x] E3 Admin CRUD: courses, sections, lessons, ebooks, banners, categories, publish toggle
 - [ ] E4 Search upgrade (Postgres trigram first, Meilisearch if needed)
 
 ## F. i18n (roadmap 6)

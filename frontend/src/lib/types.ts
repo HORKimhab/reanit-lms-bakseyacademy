@@ -204,3 +204,109 @@ export interface Library {
 	courses: LibraryCourse[];
 	ebooks: EbookCard[];
 }
+
+// ---- Admin catalog ----
+
+export interface AdminCategory {
+	id: string;
+	slug: string;
+	name_km: string;
+	name_en: string;
+	position: number;
+}
+
+export interface AdminInstructor {
+	id: string;
+	name: string;
+	bio: string | null;
+	avatar_url: string | null;
+	course_count: number;
+}
+
+export interface AdminBanner {
+	id: string;
+	title: string;
+	subtitle: string | null;
+	image_url: string | null;
+	link_url: string | null;
+	position: number;
+	published: boolean;
+}
+
+export interface AdminCourseRow {
+	id: string;
+	slug: string;
+	title: string;
+	published: boolean;
+	price_cents: number;
+	sale_price_cents: number | null;
+	instructor_name: string;
+	category_name_km: string | null;
+	lesson_count: number;
+	enrollment_count: number;
+	updated_at: string;
+}
+
+export interface AdminLesson {
+	id: string;
+	title: string;
+	position: number;
+	video_id: string | null;
+	duration_seconds: number;
+	is_preview: boolean;
+}
+
+export interface AdminSection {
+	id: string;
+	title: string;
+	position: number;
+	lessons: AdminLesson[];
+}
+
+export interface AdminCourse {
+	id: string;
+	slug: string;
+	title: string;
+	summary: string | null;
+	description: string;
+	cover_url: string | null;
+	instructor_id: string;
+	category_id: string | null;
+	price_cents: number;
+	sale_price_cents: number | null;
+	published: boolean;
+	updated_at: string;
+	sections: AdminSection[];
+}
+
+export interface AdminEbookRow {
+	id: string;
+	slug: string;
+	title: string;
+	author_name: string;
+	published: boolean;
+	price_cents: number;
+	sale_price_cents: number | null;
+	category_name_km: string | null;
+	has_file: boolean;
+	purchase_count: number;
+	updated_at: string;
+}
+
+/** The file key is write-only; `has_file` says whether one is set. */
+export interface AdminEbook {
+	id: string;
+	slug: string;
+	title: string;
+	author_name: string;
+	summary: string | null;
+	description: string;
+	cover_url: string | null;
+	page_count: number | null;
+	category_id: string | null;
+	price_cents: number;
+	sale_price_cents: number | null;
+	published: boolean;
+	has_file: boolean;
+	updated_at: string;
+}

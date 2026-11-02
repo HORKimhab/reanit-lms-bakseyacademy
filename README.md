@@ -32,7 +32,7 @@ bun run dev                    # http://localhost:5173
 
 ## Admin
 
-Make an account an admin (it then sees **ផ្ទាំងគ្រប់គ្រង** in the account menu → `/admin/orders`):
+Make an account an admin (it then sees **ផ្ទាំងគ្រប់គ្រង** in the account menu → `/admin`: orders, courses + curriculum, ebooks, banners, categories, instructors):
 
 ```sh
 psql postgres://localhost/reanit_lms -c "UPDATE users SET role = 'admin' WHERE phone = '+85512345678'"
@@ -80,6 +80,20 @@ Authenticated routes take `Authorization: Bearer <token>` (the token from regist
 | GET | `/api/admin/orders?status=&q=&page=&per_page=` | admin → paged orders with buyer + items; `awaiting_approval` oldest first; 403 `forbidden` |
 | POST | `/api/admin/orders/{id}/approve` | admin → `paid` + grants enrollments / ebooks (idempotent; also from `pending_payment` / `rejected`) |
 | POST | `/api/admin/orders/{id}/reject` | admin, `{note}` → `rejected` (from `awaiting_approval`); user sees the note and can resubmit |
+| GET / POST | `/api/admin/courses?q=&page=` | admin → paged courses incl. drafts / create `{slug, title, summary?, description, cover_url?, instructor_id, category_id?, price_cents, sale_price_cents?, published}` → 201; 409 `slug_taken`, 422 `invalid_slug` / `invalid_price` / `invalid_url` / `invalid_reference` |
+| GET / PUT / DELETE | `/api/admin/courses/{id}` | admin → course + curriculum (lessons include `video_id`); DELETE 409 `has_buyers` once enrolled/ordered |
+| POST | `/api/admin/courses/{id}/publish` | admin, `{published}` → 204 |
+| POST | `/api/admin/courses/{id}/sections` | admin, `{title}` → course (appended) |
+| PUT / DELETE | `/api/admin/sections/{id}` | admin, `{title}` → course |
+| POST | `/api/admin/sections/{id}/lessons` | admin, `{title, video_id?, duration_seconds, is_preview}` → course (appended) |
+| PUT / DELETE | `/api/admin/lessons/{id}` | admin → course |
+| POST | `/api/admin/sections/{id}/move`, `/api/admin/lessons/{id}/move` | admin, `{direction: up\|down}` → course |
+| GET / POST | `/api/admin/ebooks?q=&page=` | admin → paged ebooks incl. drafts (`has_file`) / create (same fields as courses minus instructor, plus `author_name`, `page_count?`, `file_key?`) |
+| GET / PUT / DELETE | `/api/admin/ebooks/{id}` | admin; `file_key` is write-only (blank keeps, `remove_file: true` clears); DELETE 409 `has_buyers` |
+| POST | `/api/admin/ebooks/{id}/publish` | admin, `{published}` → 204 |
+| GET / POST, PUT / DELETE `/{id}` | `/api/admin/categories` | admin, `{slug, name_km, name_en, position}`; 409 `slug_taken` |
+| GET / POST, PUT / DELETE `/{id}` | `/api/admin/instructors` | admin, `{name, bio?, avatar_url?}`; DELETE 409 `in_use` while courses reference it |
+| GET / POST, PUT / DELETE `/{id}` | `/api/admin/banners` | admin, `{title, subtitle?, image_url?, link_url?, position, published}`; URLs must be `/path` or `http(s)://` |
 
 ## Roadmap
 

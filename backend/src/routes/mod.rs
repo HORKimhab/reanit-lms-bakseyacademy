@@ -1,4 +1,7 @@
 mod admin;
+mod admin_catalog;
+mod admin_courses;
+mod admin_ebooks;
 mod auth;
 mod cart;
 mod categories;
@@ -42,6 +45,39 @@ pub fn router(state: AppState) -> Router {
         .route("/api/admin/orders", get(admin::list_orders))
         .route("/api/admin/orders/{id}/approve", post(admin::approve))
         .route("/api/admin/orders/{id}/reject", post(admin::reject))
+        .route("/api/admin/categories", get(admin_catalog::list_categories).post(admin_catalog::create_category))
+        .route(
+            "/api/admin/categories/{id}",
+            put(admin_catalog::update_category).delete(admin_catalog::delete_category),
+        )
+        .route("/api/admin/instructors", get(admin_catalog::list_instructors).post(admin_catalog::create_instructor))
+        .route(
+            "/api/admin/instructors/{id}",
+            put(admin_catalog::update_instructor).delete(admin_catalog::delete_instructor),
+        )
+        .route("/api/admin/banners", get(admin_catalog::list_banners).post(admin_catalog::create_banner))
+        .route("/api/admin/banners/{id}", put(admin_catalog::update_banner).delete(admin_catalog::delete_banner))
+        .route("/api/admin/courses", get(admin_courses::list).post(admin_courses::create))
+        .route(
+            "/api/admin/courses/{id}",
+            get(admin_courses::detail).put(admin_courses::update).delete(admin_courses::delete),
+        )
+        .route("/api/admin/courses/{id}/publish", post(admin_courses::publish))
+        .route("/api/admin/courses/{id}/sections", post(admin_courses::create_section))
+        .route(
+            "/api/admin/sections/{id}",
+            put(admin_courses::update_section).delete(admin_courses::delete_section),
+        )
+        .route("/api/admin/sections/{id}/move", post(admin_courses::move_section))
+        .route("/api/admin/sections/{id}/lessons", post(admin_courses::create_lesson))
+        .route("/api/admin/lessons/{id}", put(admin_courses::update_lesson).delete(admin_courses::delete_lesson))
+        .route("/api/admin/lessons/{id}/move", post(admin_courses::move_lesson))
+        .route("/api/admin/ebooks", get(admin_ebooks::list).post(admin_ebooks::create))
+        .route(
+            "/api/admin/ebooks/{id}",
+            get(admin_ebooks::detail).put(admin_ebooks::update).delete(admin_ebooks::delete),
+        )
+        .route("/api/admin/ebooks/{id}/publish", post(admin_ebooks::publish))
         .route("/api/categories", get(categories::list))
         .route("/api/courses", get(courses::list))
         .route("/api/courses/{slug}", get(courses::detail))

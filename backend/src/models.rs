@@ -156,6 +156,130 @@ pub struct AdminOrder {
     pub items: Vec<OrderItem>,
 }
 
+// ---- Admin catalog -------------------------------------------------------------------------
+
+#[derive(Serialize, FromRow)]
+pub struct AdminCategory {
+    pub id: Uuid,
+    pub slug: String,
+    pub name_km: String,
+    pub name_en: String,
+    pub position: i32,
+}
+
+#[derive(Serialize, FromRow)]
+pub struct AdminInstructor {
+    pub id: Uuid,
+    pub name: String,
+    pub bio: Option<String>,
+    pub avatar_url: Option<String>,
+    pub course_count: i64,
+}
+
+#[derive(Serialize, FromRow)]
+pub struct AdminBanner {
+    pub id: Uuid,
+    pub title: String,
+    pub subtitle: Option<String>,
+    pub image_url: Option<String>,
+    pub link_url: Option<String>,
+    pub position: i32,
+    pub published: bool,
+}
+
+#[derive(Serialize, FromRow)]
+pub struct AdminCourseRow {
+    pub id: Uuid,
+    pub slug: String,
+    pub title: String,
+    pub published: bool,
+    pub price_cents: i32,
+    pub sale_price_cents: Option<i32>,
+    pub instructor_name: String,
+    pub category_name_km: Option<String>,
+    pub lesson_count: i64,
+    pub enrollment_count: i64,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Serialize, FromRow)]
+pub struct AdminCourseFields {
+    pub id: Uuid,
+    pub slug: String,
+    pub title: String,
+    pub summary: Option<String>,
+    pub description: String,
+    pub cover_url: Option<String>,
+    pub instructor_id: Uuid,
+    pub category_id: Option<Uuid>,
+    pub price_cents: i32,
+    pub sale_price_cents: Option<i32>,
+    pub published: bool,
+    pub updated_at: DateTime<Utc>,
+}
+
+/// Lessons carry the raw `video_id` here: admin-only, so editors can see what is attached.
+#[derive(Serialize, FromRow)]
+pub struct AdminLesson {
+    pub id: Uuid,
+    #[serde(skip)]
+    pub section_id: Uuid,
+    pub title: String,
+    pub position: i32,
+    pub video_id: Option<String>,
+    pub duration_seconds: i32,
+    pub is_preview: bool,
+}
+
+#[derive(Serialize)]
+pub struct AdminSection {
+    pub id: Uuid,
+    pub title: String,
+    pub position: i32,
+    pub lessons: Vec<AdminLesson>,
+}
+
+#[derive(Serialize)]
+pub struct AdminCourse {
+    #[serde(flatten)]
+    pub fields: AdminCourseFields,
+    pub sections: Vec<AdminSection>,
+}
+
+#[derive(Serialize, FromRow)]
+pub struct AdminEbookRow {
+    pub id: Uuid,
+    pub slug: String,
+    pub title: String,
+    pub author_name: String,
+    pub published: bool,
+    pub price_cents: i32,
+    pub sale_price_cents: Option<i32>,
+    pub category_name_km: Option<String>,
+    pub has_file: bool,
+    pub purchase_count: i64,
+    pub updated_at: DateTime<Utc>,
+}
+
+/// `file_key` is write-only: admins see `has_file`, never the key.
+#[derive(Serialize, FromRow)]
+pub struct AdminEbook {
+    pub id: Uuid,
+    pub slug: String,
+    pub title: String,
+    pub author_name: String,
+    pub summary: Option<String>,
+    pub description: String,
+    pub cover_url: Option<String>,
+    pub page_count: Option<i32>,
+    pub category_id: Option<Uuid>,
+    pub price_cents: i32,
+    pub sale_price_cents: Option<i32>,
+    pub published: bool,
+    pub has_file: bool,
+    pub updated_at: DateTime<Utc>,
+}
+
 #[derive(Serialize, FromRow)]
 pub struct Banner {
     pub id: Uuid,
