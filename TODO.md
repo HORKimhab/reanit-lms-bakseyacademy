@@ -38,8 +38,25 @@ Payment now: the user picks Bakong KHQR or ABA PayWay, scans that method's stati
 ## F. i18n (roadmap 6)
 - [x] F1 Paraglide km/en + header language switcher (storefront, account, learning; admin stays Khmer)
 
+## G. Telegram channel storage
+Lesson videos and ebook files live as posts in a **private Telegram channel**; a bot that is admin of the channel stores and fetches them. It sits next to the current providers (Bunny Stream for video, S3/R2 for files) as one more `provider`, so existing content keeps working.
+
+Constraints that shape the design:
+- The public Bot API only downloads files ≤ 20 MB and uploads ≤ 50 MB. Course videos are bigger, so run a **self-hosted Telegram Bot API server** (`telegram-bot-api`, `--local`: up to 2 GB, files read from its disk) and point `TELEGRAM_API_URL` at it.
+- Telegram file URLs contain the bot token and never expire. They must never reach the browser: every byte is **streamed through our server** after the access check (keeps the CLAUDE.md invariant: paid content stays server-side until enrollment).
+- Telegram is not a CDN: expect rate limits and slower first bytes than Bunny/R2. Keep the provider switchable per item, and check Telegram's terms for this use before launch.
+
+- [ ] G1 Config + client: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHANNEL_ID`, `TELEGRAM_API_URL` (default public API) in `config.rs`; `src/telegram.rs` with `send_document` / `send_video` (multipart upload to the channel), `get_file` (file_id → file_path) and a byte stream for a file_path with HTTP `Range` support; startup warning when unset, like `BUNNY_*` / `STORAGE_*`
+- [ ] G2 Migration `media_files`: `provider` (`bunny` | `s3` | `telegram`), `telegram_file_id`, `telegram_file_unique_id`, `telegram_message_id`, `mime_type`, `size_bytes`, `file_name`, `duration_seconds`; `lessons.media_id` / `ebooks.media_id` (nullable; existing `video_id` / `file_key` stay for bunny / s3)
+- [ ] G3 Admin upload: `POST /api/admin/media` (multipart, admin) → uploads to the channel → `media_files` row; lesson and ebook admin forms get "upload file" next to the Video ID / file key fields. Uploads stream to Telegram rather than buffering whole files in memory
+- [ ] G4 Import existing channel posts: bot receives `channel_post` updates (webhook `POST /api/telegram/webhook`, verified with `X-Telegram-Bot-Api-Secret-Token`) and registers each video/document as a `media_files` row; admin picks it from a "media library" list (`GET /api/admin/media?q=`) when editing a lesson / ebook
+- [ ] G5 Streaming endpoint: lesson / ebook-file endpoints (D1, D4) return a short-lived HMAC-signed media URL for `telegram` items (`MEDIA_SIGNING_KEY`, same TTLs as today) instead of a Bunny / S3 URL; `GET /api/media/{token}` verifies signature + expiry, resolves `file_id` → `file_path` (cache the path; Telegram keeps it valid ≥ 1 h), and streams with `Range` / `206 Partial Content`, `Content-Type`, `Content-Disposition` (inline / attachment)
+- [ ] G6 SvelteKit proxy: `/media/[token]/+server.ts` forwards the request (incl. `Range`) to `/api/media/{token}` and pipes the response body, so the browser still never talks to the Rust API; document this as the one streaming exception next to the `api()` rule in `CLAUDE.md`
+- [ ] G7 Player + reader: lessons whose media is `telegram` play in a native `<video>` (seeking via Range) instead of the Bunny iframe; ebook reader / download use the same proxy URL. Mark complete keeps working unchanged
+- [ ] G8 Ops: README section (create channel, add bot as admin, run `telegram-bot-api --local` via `docker-compose.yml`, env vars), on-disk cache limits for the local Bot API server, and a smoke test that uploads → plays with seeking → downloads a > 20 MB file
+
 ## Later
 - [ ] Automatic payment confirmation: Bakong KHQR dynamic QR + status check, ABA PayWay checkout + pushback webhook (same grant path as admin approval)
-- [ ] Payment screenshot upload (needs object storage)
+- [ ] Payment screenshot upload: the user attaches a screenshot on `/orders/{id}`; the bot posts it (with order id, buyer, amount, reference) to a private **admin** Telegram channel/group, which also notifies admins; `orders.payment_proof_media_id` → shown in `/admin/orders` through the G5/G6 proxy (builds on G1–G2)
 - [ ] Self-service password reset (SMS OTP)
 - [ ] Google sign-in (server-side OAuth; `users.google_sub`)
