@@ -17,7 +17,7 @@ Khmer-first online course + ebook store. `backend/` is a Rust API (Axum 0.8, SQL
 - Response structs live in `src/models.rs`; detail responses compose a card with `#[serde(flatten)]`.
 - Migrations live in `backend/migrations/NNNN_name.sql` and are applied automatically on `cargo run`. Add a new numbered file; leave applied migrations untouched.
 - Money is integer US cents (`price_cents`, `sale_price_cents`); `sale_price_cents < price_cents` is enforced in the schema.
-- Public endpoints only return `published` rows.
+- Public endpoints only return `published` rows, except to owners: enrolled users / buyers keep seeing, learning and reviewing an item after it is unpublished (`published OR EXISTS (enrollment/purchase)`).
 
 ## Access-control invariants
 

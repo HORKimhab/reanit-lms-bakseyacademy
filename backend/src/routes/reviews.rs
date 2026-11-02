@@ -77,25 +77,26 @@ fn validate_review(rating: i16, comment: Option<&str>) -> AppResult<(i16, Option
     Ok((rating, comment.map(str::to_owned)))
 }
 
-/// The item's id if the user owns it: 404 unknown slug, 403 not owned.
+/// The item's id if the user owns it: 404 unknown slug (or an unpublished one they don't own), 403 not owned.
 async fn owned_item(db: &PgPool, target: Target, slug: &str, user_id: Uuid) -> AppResult<Uuid> {
     let sql = format!(
-        "SELECT t.id, EXISTS (SELECT 1 FROM {owner} o WHERE o.{col} = t.id AND o.user_id = $2) \
+        "SELECT t.id, t.published, EXISTS (SELECT 1 FROM {owner} o WHERE o.{col} = t.id AND o.user_id = $2) \
          FROM {table} t WHERE t.slug = $1",
         owner = target.owner_table(),
         col = target.column(),
         table = target.table(),
     );
-    let (id, owned): (Uuid, bool) = sqlx::query_as(&sql)
+    let (id, published, owned): (Uuid, bool, bool) = sqlx::query_as(&sql)
         .bind(slug)
         .bind(user_id)
         .fetch_optional(db)
         .await?
         .ok_or(AppError::NotFound)?;
-    if !owned {
-        return Err(AppError::Forbidden);
+    match (owned, published) {
+        (true, _) => Ok(id),
+        (false, true) => Err(AppError::Forbidden),
+        (false, false) => Err(AppError::NotFound),
     }
-    Ok(id)
 }
 
 #[derive(Deserialize)]

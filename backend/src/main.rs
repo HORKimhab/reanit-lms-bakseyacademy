@@ -28,6 +28,16 @@ async fn main() -> anyhow::Result<()> {
         .init();
 
     let config = config::Config::from_env()?;
+    match &config.video {
+        None => tracing::warn!("BUNNY_LIBRARY_ID not set: lessons have no playable video"),
+        Some(v) if v.token_key.is_none() => {
+            tracing::warn!("BUNNY_TOKEN_KEY not set: lesson embed URLs are unsigned and never expire")
+        }
+        Some(_) => {}
+    }
+    if config.storage.is_none() {
+        tracing::warn!("STORAGE_BUCKET not set: ebook downloads return 503");
+    }
 
     let db = PgPoolOptions::new()
         .max_connections(10)
