@@ -2,12 +2,13 @@
 -- Run after the API has applied migrations:  psql "$DATABASE_URL" -f seeds/dev.sql
 BEGIN;
 
-TRUNCATE banners, reviews, lessons, course_sections, courses, ebooks, categories, instructors, users CASCADE;
+TRUNCATE sessions, banners, reviews, lessons, course_sections, courses, ebooks, categories, instructors, users CASCADE;
 
-INSERT INTO users (email, full_name) VALUES
-    ('student1@example.com', 'Student One'),
-    ('student2@example.com', 'Student Two'),
-    ('student3@example.com', 'Student Three');
+-- Demo users have no password; register a new account to log in.
+INSERT INTO users (phone, email, full_name) VALUES
+    ('+85510000001', 'student1@example.com', 'Student One'),
+    ('+85510000002', 'student2@example.com', 'Student Two'),
+    ('+85510000003', NULL,                   'Student Three');
 
 INSERT INTO categories (slug, name_km, name_en, position) VALUES
     ('technology',  'បច្ចេកវិទ្យា', 'Technology',  1),
@@ -54,12 +55,12 @@ FROM (VALUES
 
 -- Deterministic pseudo-random ratings; one course left unrated to exercise the empty state.
 INSERT INTO reviews (user_id, course_id, rating, comment)
-SELECT u.id, c.id, 3 + abs(hashtext(u.email || c.slug)) % 3, 'ល្អណាស់!'
+SELECT u.id, c.id, 3 + abs(hashtext(u.full_name || c.slug)) % 3, 'ល្អណាស់!'
 FROM users u CROSS JOIN courses c
 WHERE c.slug <> 'small-business-101';
 
 INSERT INTO reviews (user_id, ebook_id, rating)
-SELECT u.id, e.id, 3 + abs(hashtext(u.email || e.slug)) % 3
+SELECT u.id, e.id, 3 + abs(hashtext(u.full_name || e.slug)) % 3
 FROM users u CROSS JOIN ebooks e;
 
 INSERT INTO banners (title, subtitle, link_url, position, published) VALUES

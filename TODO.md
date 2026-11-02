@@ -7,8 +7,8 @@ Feature parity with a typical Khmer course + ebook store (reference: bakseyacade
 - [x] A2 Homepage slideshow: `banners` table, returned in `GET /api/home`; `Carousel.svelte` replaces the gradient hero
 
 ## B. Accounts (roadmap 2)
-Open question: phone (+855) + password as the login, email optional?
-- [ ] B1 Migration: `users.phone` (unique, E.164), `email` nullable, `sessions` table
+Login: phone (+855) + password, email optional. SvelteKit keeps the session token in an HttpOnly cookie and sends it to the API as `Authorization: Bearer`.
+- [x] B1 Migration: `users.phone` (unique, E.164), `email` nullable, `sessions` table
 - [ ] B2 `POST /api/auth/register` (name, phone, password; argon2); `AppError::Conflict`, `AppError::Unauthorized`
 - [ ] B3 `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/me` (HttpOnly session cookie)
 - [ ] B4 `/auth` page (login / register tabs, +855 prefix); `hooks.server.ts` forwards the cookie through `api()`, `locals.user`
