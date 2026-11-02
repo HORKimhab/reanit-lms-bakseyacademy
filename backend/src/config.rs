@@ -13,9 +13,9 @@ pub struct Config {
     pub video: Option<BunnyStream>,
     /// Ebook file bucket; `None` (no `STORAGE_BUCKET`) means downloads are unavailable.
     pub storage: Option<ObjectStorage>,
-    /// HMAC key for `/media/{token}` links (`MEDIA_SIGNING_KEY`); random per process when unset.
+    /// HMAC key for `/media/{token}` links (`MEDIA_SIGNING_KEY`; required with Telegram, random otherwise
+    /// since nothing is signed then).
     pub media_key: Vec<u8>,
-    pub media_key_is_random: bool,
     /// Telegram channel storage; `None` without `TELEGRAM_BOT_TOKEN`.
     pub telegram: Option<Telegram>,
 }
@@ -28,8 +28,10 @@ fn optional(key: &str) -> Option<String> {
 impl Config {
     pub fn from_env() -> anyhow::Result<Self> {
         let media_key = optional("MEDIA_SIGNING_KEY");
+        if media_key.is_none() && optional("TELEGRAM_BOT_TOKEN").is_some() {
+            anyhow::bail!("MEDIA_SIGNING_KEY must be set with TELEGRAM_BOT_TOKEN (it signs /media links)");
+        }
         Ok(Self {
-            media_key_is_random: media_key.is_none(),
             media_key: media_key.map(String::into_bytes).unwrap_or_else(|| {
                 use argon2::password_hash::rand_core::{OsRng, RngCore};
                 let mut key = vec![0u8; 32];

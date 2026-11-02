@@ -103,9 +103,15 @@ impl Telegram {
         }
     }
 
-    /// Largest file `upload` accepts: 2000 MB through a `--local` server, 50 MB on the public API.
+    /// Largest file worth uploading: 2000 MB through a `--local` server. The public API accepts
+    /// 50 MB uploads but only lets bots download ≤ 20 MB, so anything bigger could never be streamed.
     pub fn max_upload_bytes(&self) -> u64 {
-        if self.local.is_some() { 2000 * 1024 * 1024 } else { 50 * 1024 * 1024 }
+        if self.local.is_some() { 2000 * 1024 * 1024 } else { 20 * 1024 * 1024 }
+    }
+
+    /// Whether payment screenshots fall back to the storage channel (no admin chat set).
+    pub fn proofs_go_to_storage_channel(&self) -> bool {
+        self.admin_chat_id.is_none()
     }
 
     /// Posts a file of `len` bytes to the storage channel, streaming `body` (not buffered in memory).

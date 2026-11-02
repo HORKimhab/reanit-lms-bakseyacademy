@@ -11,10 +11,9 @@ export const load: PageServerLoad = async ({ locals, fetch, url, params }) => {
 	const [ebook, categories, media] = await Promise.all([
 		api<AdminEbook>(fetch, `/api/admin/ebooks/${encodeURIComponent(params.id)}`, { token }),
 		api<AdminCategory[]>(fetch, '/api/admin/categories', { token }),
-		api<Paged<AdminMedia>>(fetch, '/api/admin/media?per_page=48', { token })
+		api<Paged<AdminMedia>>(fetch, '/api/admin/media?kind=document&per_page=200', { token })
 	]);
-	const documents = media.items.filter((m) => !m.mime_type?.startsWith('video/'));
-	return { ebook, categories, documents };
+	return { ebook, categories, documents: media.items };
 };
 
 export const actions: Actions = {

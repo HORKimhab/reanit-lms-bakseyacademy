@@ -50,8 +50,8 @@ async fn main() -> anyhow::Result<()> {
     }
     if config.telegram.is_none() {
         tracing::warn!("TELEGRAM_BOT_TOKEN not set: Telegram channel storage is off");
-    } else if config.media_key_is_random {
-        tracing::warn!("MEDIA_SIGNING_KEY not set: using a random key, media links break on restart");
+    } else if config.telegram.as_ref().is_some_and(|tg| tg.proofs_go_to_storage_channel()) {
+        tracing::warn!("TELEGRAM_ADMIN_CHAT_ID not set: payment screenshots go to the storage channel");
     }
 
     let db = PgPoolOptions::new()

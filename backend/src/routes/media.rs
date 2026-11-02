@@ -1,4 +1,5 @@
-//! Uploaded media stored in the Telegram channel: admin upload (and, later, library + streaming).
+//! Media stored in Telegram: admin upload, channel-post import (webhook), the media library, and
+//! streaming through signed `/media/{token}` links.
 
 use axum::{
     Json,
@@ -11,6 +12,7 @@ use chrono::{DateTime, Duration, Utc};
 use uuid::Uuid;
 use bytes::Bytes;
 use futures_util::stream;
+use serde::Deserialize;
 use tokio::sync::mpsc;
 
 use crate::{
@@ -33,7 +35,7 @@ pub async fn upload(State(st): State<AppState>, _: AdminUser, form: Multipart) -
         if size > tg.max_upload_bytes() { Err(AppError::Validation("file_too_large")) } else { Ok(()) }
     };
     let stored = upload_form_to_telegram(tg, form, check, tg.channel_id(), None).await?;
-    let media = with_preview(&st, insert_telegram(&st.db, &stored).await?);
+    let media = with_preview(&st, insert_telegram(&st.db, &stored, Purpose::Content).await?);
     Ok((StatusCode::CREATED, Json(media)))
 }
 
@@ -72,33 +74,36 @@ pub(crate) async fn upload_form_to_telegram(
                             Ok(None) => break,
                             Err(e) => {
                                 let _ = tx.send(Err(std::io::Error::other(e))).await;
-                                return false;
+                                return Pump::ClientError;
                             }
                         };
                         sent += chunk.len() as u64;
                         if sent > size {
                             let _ = tx.send(Err(std::io::Error::other("body longer than declared size"))).await;
-                            return false;
+                            return Pump::SizeMismatch;
                         }
                         if tx.send(Ok(chunk)).await.is_err() {
-                            return false;
+                            return Pump::UploadGone;
                         }
                     }
                     if sent != size {
                         let _ = tx.send(Err(std::io::Error::other("body shorter than declared size"))).await;
-                        return false;
+                        return Pump::SizeMismatch;
                     }
-                    true
+                    Pump::Done
                 };
                 let upload = tg.upload_to(chat_id, caption, kind, &file_name, &mime, size, body);
-                let (complete, stored) = tokio::join!(pump, upload);
-                if !complete {
-                    return Err(AppError::Validation("invalid_size"));
-                }
-                return stored.map_err(|e| {
-                    tracing::error!(error = %e, "telegram upload failed");
-                    AppError::Unavailable("telegram_failed")
-                });
+                let (outcome, stored) = tokio::join!(pump, upload);
+                return match (outcome, stored) {
+                    (Pump::SizeMismatch, _) => Err(AppError::Validation("invalid_size")),
+                    (Pump::ClientError, _) => Err(AppError::Validation("invalid_form")),
+                    // Telegram failed (or hung up, which stops the pump): their error, not the client's.
+                    (_, Err(e)) => {
+                        tracing::error!(error = %e, "telegram upload failed");
+                        Err(AppError::Unavailable("telegram_failed"))
+                    }
+                    (Pump::Done | Pump::UploadGone, Ok(stored)) => Ok(stored),
+                };
             }
             _ => {}
         }
@@ -106,13 +111,31 @@ pub(crate) async fn upload_form_to_telegram(
     Err(AppError::Validation("missing_file"))
 }
 
+/// How feeding the client's file into the Telegram upload ended.
+enum Pump {
+    Done,
+    /// The body was longer or shorter than the declared `size`.
+    SizeMismatch,
+    /// The client's multipart stream broke.
+    ClientError,
+    /// The upload stopped reading (Telegram failed or hung up).
+    UploadGone,
+}
+
 /// Records a Telegram file; an already-known file (same `file_unique_id`) returns the existing row.
-pub(crate) async fn insert_telegram(db: &sqlx::PgPool, f: &StoredFile) -> sqlx::Result<AdminMedia> {
+/// What a media row is for: course content (the media library) or a buyer's payment screenshot.
+#[derive(Clone, Copy)]
+pub(crate) enum Purpose {
+    Content,
+    PaymentProof,
+}
+
+pub(crate) async fn insert_telegram(db: &sqlx::PgPool, f: &StoredFile, purpose: Purpose) -> sqlx::Result<AdminMedia> {
     sqlx::query_as::<_, AdminMedia>(&format!(
         "WITH ins AS (
              INSERT INTO media_files (provider, telegram_file_id, telegram_file_unique_id, telegram_message_id,
-                                      mime_type, size_bytes, file_name, duration_seconds)
-             VALUES ('telegram', $1, $2, $3, $4, $5, $6, $7)
+                                      mime_type, size_bytes, file_name, duration_seconds, purpose)
+             VALUES ('telegram', $1, $2, $3, $4, $5, $6, $7, $8)
              ON CONFLICT (telegram_file_unique_id) WHERE telegram_file_unique_id IS NOT NULL DO NOTHING
              RETURNING {MEDIA_COLUMNS}
          )
@@ -127,29 +150,53 @@ pub(crate) async fn insert_telegram(db: &sqlx::PgPool, f: &StoredFile) -> sqlx::
     .bind(f.size_bytes)
     .bind(&f.file_name)
     .bind(f.duration_seconds)
+    .bind(match purpose {
+        Purpose::Content => "content",
+        Purpose::PaymentProof => "payment_proof",
+    })
     .fetch_one(db)
     .await
 }
 
-/// `GET /api/admin/media?q=&page=&per_page=`: the media library, newest first; `q` searches file names.
-pub async fn list(State(st): State<AppState>, _: AdminUser, Query(p): Query<ListParams>) -> AppResult<Json<Page<AdminMedia>>> {
+#[derive(Deserialize)]
+pub struct MediaListParams {
+    /// `video` or `document` (anything not a video).
+    kind: Option<String>,
+}
+
+const LIST_FILTER: &str = "WHERE purpose = 'content'
+    AND ($1::text IS NULL OR file_name ILIKE $1)
+    AND ($2::text IS NULL OR (mime_type LIKE 'video/%') = ($2 = 'video'))";
+
+/// `GET /api/admin/media?q=&kind=video|document&page=&per_page=` (≤ 200): the media library of
+/// course content, newest first; `q` searches file names. Payment screenshots are never listed.
+pub async fn list(
+    State(st): State<AppState>,
+    _: AdminUser,
+    Query(p): Query<ListParams>,
+    Query(mp): Query<MediaListParams>,
+) -> AppResult<Json<Page<AdminMedia>>> {
+    let kind = match mp.kind.as_deref() {
+        None | Some("") => None,
+        Some(k @ ("video" | "document")) => Some(k),
+        Some(_) => return Err(AppError::Validation("invalid_kind")),
+    };
     let pattern = p.search_pattern();
-    let list_sql = format!(
-        "SELECT {MEDIA_COLUMNS} FROM media_files WHERE ($1::text IS NULL OR file_name ILIKE $1)
-         ORDER BY created_at DESC LIMIT $2 OFFSET $3"
-    );
+    let per_page = p.per_page.unwrap_or(30).clamp(1, 200);
+    let offset = (p.page() - 1) * per_page;
+    let list_sql = format!("SELECT {MEDIA_COLUMNS} FROM media_files {LIST_FILTER} ORDER BY created_at DESC LIMIT $3 OFFSET $4");
+    let count_sql = format!("SELECT COUNT(*) FROM media_files {LIST_FILTER}");
     let (items, total) = tokio::try_join!(
         sqlx::query_as::<_, AdminMedia>(&list_sql)
             .bind(pattern.as_deref())
-            .bind(p.per_page())
-            .bind(p.offset())
+            .bind(kind)
+            .bind(per_page)
+            .bind(offset)
             .fetch_all(&st.db),
-        sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM media_files WHERE ($1::text IS NULL OR file_name ILIKE $1)")
-            .bind(pattern.as_deref())
-            .fetch_one(&st.db),
+        sqlx::query_scalar::<_, i64>(&count_sql).bind(pattern.as_deref()).bind(kind).fetch_one(&st.db),
     )?;
     let items = items.into_iter().map(|m| with_preview(&st, m)).collect();
-    Ok(Json(Page { items, total, page: p.page(), per_page: p.per_page() }))
+    Ok(Json(Page { items, total, page: p.page(), per_page }))
 }
 
 fn with_preview(st: &AppState, mut media: AdminMedia) -> AdminMedia {
@@ -169,7 +216,7 @@ pub async fn webhook(State(st): State<AppState>, headers: HeaderMap, body: BodyB
         return Err(AppError::Unauthorized("unauthorized"));
     }
     if let Some(file) = channel_post_file(&body, tg.channel_id()) {
-        let media = insert_telegram(&st.db, &file).await?;
+        let media = insert_telegram(&st.db, &file, Purpose::Content).await?;
         tracing::info!(media_id = %media.id, file_name = ?media.file_name, "imported channel post");
     }
     Ok(StatusCode::OK)
@@ -229,8 +276,11 @@ pub async fn stream(State(st): State<AppState>, Path(token): Path<String>, heade
     let mut res = Response::new(Body::from_stream(body.stream));
     *res.status_mut() = body.status;
     let h = res.headers_mut();
-    let mime = mime.as_deref().and_then(|m| HeaderValue::from_str(m).ok());
-    h.insert(header::CONTENT_TYPE, mime.unwrap_or(HeaderValue::from_static("application/octet-stream")));
+    let safe = mime.as_deref().is_some_and(inline_safe);
+    let content_type = mime.as_deref().filter(|_| safe).and_then(|m| HeaderValue::from_str(m).ok());
+    h.insert(header::CONTENT_TYPE, content_type.unwrap_or(HeaderValue::from_static("application/octet-stream")));
+    // Even passive types get no script/plugin/origin powers if a browser ever renders them as a page.
+    h.insert(header::CONTENT_SECURITY_POLICY, HeaderValue::from_static("sandbox; default-src 'none'; media-src 'self'; img-src 'self'"));
     h.insert(header::ACCEPT_RANGES, HeaderValue::from_static("bytes"));
     h.insert(header::CACHE_CONTROL, HeaderValue::from_static("private, max-age=3600"));
     h.insert(header::X_CONTENT_TYPE_OPTIONS, HeaderValue::from_static("nosniff"));
@@ -240,10 +290,21 @@ pub async fn stream(State(st): State<AppState>, Path(token): Path<String>, heade
     if let Some(Ok(v)) = body.content_range.map(|r| HeaderValue::from_str(&r)) {
         h.insert(header::CONTENT_RANGE, v);
     }
-    if let Ok(v) = HeaderValue::from_str(&content_disposition(grant.attachment, file_name.as_deref().unwrap_or("file"))) {
+    let attachment = grant.attachment || !safe;
+    if let Ok(v) = HeaderValue::from_str(&content_disposition(attachment, file_name.as_deref().unwrap_or("file"))) {
         h.insert(header::CONTENT_DISPOSITION, v);
     }
     Ok(res)
+}
+
+/// Types safe to render inline on the site's origin. Anything else (HTML, SVG, scripts…) is
+/// always served as a download so an uploaded file can't run in the site's context.
+fn inline_safe(mime: &str) -> bool {
+    let plain = mime.bytes().all(|b| b.is_ascii_alphanumeric() || b"/+-.".contains(&b));
+    plain
+        && (mime.starts_with("video/")
+            || mime.starts_with("audio/")
+            || matches!(mime, "application/pdf" | "image/png" | "image/jpeg" | "image/webp" | "image/gif"))
 }
 
 /// `inline` / `attachment` with an ASCII fallback name and the real (e.g. Khmer) name per RFC 6266.
@@ -276,6 +337,16 @@ fn safe_file_name(name: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn only_passive_types_render_inline() {
+        for ok in ["video/mp4", "video/webm", "audio/mpeg", "application/pdf", "image/png", "image/jpeg", "image/webp", "image/gif"] {
+            assert!(inline_safe(ok), "{ok}");
+        }
+        for bad in ["text/html", "image/svg+xml", "application/xhtml+xml", "text/javascript", "application/octet-stream", "", "video/mp4; x=<"] {
+            assert!(!inline_safe(bad), "{bad}");
+        }
+    }
 
     #[test]
     fn disposition_keeps_unicode_names_via_filename_star() {

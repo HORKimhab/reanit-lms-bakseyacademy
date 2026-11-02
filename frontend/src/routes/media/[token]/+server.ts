@@ -11,6 +11,7 @@ const PASS_THROUGH = [
 	'accept-ranges',
 	'content-disposition',
 	'cache-control',
+	'content-security-policy',
 	'x-content-type-options'
 ];
 

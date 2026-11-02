@@ -253,7 +253,7 @@
 	"error_unavailable": "Cannot reach the server",
 	"error_generic": "Something went wrong, please try again",
 	"error_invalid_size": "File size mismatch, please try again",
-	"error_file_too_large": "File too large (public Bot API ≤ 50 MB, self-hosted ≤ 2000 MB)",
+	"error_file_too_large": "File too large (public Bot API ≤ 20 MB, self-hosted ≤ 2000 MB, payment screenshots ≤ 10 MB)",
 	"error_missing_file": "Please choose a file",
 	"error_invalid_form": "Invalid form",
 	"error_telegram_unavailable": "Telegram storage is not configured",

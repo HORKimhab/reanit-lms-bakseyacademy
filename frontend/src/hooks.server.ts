@@ -5,6 +5,26 @@ import { apiResult } from '$lib/server/api';
 import { SESSION_COOKIE, clearSession } from '$lib/server/session';
 import type { User } from '$lib/types';
 
+/**
+ * Production runs with a large `BODY_SIZE_LIMIT` so admins can stream big videos to Telegram; keep
+ * every other route (login, forms, payment screenshots ≤ 10 MB) to small bodies so nobody can make
+ * a form action buffer gigabytes.
+ */
+const MAX_BODY_BYTES = 12 * 1024 * 1024;
+const LARGE_UPLOAD_PATHS = new Set(['/admin/media/upload']);
+
+const bodyLimit: Handle = ({ event, resolve }) => {
+	const { request, url } = event;
+	if (request.method !== 'GET' && request.method !== 'HEAD' && !LARGE_UPLOAD_PATHS.has(url.pathname)) {
+		const length = Number(request.headers.get('content-length') ?? 0);
+		const chunked = request.headers.get('transfer-encoding')?.toLowerCase().includes('chunked');
+		if (length > MAX_BODY_BYTES || (chunked && !request.headers.has('content-length'))) {
+			return new Response('Payload Too Large', { status: 413 });
+		}
+	}
+	return resolve(event);
+};
+
 /** Resolves the locale (cookie → Khmer) for this request and sets `<html lang>`. */
 const i18n: Handle = ({ event, resolve }) =>
 	paraglideMiddleware(event.request, ({ request, locale }) => {
@@ -31,4 +51,4 @@ const session: Handle = async ({ event, resolve }) => {
 	return resolve(event);
 };
 
-export const handle = sequence(i18n, session);
+export const handle = sequence(bodyLimit, i18n, session);

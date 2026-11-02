@@ -9,7 +9,7 @@ use chrono::Duration;
 use uuid::Uuid;
 
 use super::{
-    media::{insert_telegram, signed_url, upload_form_to_telegram},
+    media::{Purpose, insert_telegram, signed_url, upload_form_to_telegram},
     orders::load_order,
 };
 use crate::{
@@ -47,13 +47,21 @@ pub async fn upload(
         payment_ref: order.order.payment_ref.as_deref(),
     });
     let stored = upload_form_to_telegram(tg, form, validate_proof, tg.admin_chat_id(), Some(&caption)).await?;
-    let media = insert_telegram(&st.db, &stored).await?;
-    sqlx::query("UPDATE orders SET payment_proof_media_id = $2 WHERE id = $1 AND user_id = $3")
-        .bind(id)
-        .bind(media.id)
-        .bind(current.user.id)
-        .execute(&st.db)
-        .await?;
+    let media = insert_telegram(&st.db, &stored, Purpose::PaymentProof).await?;
+    // Re-check the status: an admin may have approved or the buyer cancelled during the upload.
+    let attached = sqlx::query(
+        "UPDATE orders SET payment_proof_media_id = $2 WHERE id = $1 AND user_id = $3
+           AND status IN ('pending_payment', 'awaiting_approval', 'rejected')",
+    )
+    .bind(id)
+    .bind(media.id)
+    .bind(current.user.id)
+    .execute(&st.db)
+    .await?
+    .rows_affected();
+    if attached == 0 {
+        return Err(AppError::Conflict("invalid_status"));
+    }
     Ok(Json(load_order(&st, id, Some(current.user.id)).await?))
 }
 
@@ -77,8 +85,8 @@ pub struct ProofContext<'a> {
 /// Telegram caption (≤ 1024 chars) for a payment screenshot.
 fn proof_caption(ctx: &ProofContext) -> String {
     let short_id: String = ctx.order_id.to_string().chars().take(8).collect::<String>().to_uppercase();
-    let dollars = f64::from(ctx.total_cents) / 100.0;
-    let amount = if ctx.total_cents % 100 == 0 { format!("${}", ctx.total_cents / 100) } else { format!("${dollars:.2}") };
+    let (dollars, cents) = (ctx.total_cents / 100, ctx.total_cents % 100);
+    let amount = if cents == 0 { format!("${dollars}") } else { format!("${dollars}.{cents:02}") };
     let mut lines = vec![format!("🧾 ការបញ្ជាទិញ #{short_id}")];
     lines.push(match ctx.phone {
         Some(phone) => format!("👤 {} · {phone}", ctx.buyer),
