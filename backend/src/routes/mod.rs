@@ -1,3 +1,4 @@
+mod admin;
 mod auth;
 mod cart;
 mod categories;
@@ -31,6 +32,9 @@ pub fn router(state: AppState) -> Router {
         .route("/api/orders/{id}", get(orders::detail))
         .route("/api/orders/{id}/submit", post(orders::submit))
         .route("/api/orders/{id}/cancel", post(orders::cancel))
+        .route("/api/admin/orders", get(admin::list_orders))
+        .route("/api/admin/orders/{id}/approve", post(admin::approve))
+        .route("/api/admin/orders/{id}/reject", post(admin::reject))
         .route("/api/categories", get(categories::list))
         .route("/api/courses", get(courses::list))
         .route("/api/courses/{slug}", get(courses::detail))

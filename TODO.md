@@ -20,7 +20,7 @@ Payment now: the user picks Bakong KHQR or ABA PayWay, scans that method's stati
 - [x] C1 Migration: `payment_methods` (QR image, account), `cart_items`, `orders`, `order_items` (price snapshot), `enrollments`, `ebook_purchases`
 - [x] C2 Cart API (`GET/POST/DELETE /api/cart`), add-to-cart on detail pages, header cart icon with count
 - [x] C3 `/cart` + payment-method picker → `POST /api/orders`; `/orders/{id}` shows QR + amount, reference form, cancel, status banners
-- [ ] C4 Admin approval: `AdminUser` extractor (`AppError::Forbidden`), `/api/admin/orders` list / approve / reject, `/admin/orders` page
+- [x] C4 Admin approval: `AdminUser` extractor (`AppError::Forbidden`), `/api/admin/orders` list / approve / reject, `/admin/orders` page
 - [ ] C5 `/account/orders`, `/account/library`, `owned` flag on detail pages ("Continue learning" / "Read")
 
 ## D. Learning (roadmap 4)

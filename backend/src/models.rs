@@ -75,6 +75,9 @@ pub struct PaymentMethod {
 
 #[derive(Serialize, FromRow)]
 pub struct OrderItem {
+    #[serde(skip)]
+    #[sqlx(default)]
+    pub order_id: Option<Uuid>,
     pub kind: String,
     pub course_id: Option<Uuid>,
     pub ebook_id: Option<Uuid>,
@@ -101,6 +104,24 @@ pub struct OrderDetail {
     #[serde(flatten)]
     pub order: OrderSummary,
     pub payment_method: Option<PaymentMethod>,
+    pub items: Vec<OrderItem>,
+}
+
+#[derive(FromRow)]
+pub struct AdminOrderRow {
+    #[sqlx(flatten)]
+    pub order: OrderSummary,
+    pub user_full_name: String,
+    pub user_phone: Option<String>,
+}
+
+/// An order as the admin review queue sees it: who ordered, what, and the reference to check.
+#[derive(Serialize)]
+pub struct AdminOrder {
+    #[serde(flatten)]
+    pub order: OrderSummary,
+    pub user_full_name: String,
+    pub user_phone: Option<String>,
     pub items: Vec<OrderItem>,
 }
 

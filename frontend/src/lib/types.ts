@@ -142,3 +142,9 @@ export interface OrderDetail extends OrderSummary {
 	payment_method: PaymentMethod | null;
 	items: OrderItem[];
 }
+
+export interface AdminOrder extends OrderSummary {
+	user_full_name: string;
+	user_phone: string | null;
+	items: OrderItem[];
+}

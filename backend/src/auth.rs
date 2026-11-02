@@ -182,6 +182,21 @@ impl FromRequestParts<AppState> for CurrentUser {
     }
 }
 
+/// A signed-in user with `role = 'admin'`; 401 when signed out, 403 otherwise.
+pub struct AdminUser(pub User);
+
+impl FromRequestParts<AppState> for AdminUser {
+    type Rejection = AppError;
+
+    async fn from_request_parts(parts: &mut Parts, st: &AppState) -> Result<Self, Self::Rejection> {
+        let current = CurrentUser::from_request_parts(parts, st).await?;
+        if current.user.role != "admin" {
+            return Err(AppError::Forbidden);
+        }
+        Ok(Self(current.user))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

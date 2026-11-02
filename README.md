@@ -30,6 +30,16 @@ bun install
 bun run dev                    # http://localhost:5173
 ```
 
+## Admin
+
+Make an account an admin (it then sees **ផ្ទាំងគ្រប់គ្រង** in the account menu → `/admin/orders`):
+
+```sh
+psql postgres://localhost/reanit_lms -c "UPDATE users SET role = 'admin' WHERE phone = '+85512345678'"
+```
+
+Payment QR images and account details live in `payment_methods` (`qr_image_url` can be a path under `frontend/static/` or any URL); the dev seed points at placeholders.
+
 ## API
 
 Authenticated routes take `Authorization: Bearer <token>` (the token from register/login).
@@ -57,6 +67,9 @@ Authenticated routes take `Authorization: Bearer <token>` (the token from regist
 | GET | `/api/orders/{id}` | Bearer, own orders only → order with items + payment method |
 | POST | `/api/orders/{id}/submit` | Bearer, `{payment_ref}` → `awaiting_approval` (from `pending_payment` or `rejected`); 409 `invalid_status` |
 | POST | `/api/orders/{id}/cancel` | Bearer → `cancelled` (from `pending_payment` only) |
+| GET | `/api/admin/orders?status=&q=&page=&per_page=` | admin → paged orders with buyer + items; `awaiting_approval` oldest first; 403 `forbidden` |
+| POST | `/api/admin/orders/{id}/approve` | admin → `paid` + grants enrollments / ebooks (idempotent; also from `pending_payment` / `rejected`) |
+| POST | `/api/admin/orders/{id}/reject` | admin, `{note}` → `rejected` (from `awaiting_approval`); user sees the note and can resubmit |
 
 ## Roadmap
 

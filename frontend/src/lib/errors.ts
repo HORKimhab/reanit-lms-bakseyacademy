@@ -15,6 +15,8 @@ const messages: Record<string, string> = {
 	invalid_payment_method: 'សូមជ្រើសរើសវិធីបង់ប្រាក់',
 	invalid_payment_ref: 'សូមបញ្ចូលលេខប្រតិបត្តិការ (យ៉ាងហោចណាស់ ៣ តួ)',
 	invalid_status: 'ការបញ្ជាទិញនេះមិនអាចកែប្រែបានទៀតទេ',
+	invalid_note: 'សូមបញ្ចូលមូលហេតុ',
+	forbidden: 'អ្នកមិនមានសិទ្ធិទេ',
 	not_found: 'រកមិនឃើញ',
 	unauthorized: 'សូមចូលគណនីម្តងទៀត',
 	unavailable: 'មិនអាចភ្ជាប់ទៅម៉ាស៊ីនមេបានទេ'

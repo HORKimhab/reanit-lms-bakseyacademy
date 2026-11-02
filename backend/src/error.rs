@@ -20,6 +20,9 @@ pub enum AppError {
     /// Missing/expired session (`unauthorized`) or failed login (`invalid_credentials`).
     #[error("unauthorized: {0}")]
     Unauthorized(&'static str),
+    /// Signed in but not allowed (e.g. not an admin).
+    #[error("forbidden")]
+    Forbidden,
     #[error(transparent)]
     Db(#[from] sqlx::Error),
     #[error(transparent)]
@@ -33,6 +36,7 @@ impl IntoResponse for AppError {
             AppError::Validation(code) => (StatusCode::UNPROCESSABLE_ENTITY, *code),
             AppError::Conflict(code) => (StatusCode::CONFLICT, *code),
             AppError::Unauthorized(code) => (StatusCode::UNAUTHORIZED, *code),
+            AppError::Forbidden => (StatusCode::FORBIDDEN, "forbidden"),
             AppError::Db(e) => {
                 tracing::error!(error = %e, "database error");
                 (StatusCode::INTERNAL_SERVER_ERROR, "internal_error")
