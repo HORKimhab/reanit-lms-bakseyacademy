@@ -18,6 +18,10 @@
 <svelte:head><title>គណនីរបស់ខ្ញុំ · Reanit Academy</title></svelte:head>
 
 <h1 class="text-3xl font-bold">គណនីរបស់ខ្ញុំ</h1>
+<nav class="mt-4 flex gap-4 text-sm">
+	<a href="/account/library" class="text-brand-600 hover:underline">បណ្ណាល័យរបស់ខ្ញុំ</a>
+	<a href="/account/orders" class="text-brand-600 hover:underline">ការបញ្ជាទិញរបស់ខ្ញុំ</a>
+</nav>
 
 <div class="mt-8 grid gap-6 lg:grid-cols-2">
 	<section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">

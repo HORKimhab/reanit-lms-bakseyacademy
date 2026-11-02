@@ -5,6 +5,7 @@ mod categories;
 mod courses;
 mod ebooks;
 mod home;
+mod library;
 mod orders;
 
 use axum::{
@@ -25,6 +26,8 @@ pub fn router(state: AppState) -> Router {
         .route("/api/auth/logout", post(auth::logout))
         .route("/api/me", get(auth::me).patch(auth::update_me))
         .route("/api/me/password", post(auth::change_password))
+        .route("/api/me/orders", get(orders::my_orders))
+        .route("/api/me/library", get(library::library))
         .route("/api/cart", get(cart::get).post(cart::add))
         .route("/api/cart/{id}", delete(cart::remove))
         .route("/api/payment-methods", get(orders::payment_methods))

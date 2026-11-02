@@ -29,7 +29,14 @@
 			{#if ebook.page_count}<span>{khmerNumber(ebook.page_count)} ទំព័រ</span>{/if}
 		</div>
 		<div class="mt-6"><Price price={ebook.price_cents} sale={ebook.sale_price_cents} size="lg" /></div>
-		<div class="mt-4"><BuyButtons {form} /></div>
+		<div class="mt-4">
+			{#if ebook.owned}
+				<p class="text-sm text-green-700">✓ អ្នកបានទិញសៀវភៅនេះរួចហើយ</p>
+				<!-- D4: link to the reader / download -->
+			{:else}
+				<BuyButtons {form} />
+			{/if}
+		</div>
 		{#if ebook.summary}<p class="mt-8 text-lg text-slate-700">{ebook.summary}</p>{/if}
 		{#if ebook.description}<p class="mt-4 whitespace-pre-line text-slate-700">{ebook.description}</p>{/if}
 	</div>

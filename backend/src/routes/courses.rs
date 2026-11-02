@@ -7,11 +7,12 @@ use uuid::Uuid;
 
 use crate::{
     AppState,
+    auth::CurrentUser,
     error::{AppError, AppResult},
     models::*,
 };
 
-const CARD_SELECT: &str = r#"
+pub(crate) const CARD_SELECT: &str = r#"
 SELECT c.id, c.slug, c.title, c.summary, c.cover_url, c.price_cents, c.sale_price_cents,
        cat.slug AS category_slug, cat.name_km AS category_name_km,
        i.name AS instructor_name,
@@ -74,6 +75,7 @@ pub async fn list(
 
 pub async fn detail(
     State(st): State<AppState>,
+    current: Option<CurrentUser>,
     Path(slug): Path<String>,
 ) -> AppResult<Json<CourseDetail>> {
     let card = sqlx::query_as::<_, CourseCard>(&format!(
@@ -84,7 +86,7 @@ pub async fn detail(
     .await?
     .ok_or(AppError::NotFound)?;
 
-    let (extra, section_rows, lesson_rows) = tokio::try_join!(
+    let (extra, section_rows, lesson_rows, owned) = tokio::try_join!(
         sqlx::query_as::<_, CourseExtra>(
             "SELECT c.description, i.bio AS instructor_bio, i.avatar_url AS instructor_avatar_url
              FROM courses c JOIN instructors i ON i.id = c.instructor_id
@@ -105,13 +107,14 @@ pub async fn detail(
         )
         .bind(card.id)
         .fetch_all(&st.db),
+        owns(&st.db, current.as_ref(), card.id),
     )?;
 
     let lesson_count = lesson_rows.len();
     let total_duration_seconds = lesson_rows.iter().map(|l| i64::from(l.duration_seconds)).sum();
     let sections = group_lessons(section_rows, lesson_rows);
 
-    Ok(Json(CourseDetail { card, extra, sections, lesson_count, total_duration_seconds }))
+    Ok(Json(CourseDetail { card, extra, sections, lesson_count, total_duration_seconds, owned }))
 }
 
 fn group_lessons(sections: Vec<SectionRow>, lessons: Vec<LessonRow>) -> Vec<SectionOut> {
@@ -132,4 +135,14 @@ fn group_lessons(sections: Vec<SectionRow>, lessons: Vec<LessonRow>) -> Vec<Sect
         }
     }
     out
+}
+
+/// Whether the signed-in user (if any) owns this course.
+async fn owns(db: &PgPool, current: Option<&CurrentUser>, id: Uuid) -> sqlx::Result<bool> {
+    let Some(current) = current else { return Ok(false) };
+    sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM enrollments WHERE user_id = $1 AND course_id = $2)")
+        .bind(current.user.id)
+        .bind(id)
+        .fetch_one(db)
+        .await
 }

@@ -44,6 +44,7 @@ export interface CourseDetail extends CourseCard {
 	sections: Section[];
 	lesson_count: number;
 	total_duration_seconds: number;
+	owned: boolean;
 }
 
 export interface EbookCard extends ProductBase {
@@ -53,6 +54,7 @@ export interface EbookCard extends ProductBase {
 export interface EbookDetail extends EbookCard {
 	description: string;
 	page_count: number | null;
+	owned: boolean;
 }
 
 export interface Paged<T> {
@@ -147,4 +149,13 @@ export interface AdminOrder extends OrderSummary {
 	user_full_name: string;
 	user_phone: string | null;
 	items: OrderItem[];
+}
+
+export interface OrderWithItems extends OrderSummary {
+	items: OrderItem[];
+}
+
+export interface Library {
+	courses: CourseCard[];
+	ebooks: EbookCard[];
 }

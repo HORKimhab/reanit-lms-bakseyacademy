@@ -79,7 +79,12 @@
 			</div>
 			<div class="space-y-4 p-5">
 				<Price price={course.price_cents} sale={course.sale_price_cents} size="lg" />
-				<BuyButtons {form} full />
+				{#if course.owned}
+					<p class="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">✓ អ្នកបានចុះឈ្មោះក្នុងវគ្គនេះរួចហើយ</p>
+					<!-- D2: link to the lesson player -->
+				{:else}
+					<BuyButtons {form} full />
+				{/if}
 			</div>
 		</div>
 	</aside>

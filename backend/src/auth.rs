@@ -10,7 +10,7 @@ use argon2::{
     },
 };
 use axum::{
-    extract::FromRequestParts,
+    extract::{FromRequestParts, OptionalFromRequestParts},
     http::{header::AUTHORIZATION, request::Parts},
 };
 use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
@@ -157,17 +157,18 @@ pub struct CurrentUser {
     pub token_hash: Vec<u8>,
 }
 
-impl FromRequestParts<AppState> for CurrentUser {
-    type Rejection = AppError;
-
-    async fn from_request_parts(parts: &mut Parts, st: &AppState) -> Result<Self, Self::Rejection> {
-        let token = parts
+impl CurrentUser {
+    /// `None` when there is no bearer token or it is unknown/expired.
+    async fn resolve(parts: &Parts, st: &AppState) -> Result<Option<Self>, AppError> {
+        let Some(token) = parts
             .headers
             .get(AUTHORIZATION)
             .and_then(|v| v.to_str().ok())
             .and_then(|v| v.strip_prefix("Bearer "))
             .filter(|t| !t.is_empty())
-            .ok_or(AppError::Unauthorized("unauthorized"))?;
+        else {
+            return Ok(None);
+        };
         let token_hash = hash_token(token);
         let user = sqlx::query_as::<_, User>(
             "SELECT u.id, u.full_name, u.phone, u.email, u.role \
@@ -176,9 +177,28 @@ impl FromRequestParts<AppState> for CurrentUser {
         )
         .bind(&token_hash)
         .fetch_optional(&st.db)
-        .await?
-        .ok_or(AppError::Unauthorized("unauthorized"))?;
-        Ok(Self { user, token_hash })
+        .await?;
+        Ok(user.map(|user| Self { user, token_hash }))
+    }
+}
+
+impl FromRequestParts<AppState> for CurrentUser {
+    type Rejection = AppError;
+
+    async fn from_request_parts(parts: &mut Parts, st: &AppState) -> Result<Self, Self::Rejection> {
+        Self::resolve(parts, st)
+            .await?
+            .ok_or(AppError::Unauthorized("unauthorized"))
+    }
+}
+
+/// `Option<CurrentUser>` for public endpoints that personalize when signed in
+/// (a bad or expired token is treated as signed out).
+impl OptionalFromRequestParts<AppState> for CurrentUser {
+    type Rejection = AppError;
+
+    async fn from_request_parts(parts: &mut Parts, st: &AppState) -> Result<Option<Self>, Self::Rejection> {
+        Self::resolve(parts, st).await
     }
 }
 
@@ -189,7 +209,7 @@ impl FromRequestParts<AppState> for AdminUser {
     type Rejection = AppError;
 
     async fn from_request_parts(parts: &mut Parts, st: &AppState) -> Result<Self, Self::Rejection> {
-        let current = CurrentUser::from_request_parts(parts, st).await?;
+        let current = <CurrentUser as FromRequestParts<AppState>>::from_request_parts(parts, st).await?;
         if current.user.role != "admin" {
             return Err(AppError::Forbidden);
         }

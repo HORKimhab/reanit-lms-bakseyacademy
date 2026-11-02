@@ -50,15 +50,17 @@ Authenticated routes take `Authorization: Bearer <token>` (the token from regist
 | GET | `/api/home` | published banners + 8 newest courses + ebooks |
 | GET | `/api/categories` | |
 | GET | `/api/courses?q=&category=&page=&per_page=` | paged, search title/instructor |
-| GET | `/api/courses/{slug}` | detail + curriculum (video id only for preview lessons) |
+| GET | `/api/courses/{slug}` | detail + curriculum (video id only for preview lessons); optional Bearer → `owned` |
 | GET | `/api/ebooks?q=&category=&page=&per_page=` | paged, search title/author |
-| GET | `/api/ebooks/{slug}` | detail (file key never exposed) |
+| GET | `/api/ebooks/{slug}` | detail (file key never exposed); optional Bearer → `owned` |
 | POST | `/api/auth/register` | `{full_name, phone, password}` → 201 `{token, max_age, user}`; 409 `phone_taken`, 422 `invalid_phone` / `invalid_name` / `weak_password` |
 | POST | `/api/auth/login` | `{phone, password}` → `{token, max_age, user}`; 401 `invalid_credentials` |
 | POST | `/api/auth/logout` | Bearer → 204, deletes the session |
 | GET | `/api/me` | Bearer → user; 401 `unauthorized` |
 | PATCH | `/api/me` | Bearer, `{full_name, email}` (empty email clears it) → user; 409 `email_taken`, 422 `invalid_email` / `invalid_name` |
 | POST | `/api/me/password` | Bearer, `{current_password, new_password}` → 204, signs out other sessions; 422 `wrong_password` / `weak_password` |
+| GET | `/api/me/orders` | Bearer → own orders with items, newest first |
+| GET | `/api/me/library` | Bearer → `{courses, ebooks}` the user owns (card shape) |
 | GET | `/api/cart` | Bearer → `{items, total_cents}` (published items; total uses sale price) |
 | POST | `/api/cart` | Bearer, `{course_id}` or `{ebook_id}` → cart; 404, 409 `already_owned`, 422 `invalid_item` |
 | DELETE | `/api/cart/{id}` | Bearer → cart |
@@ -77,7 +79,7 @@ Task-level breakdown: [`TODO.md`](TODO.md).
 
 1. ~~Catalog: schema, courses, ebooks, categories, ratings~~
 2. ~~Auth (phone + argon2, session cookies), account page~~
-3. Cart → orders → ABA PayWay / Bakong KHQR webhook → enrollments
+3. ~~Cart → orders → QR payment (Bakong KHQR / ABA PayWay) + admin approval → enrollments~~ (automatic confirmation: see TODO "Later")
 4. Lesson player (Bunny/Cloudflare Stream signed URLs), progress tracking, ebook signed downloads
 5. Reviews write API, search upgrade (Meilisearch), "for you" recommendations, admin
 6. i18n (Paraglide: km/en)

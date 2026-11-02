@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use axum::{
     Json,
     extract::{Path, Query, State},
@@ -7,12 +5,12 @@ use axum::{
 use serde::Deserialize;
 use uuid::Uuid;
 
-use super::orders::{ORDER_COLUMNS, grant_order, load_order};
+use super::orders::{ORDER_COLUMNS, grant_order, items_by_order, load_order};
 use crate::{
     AppState,
     auth::AdminUser,
     error::{AppError, AppResult},
-    models::{AdminOrder, AdminOrderRow, ListParams, OrderDetail, OrderItem, Page},
+    models::{AdminOrder, AdminOrderRow, ListParams, OrderDetail, Page},
 };
 
 const STATUSES: [&str; 5] = [
@@ -73,19 +71,7 @@ pub async fn list_orders(
     )?;
 
     let ids: Vec<Uuid> = rows.iter().map(|r| r.order.id).collect();
-    let mut items_by_order: HashMap<Uuid, Vec<OrderItem>> = HashMap::new();
-    for item in sqlx::query_as::<_, OrderItem>(
-        "SELECT order_id, kind, course_id, ebook_id, title, price_cents FROM order_items \
-         WHERE order_id = ANY($1) ORDER BY kind, title",
-    )
-    .bind(&ids)
-    .fetch_all(&st.db)
-    .await?
-    {
-        if let Some(order_id) = item.order_id {
-            items_by_order.entry(order_id).or_default().push(item);
-        }
-    }
+    let mut items_by_order = items_by_order(&st.db, &ids).await?;
 
     let items = rows
         .into_iter()

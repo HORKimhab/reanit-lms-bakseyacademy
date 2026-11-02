@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use axum::{
     Json,
     extract::{Path, State},
@@ -12,7 +14,7 @@ use crate::{
     AppState,
     auth::CurrentUser,
     error::{AppError, AppResult},
-    models::{OrderDetail, OrderItem, OrderSummary, PaymentMethod},
+    models::{OrderDetail, OrderItem, OrderSummary, OrderWithItems, PaymentMethod},
 };
 
 pub(crate) const ORDER_COLUMNS: &str = "o.id, o.status, o.total_cents, o.payment_method AS payment_method_code, \
@@ -59,6 +61,48 @@ pub(crate) async fn load_order(
         payment_method,
         items,
     })
+}
+
+/// Items for several orders at once, grouped by order id.
+pub(crate) async fn items_by_order(
+    db: &sqlx::PgPool,
+    ids: &[Uuid],
+) -> sqlx::Result<HashMap<Uuid, Vec<OrderItem>>> {
+    let mut map: HashMap<Uuid, Vec<OrderItem>> = HashMap::new();
+    for item in sqlx::query_as::<_, OrderItem>(
+        "SELECT order_id, kind, course_id, ebook_id, title, price_cents FROM order_items \
+         WHERE order_id = ANY($1) ORDER BY kind, title",
+    )
+    .bind(ids)
+    .fetch_all(db)
+    .await?
+    {
+        if let Some(order_id) = item.order_id {
+            map.entry(order_id).or_default().push(item);
+        }
+    }
+    Ok(map)
+}
+
+/// The signed-in user's orders, newest first (latest 100).
+pub async fn my_orders(
+    State(st): State<AppState>,
+    current: CurrentUser,
+) -> AppResult<Json<Vec<OrderWithItems>>> {
+    let orders = sqlx::query_as::<_, OrderSummary>(&format!(
+        "SELECT {ORDER_COLUMNS} FROM orders o WHERE o.user_id = $1 ORDER BY o.created_at DESC LIMIT 100"
+    ))
+    .bind(current.user.id)
+    .fetch_all(&st.db)
+    .await?;
+    let ids: Vec<Uuid> = orders.iter().map(|o| o.id).collect();
+    let mut items = items_by_order(&st.db, &ids).await?;
+    Ok(Json(
+        orders
+            .into_iter()
+            .map(|order| OrderWithItems { items: items.remove(&order.id).unwrap_or_default(), order })
+            .collect(),
+    ))
 }
 
 /// Grants every course/ebook in a paid order. Idempotent.

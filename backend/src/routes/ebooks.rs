@@ -3,14 +3,16 @@ use axum::{
     extract::{Path, Query, State},
 };
 use sqlx::PgPool;
+use uuid::Uuid;
 
 use crate::{
     AppState,
+    auth::CurrentUser,
     error::{AppError, AppResult},
     models::*,
 };
 
-const CARD_SELECT: &str = r#"
+pub(crate) const CARD_SELECT: &str = r#"
 SELECT e.id, e.slug, e.title, e.summary, e.cover_url, e.author_name,
        e.price_cents, e.sale_price_cents,
        cat.slug AS category_slug, cat.name_km AS category_name_km,
@@ -70,6 +72,7 @@ pub async fn list(
 
 pub async fn detail(
     State(st): State<AppState>,
+    current: Option<CurrentUser>,
     Path(slug): Path<String>,
 ) -> AppResult<Json<EbookDetail>> {
     let card = sqlx::query_as::<_, EbookCard>(&format!(
@@ -80,12 +83,22 @@ pub async fn detail(
     .await?
     .ok_or(AppError::NotFound)?;
 
-    let extra = sqlx::query_as::<_, EbookExtra>(
-        "SELECT description, page_count FROM ebooks WHERE id = $1",
-    )
-    .bind(card.id)
-    .fetch_one(&st.db)
-    .await?;
+    let (extra, owned) = tokio::try_join!(
+        sqlx::query_as::<_, EbookExtra>("SELECT description, page_count FROM ebooks WHERE id = $1")
+            .bind(card.id)
+            .fetch_one(&st.db),
+        owns(&st.db, current.as_ref(), card.id),
+    )?;
 
-    Ok(Json(EbookDetail { card, extra }))
+    Ok(Json(EbookDetail { card, extra, owned }))
+}
+
+/// Whether the signed-in user (if any) owns this ebook.
+async fn owns(db: &PgPool, current: Option<&CurrentUser>, id: Uuid) -> sqlx::Result<bool> {
+    let Some(current) = current else { return Ok(false) };
+    sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM ebook_purchases WHERE user_id = $1 AND ebook_id = $2)")
+        .bind(current.user.id)
+        .bind(id)
+        .fetch_one(db)
+        .await
 }

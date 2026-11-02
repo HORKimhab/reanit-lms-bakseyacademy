@@ -3,8 +3,8 @@ import { addToCartAction } from '$lib/server/cart';
 import type { CourseDetail } from '$lib/types';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ fetch, params }) => ({
-	course: await api<CourseDetail>(fetch, `/api/courses/${encodeURIComponent(params.slug)}`)
+export const load: PageServerLoad = async ({ fetch, params, locals }) => ({
+	course: await api<CourseDetail>(fetch, `/api/courses/${encodeURIComponent(params.slug)}`, { token: locals.token })
 });
 
 export const actions: Actions = {

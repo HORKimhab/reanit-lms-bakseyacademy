@@ -115,6 +115,20 @@ pub struct AdminOrderRow {
     pub user_phone: Option<String>,
 }
 
+/// An order with its items, for the buyer's order history.
+#[derive(Serialize)]
+pub struct OrderWithItems {
+    #[serde(flatten)]
+    pub order: OrderSummary,
+    pub items: Vec<OrderItem>,
+}
+
+#[derive(Serialize)]
+pub struct Library {
+    pub courses: Vec<CourseCard>,
+    pub ebooks: Vec<EbookCard>,
+}
+
 /// An order as the admin review queue sees it: who ordered, what, and the reference to check.
 #[derive(Serialize)]
 pub struct AdminOrder {
@@ -199,6 +213,8 @@ pub struct CourseDetail {
     pub sections: Vec<SectionOut>,
     pub lesson_count: usize,
     pub total_duration_seconds: i64,
+    /// The signed-in user is enrolled (false when signed out).
+    pub owned: bool,
 }
 
 #[derive(Serialize, FromRow)]
@@ -229,6 +245,8 @@ pub struct EbookDetail {
     pub card: EbookCard,
     #[serde(flatten)]
     pub extra: EbookExtra,
+    /// The signed-in user bought it (false when signed out).
+    pub owned: bool,
 }
 
 #[derive(Serialize)]

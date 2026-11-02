@@ -83,6 +83,8 @@
 						<span class="max-w-32 truncate">{user.full_name}</span>
 					</summary>
 					<div class="absolute right-0 mt-2 w-48 rounded-xl border border-slate-200 bg-white p-1 text-sm shadow-lg">
+						<a href="/account/library" class="block rounded-lg px-3 py-2 hover:bg-slate-100">បណ្ណាល័យរបស់ខ្ញុំ</a>
+						<a href="/account/orders" class="block rounded-lg px-3 py-2 hover:bg-slate-100">ការបញ្ជាទិញរបស់ខ្ញុំ</a>
 						<a href="/account" class="block rounded-lg px-3 py-2 hover:bg-slate-100">គណនីរបស់ខ្ញុំ</a>
 						{#if user.role === 'admin'}
 							<a href="/admin/orders" class="block rounded-lg px-3 py-2 hover:bg-slate-100">ផ្ទាំងគ្រប់គ្រង</a>
@@ -115,6 +117,8 @@
 				<a href={link.href} class="block py-2" onclick={() => (menuOpen = false)}>{link.label}</a>
 			{/each}
 			{#if user}
+				<a href="/account/library" class="block py-2" onclick={() => (menuOpen = false)}>បណ្ណាល័យរបស់ខ្ញុំ</a>
+				<a href="/account/orders" class="block py-2" onclick={() => (menuOpen = false)}>ការបញ្ជាទិញរបស់ខ្ញុំ</a>
 				<a href="/account" class="block py-2" onclick={() => (menuOpen = false)}>គណនីរបស់ខ្ញុំ ({user.full_name})</a>
 				<form method="POST" action="/auth?/logout">
 					<button class="block py-2 text-red-600">ចាកចេញ</button>

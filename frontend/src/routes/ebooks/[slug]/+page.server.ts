@@ -3,8 +3,8 @@ import { addToCartAction } from '$lib/server/cart';
 import type { EbookDetail } from '$lib/types';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ fetch, params }) => ({
-	ebook: await api<EbookDetail>(fetch, `/api/ebooks/${encodeURIComponent(params.slug)}`)
+export const load: PageServerLoad = async ({ fetch, params, locals }) => ({
+	ebook: await api<EbookDetail>(fetch, `/api/ebooks/${encodeURIComponent(params.slug)}`, { token: locals.token })
 });
 
 export const actions: Actions = {
