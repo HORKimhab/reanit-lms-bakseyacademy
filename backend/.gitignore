@@ -1,0 +1,11 @@
+# Build output
+/target/
+
+# Local config (keep .env.example)
+.env
+.env.*
+!.env.example
+
+# rustfmt / editor backups
+**/*.rs.bk
+*.pdb

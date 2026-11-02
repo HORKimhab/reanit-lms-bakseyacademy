@@ -1,6 +1,13 @@
-.env
+# OS / editor (backend/ and frontend/ have their own .gitignore)
 .DS_Store
-backend/target/
-frontend/node_modules/
-frontend/.svelte-kit/
-frontend/build/
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+*.log
+
+# Safety net for env files anywhere (e.g. one for docker-compose)
+.env
+.env.*
+!.env.example

@@ -1,0 +1,16 @@
+# Dependencies
+node_modules/
+
+# SvelteKit / Vite output
+/.svelte-kit/
+/build/
+/.output/
+/.vercel/
+/.netlify/
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# Local config (keep .env.example)
+.env
+.env.*
+!.env.example
