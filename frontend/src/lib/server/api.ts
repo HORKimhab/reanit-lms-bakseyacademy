@@ -3,17 +3,49 @@ import { error } from '@sveltejs/kit';
 
 const base = () => env.API_URL ?? 'http://127.0.0.1:8080';
 
-/** Server-side fetch to the Rust API. Only usable from +page.server.ts / +layout.server.ts. */
-export async function api<T>(fetchFn: typeof fetch, path: string): Promise<T> {
+export interface ApiOptions {
+	method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
+	/** Sent as JSON. */
+	body?: unknown;
+	/** Session token from the `session` cookie; sent as `Authorization: Bearer`. */
+	token?: string | null;
+}
+
+export type ApiResult<T> = { ok: true; status: number; data: T } | { ok: false; status: number; code: string };
+
+/**
+ * Server-side call to the Rust API that never throws for API errors: returns the `{"error": code}`
+ * body instead, for form actions that show validation messages. Network failure → status 503.
+ */
+export async function apiResult<T>(fetchFn: typeof fetch, path: string, opts: ApiOptions = {}): Promise<ApiResult<T>> {
+	const headers: Record<string, string> = {};
+	if (opts.body !== undefined) headers['content-type'] = 'application/json';
+	if (opts.token) headers.authorization = `Bearer ${opts.token}`;
 	let res: Response;
 	try {
-		res = await fetchFn(`${base()}${path}`);
+		res = await fetchFn(`${base()}${path}`, {
+			method: opts.method ?? 'GET',
+			headers,
+			body: opts.body === undefined ? undefined : JSON.stringify(opts.body)
+		});
 	} catch {
-		error(503, 'មិនអាចភ្ជាប់ទៅម៉ាស៊ីនមេបានទេ');
+		return { ok: false, status: 503, code: 'unavailable' };
 	}
+	if (res.ok) {
+		const data = (res.status === 204 ? undefined : await res.json()) as T;
+		return { ok: true, status: res.status, data };
+	}
+	const body = (await res.json().catch(() => null)) as { error?: string } | null;
+	return { ok: false, status: res.status, code: body?.error ?? 'unknown' };
+}
+
+/** Server-side fetch to the Rust API. Only usable from +page.server.ts / +layout.server.ts. */
+export async function api<T>(fetchFn: typeof fetch, path: string, opts: ApiOptions = {}): Promise<T> {
+	const res = await apiResult<T>(fetchFn, path, opts);
+	if (res.ok) return res.data;
+	if (res.status === 503) error(503, 'មិនអាចភ្ជាប់ទៅម៉ាស៊ីនមេបានទេ');
 	if (res.status === 404) error(404, 'រកមិនឃើញ');
-	if (!res.ok) error(502, 'មានបញ្ហាពីម៉ាស៊ីនមេ');
-	return res.json() as Promise<T>;
+	error(502, 'មានបញ្ហាពីម៉ាស៊ីនមេ');
 }
 
 /** Forward only the listing query params the API understands. */

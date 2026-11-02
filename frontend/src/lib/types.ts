@@ -75,3 +75,17 @@ export interface Home {
 	new_courses: CourseCard[];
 	new_ebooks: EbookCard[];
 }
+
+export interface User {
+	id: string;
+	full_name: string;
+	phone: string | null;
+	email: string | null;
+	role: 'student' | 'instructor' | 'admin';
+}
+
+export interface AuthResponse {
+	token: string;
+	max_age: number;
+	user: User;
+}
