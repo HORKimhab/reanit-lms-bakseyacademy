@@ -2,7 +2,7 @@
 -- Run after the API has applied migrations:  psql "$DATABASE_URL" -f seeds/dev.sql
 BEGIN;
 
-TRUNCATE reviews, lessons, course_sections, courses, ebooks, categories, instructors, users CASCADE;
+TRUNCATE banners, reviews, lessons, course_sections, courses, ebooks, categories, instructors, users CASCADE;
 
 INSERT INTO users (email, full_name) VALUES
     ('student1@example.com', 'Student One'),
@@ -61,5 +61,10 @@ WHERE c.slug <> 'small-business-101';
 INSERT INTO reviews (user_id, ebook_id, rating)
 SELECT u.id, e.id, 3 + abs(hashtext(u.email || e.slug)) % 3
 FROM users u CROSS JOIN ebooks e;
+
+INSERT INTO banners (title, subtitle, link_url, position, published) VALUES
+    ('រៀនជំនាញថ្មីៗ គ្រប់ពេល គ្រប់ទីកន្លែង', 'វគ្គសិក្សា និងសៀវភៅពីគ្រូជំនាញ ជាភាសាខ្មែរ។', '/courses', 1, true),
+    ('សៀវភៅថ្មីៗ ប្រចាំខែ', 'អានបានគ្រប់ឧបករណ៍។', '/ebooks', 2, true),
+    ('Draft banner', NULL, NULL, 3, false);
 
 COMMIT;

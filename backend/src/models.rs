@@ -11,6 +11,15 @@ pub struct Category {
 }
 
 #[derive(Serialize, FromRow)]
+pub struct Banner {
+    pub id: Uuid,
+    pub title: String,
+    pub subtitle: Option<String>,
+    pub image_url: Option<String>,
+    pub link_url: Option<String>,
+}
+
+#[derive(Serialize, FromRow)]
 pub struct CourseCard {
     pub id: Uuid,
     pub slug: String,

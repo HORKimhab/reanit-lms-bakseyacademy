@@ -62,7 +62,16 @@ export interface Paged<T> {
 	per_page: number;
 }
 
+export interface Banner {
+	id: string;
+	title: string;
+	subtitle: string | null;
+	image_url: string | null;
+	link_url: string | null;
+}
+
 export interface Home {
+	banners: Banner[];
 	new_courses: CourseCard[];
 	new_ebooks: EbookCard[];
 }

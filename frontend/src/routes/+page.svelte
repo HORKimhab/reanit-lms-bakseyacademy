@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Carousel from '$lib/components/Carousel.svelte';
 	import ProductCard from '$lib/components/ProductCard.svelte';
 	import type { PageData } from './$types';
 
@@ -7,13 +8,7 @@
 
 <svelte:head><title>Reanit Academy</title></svelte:head>
 
-<section class="rounded-2xl bg-gradient-to-br from-brand-600 to-sky-500 px-6 py-14 text-white sm:px-12">
-	<h1 class="text-3xl font-bold sm:text-4xl">រៀនជំនាញថ្មីៗ គ្រប់ពេល គ្រប់ទីកន្លែង</h1>
-	<p class="mt-3 max-w-xl text-white/85">វគ្គសិក្សា និងសៀវភៅពីគ្រូជំនាញ ជាភាសាខ្មែរ។</p>
-	<a href="/courses" class="mt-6 inline-block rounded-lg bg-white px-5 py-2.5 font-semibold text-brand-700 hover:bg-brand-50">
-		មើលវគ្គសិក្សា
-	</a>
-</section>
+<Carousel banners={data.home.banners} />
 
 <section class="mt-12">
 	<div class="mb-4 flex items-end justify-between">

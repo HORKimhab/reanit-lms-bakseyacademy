@@ -4,7 +4,7 @@ Feature parity with a typical Khmer course + ebook store (reference: bakseyacade
 
 ## A. Layout
 - [x] A1 Footer: address, phones, email and social links (Facebook / Telegram / YouTube) from one config, `frontend/src/lib/site.ts` (placeholders until real details exist)
-- [ ] A2 Homepage slideshow: `banners` table + `GET /api/banners`, `Carousel.svelte` replaces the gradient hero
+- [x] A2 Homepage slideshow: `banners` table, returned in `GET /api/home`; `Carousel.svelte` replaces the gradient hero
 
 ## B. Accounts (roadmap 2)
 Open question: phone (+855) + password as the login, email optional?

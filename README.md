@@ -35,7 +35,7 @@ bun run dev                    # http://localhost:5173
 | Method | Path | Notes |
 |---|---|---|
 | GET | `/api/health` | DB ping |
-| GET | `/api/home` | 8 newest courses + ebooks |
+| GET | `/api/home` | published banners + 8 newest courses + ebooks |
 | GET | `/api/categories` | |
 | GET | `/api/courses?q=&category=&page=&per_page=` | paged, search title/instructor |
 | GET | `/api/courses/{slug}` | detail + curriculum (video id only for preview lessons) |
