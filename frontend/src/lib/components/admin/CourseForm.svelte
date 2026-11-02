@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { inputClass, labelClass, primaryButton } from '$lib/admin-ui';
+	import { dollarsInput, inputClass, labelClass, primaryButton } from '$lib/admin-ui';
 	import type { AdminCategory, AdminCourse, AdminInstructor } from '$lib/types';
 
 	let {
@@ -15,7 +15,6 @@
 		action: string;
 	} = $props();
 
-	const dollars = (c: number | null | undefined) => (c == null ? '' : (c / 100).toFixed(2));
 	const pricePattern = '\\d+(\\.\\d{1,2})?';
 </script>
 
@@ -64,7 +63,7 @@
 			required
 			inputmode="decimal"
 			pattern={pricePattern}
-			value={dollars(course?.price_cents)}
+			value={dollarsInput(course?.price_cents)}
 			placeholder="30.00"
 			class={inputClass}
 		/>
@@ -75,7 +74,7 @@
 			name="sale_price"
 			inputmode="decimal"
 			pattern={pricePattern}
-			value={dollars(course?.sale_price_cents)}
+			value={dollarsInput(course?.sale_price_cents)}
 			placeholder="ទុកទទេ = គ្មាន"
 			class={inputClass}
 		/>

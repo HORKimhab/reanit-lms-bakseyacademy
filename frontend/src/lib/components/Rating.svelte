@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { formatNumber } from '$lib/format';
 	import { m } from '$lib/paraglide/messages.js';
 	let { avg, count }: { avg: number; count: number } = $props();
 </script>
@@ -6,8 +7,8 @@
 {#if count > 0}
 	<span class="inline-flex items-center gap-1 text-sm">
 		<span class="text-amber-500">★</span>
-		<span class="font-semibold">{avg.toFixed(1)}</span>
-		<span class="text-slate-400">({count})</span>
+		<span class="font-semibold">{formatNumber(avg.toFixed(1))}</span>
+		<span class="text-slate-400">({formatNumber(count)})</span>
 	</span>
 {:else}
 	<span class="text-sm text-slate-400">{m.rating_none()}</span>

@@ -1,6 +1,7 @@
 mod auth;
 mod config;
 mod error;
+mod http_range;
 mod media_token;
 mod models;
 mod routes;

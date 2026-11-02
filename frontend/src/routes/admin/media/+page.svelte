@@ -3,11 +3,10 @@
 	import Pagination from '$lib/components/Pagination.svelte';
 	import MediaField from '$lib/components/admin/MediaField.svelte';
 	import { inputClass, secondaryButton } from '$lib/admin-ui';
-	import { formatClock, formatDateTime, formatNumber } from '$lib/format';
+	import { formatBytes, formatClock, formatDateTime, formatNumber } from '$lib/format';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
-	const size = (b: number | null) => (b === null ? '—' : b >= 1048576 ? `${(b / 1048576).toFixed(1)} MB` : `${Math.ceil(b / 1024)} KB`);
 </script>
 
 <svelte:head><title>ឯកសារ · Admin</title></svelte:head>
@@ -44,7 +43,7 @@
 						<p class="font-mono text-xs text-slate-400">{f.id}</p>
 					</td>
 					<td class="px-4 py-2 text-xs">{f.mime_type ?? '—'}</td>
-					<td class="px-4 py-2">{size(f.size_bytes)}</td>
+					<td class="px-4 py-2">{f.size_bytes === null ? '—' : formatBytes(f.size_bytes)}</td>
 					<td class="px-4 py-2">{f.duration_seconds ? formatClock(f.duration_seconds) : '—'}</td>
 					<td class="px-4 py-2 text-xs text-slate-500">{formatDateTime(f.created_at)}</td>
 				</tr>

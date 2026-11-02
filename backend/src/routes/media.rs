@@ -311,7 +311,7 @@ fn inline_safe(mime: &str) -> bool {
 }
 
 /// `inline` / `attachment` with an ASCII fallback name and the real (e.g. Khmer) name per RFC 6266.
-fn content_disposition(attachment: bool, file_name: &str) -> String {
+pub(crate) fn content_disposition(attachment: bool, file_name: &str) -> String {
     let kind = if attachment { "attachment" } else { "inline" };
     let ascii: String = file_name
         .chars()

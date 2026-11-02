@@ -10,3 +10,6 @@ export const dangerButton = 'rounded-lg border border-red-200 px-3 py-1.5 text-s
 export const confirmClick = (message: string) => (e: MouseEvent) => {
 	if (!confirm(message)) e.preventDefault();
 };
+
+/** Cents → a dollar amount for a price `<input>` value: 1550 → "15.50", null → "". */
+export const dollarsInput = (cents: number | null | undefined) => (cents == null ? '' : (cents / 100).toFixed(2));

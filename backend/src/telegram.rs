@@ -17,6 +17,8 @@ use bytes::Bytes;
 use futures_util::{TryStreamExt, stream::BoxStream};
 use serde::Deserialize;
 
+use crate::http_range::parse_range;
+
 /// Bot API client bound to one storage channel.
 #[derive(Clone)]
 pub struct Telegram {
@@ -114,19 +116,8 @@ impl Telegram {
         self.admin_chat_id.is_none()
     }
 
-    /// Posts a file of `len` bytes to the storage channel, streaming `body` (not buffered in memory).
-    pub async fn upload(
-        &self,
-        kind: UploadKind,
-        file_name: &str,
-        mime_type: &str,
-        len: u64,
-        body: reqwest::Body,
-    ) -> anyhow::Result<StoredFile> {
-        self.upload_to(&self.channel_id, None, kind, file_name, mime_type, len, body).await
-    }
-
-    /// [`Self::upload`] to any chat the bot can post in, with an optional caption.
+    /// Posts a file of `len` bytes to `chat_id` (the storage channel, or the admins' chat for payment
+    /// screenshots) with an optional caption, streaming `body` (not buffered in memory).
     #[allow(clippy::too_many_arguments)]
     pub async fn upload_to(
         &self,
@@ -277,45 +268,6 @@ async fn open_local(local: &LocalDir, file_path: &str, range: Option<&str>) -> R
         content_range,
         stream: Box::pin(tokio_util::io::ReaderStream::new(file.take(len))),
     })
-}
-
-/// `Range: bytes=…` → inclusive `(start, end)` within a file of `total` bytes.
-/// `Ok(None)`: no header, or one we ignore (malformed / multi-range) → send the whole file.
-/// `Err(())`: syntactically fine but unsatisfiable → 416.
-pub fn parse_range(header: Option<&str>, total: u64) -> Result<Option<(u64, u64)>, ()> {
-    let Some(spec) = header.and_then(|h| h.trim().strip_prefix("bytes=")) else {
-        return Ok(None);
-    };
-    if spec.contains(',') {
-        return Ok(None);
-    }
-    let Some((start, end)) = spec.split_once('-') else { return Ok(None) };
-    let num = |s: &str| -> Option<u64> {
-        if s.is_empty() || !s.bytes().all(|b| b.is_ascii_digit()) { None } else { s.parse().ok() }
-    };
-
-    // bytes=-N: the last N bytes
-    if start.is_empty() {
-        let Some(n) = num(end) else { return Ok(None) };
-        if n == 0 || total == 0 {
-            return Err(());
-        }
-        return Ok(Some((total.saturating_sub(n), total - 1)));
-    }
-
-    // bytes=A- / bytes=A-B
-    let Some(a) = num(start) else { return Ok(None) };
-    let b = match end {
-        "" => None,
-        e => match num(e) {
-            Some(b) if b >= a => Some(b),
-            _ => return Ok(None),
-        },
-    };
-    if a >= total {
-        return Err(());
-    }
-    Ok(Some((a, b.map_or(total - 1, |b| b.min(total - 1)))))
 }
 
 /// Maps a `--local` server path to our mount; `None` if it is outside `server_dir` or climbs out.
@@ -484,7 +436,7 @@ mod tests {
     async fn uploads_resolves_and_streams_over_http() {
         let tg = Telegram::new(&fake_bot_api().await, TOKEN.into(), "-100777".into(), None);
         let stored = tg
-            .upload(UploadKind::Video, "lesson.mp4", "video/mp4", CONTENT.len() as u64, CONTENT.to_vec().into())
+            .upload_to("-100777", None, UploadKind::Video, "lesson.mp4", "video/mp4", CONTENT.len() as u64, CONTENT.to_vec().into())
             .await
             .unwrap();
         assert_eq!(
@@ -545,25 +497,6 @@ mod tests {
         assert!(matches!(tg.open(path, Some("bytes=10-")).await, Err(OpenError::RangeNotSatisfiable)));
         assert!(matches!(tg.open("/etc/passwd", None).await, Err(OpenError::Other(_))));
         std::fs::remove_dir_all(host).ok();
-    }
-
-    #[test]
-    fn ranges() {
-        assert_eq!(parse_range(None, 1000), Ok(None));
-        assert_eq!(parse_range(Some("bytes=0-99"), 1000), Ok(Some((0, 99))));
-        assert_eq!(parse_range(Some("bytes=900-"), 1000), Ok(Some((900, 999))));
-        assert_eq!(parse_range(Some("bytes=-100"), 1000), Ok(Some((900, 999))));
-        // end past the file is clamped; suffix longer than the file is the whole file
-        assert_eq!(parse_range(Some("bytes=990-5000"), 1000), Ok(Some((990, 999))));
-        assert_eq!(parse_range(Some("bytes=-5000"), 1000), Ok(Some((0, 999))));
-        // ignored → whole file
-        for ignored in ["items=0-1", "bytes=a-b", "bytes=5-1", "bytes=0-1,5-6", "bytes=-"] {
-            assert_eq!(parse_range(Some(ignored), 1000), Ok(None), "{ignored}");
-        }
-        // unsatisfiable
-        assert_eq!(parse_range(Some("bytes=1000-"), 1000), Err(()));
-        assert_eq!(parse_range(Some("bytes=-0"), 1000), Err(()));
-        assert_eq!(parse_range(Some("bytes=0-"), 0), Err(()));
     }
 
     #[test]

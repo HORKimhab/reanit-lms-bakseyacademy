@@ -166,7 +166,7 @@ pub async fn file(
     let file_key = file_key.ok_or(AppError::NotFound)?;
     let storage = st.storage.as_ref().ok_or(AppError::Unavailable("storage_unavailable"))?;
 
-    let disposition = content_disposition(attachment, &slug, &file_key);
+    let disposition = media::content_disposition(attachment, &download_name(&slug, &file_key));
     let now = Utc::now();
     let url = storage.presign_get(
         &file_key,
@@ -177,15 +177,14 @@ pub async fn file(
     Ok(Json(EbookFile { url, expires_at: now + FILE_URL_TTL }))
 }
 
-/// Download name is the (ASCII) slug plus the stored file's extension.
-fn content_disposition(attachment: bool, slug: &str, file_key: &str) -> String {
-    let kind = if attachment { "attachment" } else { "inline" };
+/// Download name: the slug plus the stored file's extension (`brand-building.pdf`).
+fn download_name(slug: &str, file_key: &str) -> String {
     let ext = file_key
         .rsplit_once('.')
         .map(|(_, e)| e)
         .filter(|e| !e.contains('/') && e.len() <= 5 && e.bytes().all(|b| b.is_ascii_alphanumeric()));
     match ext {
-        Some(ext) => format!("{kind}; filename=\"{slug}.{ext}\""),
-        None => format!("{kind}; filename=\"{slug}\""),
+        Some(ext) => format!("{slug}.{ext}"),
+        None => slug.to_owned(),
     }
 }

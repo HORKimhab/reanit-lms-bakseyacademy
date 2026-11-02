@@ -19,7 +19,16 @@ const VIDEO_URL_TTL: Duration = Duration::hours(4);
 
 /// Who may watch a lesson: enrolled users (even after the course is unpublished), and anyone
 /// for preview lessons of a published course.
-fn check_access(published: bool, is_preview: bool, signed_in: bool, enrolled: bool) -> AppResult<()> {
+/// The facts the lesson access rule depends on.
+struct LessonGate {
+    published: bool,
+    is_preview: bool,
+    signed_in: bool,
+    enrolled: bool,
+}
+
+fn check_access(gate: LessonGate) -> AppResult<()> {
+    let LessonGate { published, is_preview, signed_in, enrolled } = gate;
     if enrolled || (published && is_preview) {
         Ok(())
     } else if !published {
@@ -37,7 +46,12 @@ pub async fn lesson(
     Path((slug, id)): Path<(String, Uuid)>,
 ) -> AppResult<Json<LessonPlayback>> {
     let row = load_lesson(&st, &slug, id, current.as_ref()).await?;
-    check_access(row.published, row.is_preview, current.is_some(), row.enrolled)?;
+    check_access(LessonGate {
+        published: row.published,
+        is_preview: row.is_preview,
+        signed_in: current.is_some(),
+        enrolled: row.enrolled,
+    })?;
 
     // Uploaded (Telegram) media wins over a Bunny video id.
     let (video_url, video_type, expires_at) = match (row.media_id, &st.telegram) {
@@ -141,20 +155,20 @@ mod tests {
 
     #[test]
     fn enrolled_users_watch_any_lesson_even_unpublished() {
-        assert_eq!(code(check_access(true, false, true, true)), "ok");
-        assert_eq!(code(check_access(false, false, true, true)), "ok");
+        assert_eq!(code(check_access(LessonGate { published: true, is_preview: false, signed_in: true, enrolled: true })), "ok");
+        assert_eq!(code(check_access(LessonGate { published: false, is_preview: false, signed_in: true, enrolled: true })), "ok");
     }
 
     #[test]
     fn previews_are_public_on_published_courses_only() {
-        assert_eq!(code(check_access(true, true, false, false)), "ok");
-        assert_eq!(code(check_access(false, true, false, false)), "not_found");
+        assert_eq!(code(check_access(LessonGate { published: true, is_preview: true, signed_in: false, enrolled: false })), "ok");
+        assert_eq!(code(check_access(LessonGate { published: false, is_preview: true, signed_in: false, enrolled: false })), "not_found");
     }
 
     #[test]
     fn paid_lessons_need_sign_in_then_enrollment() {
-        assert_eq!(code(check_access(true, false, false, false)), "unauthorized");
-        assert_eq!(code(check_access(true, false, true, false)), "forbidden");
-        assert_eq!(code(check_access(false, false, true, false)), "not_found");
+        assert_eq!(code(check_access(LessonGate { published: true, is_preview: false, signed_in: false, enrolled: false })), "unauthorized");
+        assert_eq!(code(check_access(LessonGate { published: true, is_preview: false, signed_in: true, enrolled: false })), "forbidden");
+        assert_eq!(code(check_access(LessonGate { published: false, is_preview: false, signed_in: true, enrolled: false })), "not_found");
     }
 }

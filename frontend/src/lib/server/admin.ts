@@ -52,9 +52,6 @@ export async function adminCall<T, E extends Record<string, string> = Record<nev
 	return { ok: false, failure: fail(res.status, { code: res.code, ...(extra as E) }) };
 }
 
-/** Dollars for an `<input>` value: 1550 → "15.50". */
-export const dollars = (c: number | null) => (c === null ? '' : (c / 100).toFixed(2));
-
 /**
  * Media for the lesson / ebook pickers: newest 200 of `kind`, or those matching `?mediaq=` (the
  * picker's search box reloads the page with it, so any file in the library can be found).

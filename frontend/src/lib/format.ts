@@ -24,6 +24,11 @@ export function formatDuration(seconds: number): string {
 		: m.duration_hours_minutes({ hours: formatNumber(h), minutes: formatNumber(min) });
 }
 
+/** File size: "740 KB", "25.0 MB" (locale digits). */
+export function formatBytes(bytes: number): string {
+	return bytes >= 1048576 ? `${formatNumber((bytes / 1048576).toFixed(1))} MB` : `${formatNumber(Math.ceil(bytes / 1024))} KB`;
+}
+
 export function formatClock(seconds: number): string {
 	const mm = Math.floor(seconds / 60);
 	const s = seconds % 60;
