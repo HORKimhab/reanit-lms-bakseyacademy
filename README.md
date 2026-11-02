@@ -47,6 +47,8 @@ Authenticated routes take `Authorization: Bearer <token>` (the token from regist
 | POST | `/api/auth/login` | `{phone, password}` → `{token, max_age, user}`; 401 `invalid_credentials` |
 | POST | `/api/auth/logout` | Bearer → 204, deletes the session |
 | GET | `/api/me` | Bearer → user; 401 `unauthorized` |
+| PATCH | `/api/me` | Bearer, `{full_name, email}` (empty email clears it) → user; 409 `email_taken`, 422 `invalid_email` / `invalid_name` |
+| POST | `/api/me/password` | Bearer, `{current_password, new_password}` → 204, signs out other sessions; 422 `wrong_password` / `weak_password` |
 
 ## Roadmap
 

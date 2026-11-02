@@ -110,3 +110,71 @@ pub async fn logout(State(st): State<AppState>, current: CurrentUser) -> AppResu
 pub async fn me(current: CurrentUser) -> AppResult<Json<User>> {
     Ok(Json(current.user))
 }
+
+#[derive(Deserialize)]
+pub struct ProfileBody {
+    full_name: String,
+    email: Option<String>,
+}
+
+/// Replaces the editable profile fields. An empty `email` clears it.
+pub async fn update_me(
+    State(st): State<AppState>,
+    current: CurrentUser,
+    Json(body): Json<ProfileBody>,
+) -> AppResult<Json<User>> {
+    let full_name = auth::validate_full_name(&body.full_name)?;
+    let email = auth::validate_email(body.email.as_deref())?;
+    let user = sqlx::query_as::<_, User>(&format!(
+        "UPDATE users SET full_name = $1, email = $2 WHERE id = $3 RETURNING {USER_COLUMNS}"
+    ))
+    .bind(full_name)
+    .bind(email)
+    .bind(current.user.id)
+    .fetch_one(&st.db)
+    .await
+    .map_err(|e| match e.as_database_error() {
+        Some(db) if db.is_unique_violation() => AppError::Conflict("email_taken"),
+        Some(db) if db.is_check_violation() => AppError::Validation("phone_or_email_required"),
+        _ => e.into(),
+    })?;
+    Ok(Json(user))
+}
+
+#[derive(Deserialize)]
+pub struct PasswordBody {
+    current_password: String,
+    new_password: String,
+}
+
+/// Changes the password and signs out every other session.
+pub async fn change_password(
+    State(st): State<AppState>,
+    current: CurrentUser,
+    Json(body): Json<PasswordBody>,
+) -> AppResult<StatusCode> {
+    auth::validate_password(&body.new_password)?;
+    let stored: Option<String> =
+        sqlx::query_scalar("SELECT password_hash FROM users WHERE id = $1")
+            .bind(current.user.id)
+            .fetch_one(&st.db)
+            .await?;
+    if !auth::verify_password(body.current_password, stored).await? {
+        return Err(AppError::Validation("wrong_password"));
+    }
+    let hash = auth::hash_password(body.new_password).await?;
+
+    let mut tx = st.db.begin().await?;
+    sqlx::query("UPDATE users SET password_hash = $1 WHERE id = $2")
+        .bind(hash)
+        .bind(current.user.id)
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("DELETE FROM sessions WHERE user_id = $1 AND token_hash <> $2")
+        .bind(current.user.id)
+        .bind(&current.token_hash)
+        .execute(&mut *tx)
+        .await?;
+    tx.commit().await?;
+    Ok(StatusCode::NO_CONTENT)
+}

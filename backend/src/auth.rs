@@ -55,6 +55,25 @@ pub fn validate_full_name(name: &str) -> AppResult<String> {
     Ok(name.to_owned())
 }
 
+/// Empty → `None`; otherwise a loosely checked, lower-cased address.
+pub fn validate_email(email: Option<&str>) -> AppResult<Option<String>> {
+    let Some(email) = email.map(str::trim).filter(|e| !e.is_empty()) else {
+        return Ok(None);
+    };
+    let valid = email.len() <= 254
+        && !email.contains(char::is_whitespace)
+        && email.split_once('@').is_some_and(|(local, domain)| {
+            !local.is_empty()
+                && domain.contains('.')
+                && !domain.starts_with('.')
+                && !domain.ends_with('.')
+        });
+    if !valid {
+        return Err(AppError::Validation("invalid_email"));
+    }
+    Ok(Some(email.to_lowercase()))
+}
+
 pub fn validate_password(password: &str) -> AppResult<()> {
     if !(8..=128).contains(&password.chars().count()) {
         return Err(AppError::Validation("weak_password"));
@@ -238,5 +257,14 @@ mod tests {
         assert!(validate_full_name("   ").is_err());
         assert!(validate_password("short").is_err());
         assert!(validate_password("long enough").is_ok());
+        assert_eq!(
+            validate_email(Some(" A@B.com ")).unwrap().as_deref(),
+            Some("a@b.com")
+        );
+        assert_eq!(validate_email(Some("  ")).unwrap(), None);
+        assert_eq!(validate_email(None).unwrap(), None);
+        for bad in ["a@b", "@b.com", "a b@c.com", "a@.com", "no-at.com"] {
+            assert!(validate_email(Some(bad)).is_err(), "{bad}");
+        }
     }
 }
