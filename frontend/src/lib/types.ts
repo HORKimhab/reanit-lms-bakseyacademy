@@ -54,6 +54,8 @@ export interface LessonPlayback {
 	duration_seconds: number;
 	is_preview: boolean;
 	video_url: string | null;
+	/** `embed`: Bunny iframe URL; `file`: a `/media/…` stream for a native `<video>` (Telegram). */
+	video_type: 'embed' | 'file';
 	expires_at: string | null;
 	completed: boolean;
 }

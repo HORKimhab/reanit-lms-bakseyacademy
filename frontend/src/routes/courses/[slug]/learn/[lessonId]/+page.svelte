@@ -25,7 +25,13 @@
 <div class="mt-3 grid gap-6 lg:grid-cols-[1fr_340px]">
 	<div>
 		<div class="aspect-video overflow-hidden rounded-xl bg-slate-900">
-			{#if lesson.video_url}
+			{#if lesson.video_url && lesson.video_type === 'file'}
+				{#key lesson.video_url}
+					<!-- svelte-ignore a11y_media_has_caption -->
+					<video src={lesson.video_url} title={lesson.title} class="h-full w-full" controls preload="metadata" playsinline
+					></video>
+				{/key}
+			{:else if lesson.video_url}
 				{#key lesson.video_url}
 					<iframe
 						src={lesson.video_url}
