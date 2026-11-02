@@ -17,7 +17,7 @@ Login: phone (+855) + password, email optional. SvelteKit keeps the session toke
 
 ## C. Commerce (roadmap 3)
 Payment now: the user picks Bakong KHQR or ABA PayWay, scans that method's static QR image, and submits the transaction reference; an admin approves, which grants access. Orders: `pending_payment` → `awaiting_approval` → `paid` | `rejected` (resubmittable); `cancelled` from `pending_payment`; a free order is `paid` at checkout.
-- [ ] C1 Migration: `payment_methods` (QR image, account), `cart_items`, `orders`, `order_items` (price snapshot), `enrollments`, `ebook_purchases`
+- [x] C1 Migration: `payment_methods` (QR image, account), `cart_items`, `orders`, `order_items` (price snapshot), `enrollments`, `ebook_purchases`
 - [ ] C2 Cart API (`GET/POST/DELETE /api/cart`), add-to-cart on detail pages, header cart icon with count
 - [ ] C3 `/cart` + payment-method picker → `POST /api/orders`; `/orders/{id}` shows QR + amount, reference form, cancel, status banners
 - [ ] C4 Admin approval: `AdminUser` extractor (`AppError::Forbidden`), `/api/admin/orders` list / approve / reject, `/admin/orders` page

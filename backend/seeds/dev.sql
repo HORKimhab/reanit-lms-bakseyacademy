@@ -2,7 +2,7 @@
 -- Run after the API has applied migrations:  psql "$DATABASE_URL" -f seeds/dev.sql
 BEGIN;
 
-TRUNCATE sessions, banners, reviews, lessons, course_sections, courses, ebooks, categories, instructors, users CASCADE;
+TRUNCATE enrollments, ebook_purchases, order_items, orders, cart_items, payment_methods, sessions, banners, reviews, lessons, course_sections, courses, ebooks, categories, instructors, users CASCADE;
 
 -- Demo users have no password; register a new account to log in.
 INSERT INTO users (phone, email, full_name) VALUES
@@ -67,5 +67,10 @@ INSERT INTO banners (title, subtitle, link_url, position, published) VALUES
     ('រៀនជំនាញថ្មីៗ គ្រប់ពេល គ្រប់ទីកន្លែង', 'វគ្គសិក្សា និងសៀវភៅពីគ្រូជំនាញ ជាភាសាខ្មែរ។', '/courses', 1, true),
     ('សៀវភៅថ្មីៗ ប្រចាំខែ', 'អានបានគ្រប់ឧបករណ៍។', '/ebooks', 2, true),
     ('Draft banner', NULL, NULL, 3, false);
+
+-- Placeholder QR images (frontend/static/payments); replace with the real merchant QR codes.
+INSERT INTO payment_methods (code, name_km, name_en, account_name, account_number, qr_image_url, position, active) VALUES
+    ('bakong_khqr', 'បាគង KHQR', 'Bakong KHQR', 'REANIT ACADEMY', 'reanit@aclb', '/payments/bakong-khqr-placeholder.svg', 1, true),
+    ('aba_payway',  'ABA PayWay', 'ABA PayWay',  'REANIT ACADEMY', '000 000 000', '/payments/aba-payway-placeholder.svg',  2, true);
 
 COMMIT;
