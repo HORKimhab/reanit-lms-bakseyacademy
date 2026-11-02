@@ -1,8 +1,9 @@
 <script lang="ts">
+	import { m } from '$lib/paraglide/messages.js';
 	import { enhance } from '$app/forms';
 	import ProgressBar from '$lib/components/ProgressBar.svelte';
 	import { errorMessage } from '$lib/errors';
-	import { formatClock, khmerNumber } from '$lib/format';
+	import { formatClock, formatNumber } from '$lib/format';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -36,33 +37,33 @@
 					></iframe>
 				{/key}
 			{:else}
-				<div class="grid h-full place-items-center p-6 text-center text-slate-300">វីដេអូសម្រាប់មេរៀននេះមិនទាន់មានទេ</div>
+				<div class="grid h-full place-items-center p-6 text-center text-slate-300">{m.lesson_no_video()}</div>
 			{/if}
 		</div>
 
 		<div class="mt-4 flex flex-wrap items-start justify-between gap-4">
 			<div>
-				<p class="text-sm text-slate-500">មេរៀនទី {khmerNumber(index + 1)} / {khmerNumber(lessons.length)}</p>
+				<p class="text-sm text-slate-500">{m.lesson_position({ n: formatNumber(index + 1), total: formatNumber(lessons.length) })}</p>
 				<h1 class="text-2xl font-bold">{lesson.title}</h1>
 			</div>
 			<div class="flex flex-wrap gap-2">
 				{#if course.owned}
 					<form method="POST" action={lesson.completed ? '?/uncomplete' : '?/complete'} use:enhance>
 						{#if lesson.completed}
-							<button class="rounded-lg border border-green-600 px-4 py-2 text-sm text-green-700 hover:bg-green-50">✓ បានបញ្ចប់</button>
+							<button class="rounded-lg border border-green-600 px-4 py-2 text-sm text-green-700 hover:bg-green-50">✓ {m.lesson_completed()}</button>
 						{:else}
 							{#if next}<input type="hidden" name="next" value={next.id} />{/if}
 							<button class="rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700">
-								{next ? 'បញ្ចប់ ហើយបន្ត →' : 'សម្គាល់ថាបានបញ្ចប់'}
+								{next ? m.lesson_complete_and_next() + ' →' : m.lesson_mark_complete()}
 							</button>
 						{/if}
 					</form>
 				{/if}
 				{#if prev && canWatch(prev)}
-					<a href={href(prev.id)} class="rounded-lg border border-slate-200 px-4 py-2 text-sm hover:border-brand-500">← មុន</a>
+					<a href={href(prev.id)} class="rounded-lg border border-slate-200 px-4 py-2 text-sm hover:border-brand-500">← {m.carousel_prev()}</a>
 				{/if}
 				{#if next && canWatch(next)}
-					<a href={href(next.id)} class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">បន្ទាប់ →</a>
+					<a href={href(next.id)} class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">{m.carousel_next()} →</a>
 				{/if}
 			</div>
 		</div>
@@ -73,7 +74,7 @@
 
 		{#if !course.owned}
 			<p class="mt-6 rounded-lg bg-brand-50 px-4 py-3 text-sm text-brand-700">
-				នេះជាមេរៀនមើលសាកល្បង។ <a href="/courses/{course.slug}" class="font-semibold underline">ទិញវគ្គសិក្សា</a> ដើម្បីមើលមេរៀនទាំងអស់។
+				{m.lesson_preview_notice()} <a href="/courses/{course.slug}" class="font-semibold underline">{m.lesson_buy_course()}</a> {m.lesson_buy_course_suffix()}
 			</p>
 		{/if}
 	</div>
@@ -81,7 +82,7 @@
 	<aside class="lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:self-start lg:overflow-y-auto">
 		{#if course.owned}
 			<div class="mb-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
-				<p class="mb-1 text-sm font-semibold">វឌ្ឍនភាព · {khmerNumber(done.size)}/{khmerNumber(lessons.length)} មេរៀន</p>
+				<p class="mb-1 text-sm font-semibold">{m.lesson_progress({ done: formatNumber(done.size), total: formatNumber(lessons.length) })}</p>
 				<ProgressBar done={done.size} total={lessons.length} />
 			</div>
 		{/if}
@@ -102,7 +103,7 @@
 											: ''}"
 									>
 										<span class="flex items-center gap-2">
-											{#if done.has(l.id)}<span class="text-green-600" aria-label="បានបញ្ចប់">✓</span>{:else}<span class="text-slate-400">▶</span>{/if}
+											{#if done.has(l.id)}<span class="text-green-600" aria-label={m.lesson_completed()}>✓</span>{:else}<span class="text-slate-400">▶</span>{/if}
 											{l.title}
 										</span>
 										<span class="text-slate-400">{formatClock(l.duration_seconds)}</span>

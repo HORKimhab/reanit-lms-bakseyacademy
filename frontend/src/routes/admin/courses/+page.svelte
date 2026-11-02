@@ -3,7 +3,7 @@
 	import Pagination from '$lib/components/Pagination.svelte';
 	import { inputClass, primaryButton, secondaryButton } from '$lib/admin-ui';
 	import { errorMessage } from '$lib/errors';
-	import { formatDateTime, formatPrice, khmerNumber } from '$lib/format';
+	import { formatDateTime, formatPrice, formatNumber } from '$lib/format';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -26,7 +26,7 @@
 	<p class="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">{errorMessage(form.code)}</p>
 {/if}
 
-<p class="mt-4 text-sm text-slate-500">{khmerNumber(data.courses.total)} វគ្គសិក្សា</p>
+<p class="mt-4 text-sm text-slate-500">{formatNumber(data.courses.total)} វគ្គសិក្សា</p>
 
 <div class="mt-2 overflow-x-auto rounded-xl border border-slate-200 bg-white">
 	<table class="w-full text-sm">
@@ -53,8 +53,8 @@
 						{formatPrice(c.sale_price_cents ?? c.price_cents)}
 						{#if c.sale_price_cents !== null}<s class="text-xs text-slate-400">{formatPrice(c.price_cents)}</s>{/if}
 					</td>
-					<td class="px-4 py-2">{khmerNumber(c.lesson_count)}</td>
-					<td class="px-4 py-2">{khmerNumber(c.enrollment_count)}</td>
+					<td class="px-4 py-2">{formatNumber(c.lesson_count)}</td>
+					<td class="px-4 py-2">{formatNumber(c.enrollment_count)}</td>
 					<td class="px-4 py-2 text-xs text-slate-500">{formatDateTime(c.updated_at)}</td>
 					<td class="px-4 py-2">
 						<form method="POST" action="?/publish" use:enhance>

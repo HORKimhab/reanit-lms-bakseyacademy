@@ -32,5 +32,7 @@ Preserve these when touching course/ebook responses.
 - All API calls go through `api()` in `src/lib/server/api.ts`, from `+page.server.ts` / `+layout.server.ts` loads only. The browser never talks to the Rust API directly; `API_URL` is a private env var.
 - `src/lib/types.ts` mirrors the Rust response structs by hand; update both sides together.
 - Components use Svelte 5 runes (`$props()`, `$state`, `$derived`).
-- UI copy is Khmer. Format numbers, prices and durations through `src/lib/format.ts` (`khmerNumber`, `formatPrice`, `formatDuration`), which renders Khmer digits and units.
+- UI copy is Khmer-first with English via Paraglide: strings live in `frontend/messages/{km,en}.json` and are used as `m.key()` (`$lib/paraglide/messages.js`, generated on dev/build, gitignored). Add both locales together; English counts use plural variants (see `courses_count`). Locale comes from the `PARAGLIDE_LOCALE` cookie (header switcher), default `km`. The admin area (`/admin`) is Khmer-only, but its error codes still go through `errors.ts`.
+- API fields with `_km` / `_en` pairs go through `localized()` / `categoryName()` in `src/lib/i18n.ts`. Catalog content (titles, descriptions) is shown as entered.
+- Format numbers, prices, durations and dates through `src/lib/format.ts` (`formatNumber`, `formatPrice`, `formatDuration`, `formatDateTime`): Khmer digits and units in `km`, ASCII in `en`.
 - Styling is Tailwind v4 configured in `src/app.css` via `@theme` (brand colors, Noto Sans Khmer); there is no `tailwind.config.js`. Keep the generous body line-height, which Khmer subscripts need.

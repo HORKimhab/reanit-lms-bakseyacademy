@@ -309,6 +309,7 @@ pub struct CourseCard {
     pub sale_price_cents: Option<i32>,
     pub category_slug: Option<String>,
     pub category_name_km: Option<String>,
+    pub category_name_en: Option<String>,
     pub instructor_name: String,
     pub rating_avg: f64,
     pub rating_count: i64,
@@ -413,6 +414,7 @@ pub struct EbookCard {
     pub sale_price_cents: Option<i32>,
     pub category_slug: Option<String>,
     pub category_name_km: Option<String>,
+    pub category_name_en: Option<String>,
     pub rating_avg: f64,
     pub rating_count: i64,
 }

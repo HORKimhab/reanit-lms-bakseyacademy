@@ -15,7 +15,7 @@ use crate::{
 
 pub(crate) const CARD_SELECT: &str = r#"
 SELECT c.id, c.slug, c.title, c.summary, c.cover_url, c.price_cents, c.sale_price_cents,
-       cat.slug AS category_slug, cat.name_km AS category_name_km,
+       cat.slug AS category_slug, cat.name_km AS category_name_km, cat.name_en AS category_name_en,
        i.name AS instructor_name,
        COALESCE(r.avg, 0)::float8 AS rating_avg,
        COALESCE(r.cnt, 0)::int8 AS rating_count

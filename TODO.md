@@ -36,7 +36,7 @@ Payment now: the user picks Bakong KHQR or ABA PayWay, scans that method's stati
 - [x] E4 Search upgrade (Postgres trigram first, Meilisearch if needed) — trigram is enough for now; `/search` covers courses + ebooks
 
 ## F. i18n (roadmap 6)
-- [ ] F1 Paraglide km/en + header language switcher
+- [x] F1 Paraglide km/en + header language switcher (storefront, account, learning; admin stays Khmer)
 
 ## Later
 - [ ] Automatic payment confirmation: Bakong KHQR dynamic QR + status check, ABA PayWay checkout + pushback webhook (same grant path as admin approval)

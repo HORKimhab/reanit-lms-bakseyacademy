@@ -3,7 +3,7 @@
 	import Pagination from '$lib/components/Pagination.svelte';
 	import { inputClass, primaryButton, secondaryButton } from '$lib/admin-ui';
 	import { errorMessage } from '$lib/errors';
-	import { formatDateTime, formatPrice, khmerNumber } from '$lib/format';
+	import { formatDateTime, formatPrice, formatNumber } from '$lib/format';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -26,7 +26,7 @@
 	<p class="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">{errorMessage(form.code)}</p>
 {/if}
 
-<p class="mt-4 text-sm text-slate-500">{khmerNumber(data.ebooks.total)} សៀវភៅ</p>
+<p class="mt-4 text-sm text-slate-500">{formatNumber(data.ebooks.total)} សៀវភៅ</p>
 
 <div class="mt-2 overflow-x-auto rounded-xl border border-slate-200 bg-white">
 	<table class="w-full text-sm">
@@ -54,7 +54,7 @@
 						{#if e.sale_price_cents !== null}<s class="text-xs text-slate-400">{formatPrice(e.price_cents)}</s>{/if}
 					</td>
 					<td class="px-4 py-2">{#if e.has_file}<span class="text-green-700">✓</span>{:else}<span class="text-amber-600">—</span>{/if}</td>
-					<td class="px-4 py-2">{khmerNumber(e.purchase_count)}</td>
+					<td class="px-4 py-2">{formatNumber(e.purchase_count)}</td>
 					<td class="px-4 py-2 text-xs text-slate-500">{formatDateTime(e.updated_at)}</td>
 					<td class="px-4 py-2">
 						<form method="POST" action="?/publish" use:enhance>

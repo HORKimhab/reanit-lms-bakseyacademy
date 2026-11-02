@@ -1,3 +1,4 @@
+import { m } from '$lib/paraglide/messages.js';
 import { env } from '$env/dynamic/private';
 import { error } from '@sveltejs/kit';
 
@@ -43,9 +44,9 @@ export async function apiResult<T>(fetchFn: typeof fetch, path: string, opts: Ap
 export async function api<T>(fetchFn: typeof fetch, path: string, opts: ApiOptions = {}): Promise<T> {
 	const res = await apiResult<T>(fetchFn, path, opts);
 	if (res.ok) return res.data;
-	if (res.status === 503) error(503, 'មិនអាចភ្ជាប់ទៅម៉ាស៊ីនមេបានទេ');
-	if (res.status === 404) error(404, 'រកមិនឃើញ');
-	error(502, 'មានបញ្ហាពីម៉ាស៊ីនមេ');
+	if (res.status === 503) error(503, m.error_api_unavailable());
+	if (res.status === 404) error(404, m.error_not_found());
+	error(502, m.error_api_failed());
 }
 
 /** Forward only the listing query params the API understands. */

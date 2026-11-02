@@ -1,8 +1,10 @@
 <script lang="ts">
+	import { m } from '$lib/paraglide/messages.js';
+	import { localized } from '$lib/i18n';
 	import { enhance } from '$app/forms';
 	import Price from '$lib/components/Price.svelte';
 	import { errorMessage } from '$lib/errors';
-	import { formatPrice, khmerNumber } from '$lib/format';
+	import { formatPrice, formatNumber } from '$lib/format';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -13,9 +15,9 @@
 	});
 </script>
 
-<svelte:head><title>កន្ត្រក · Reanit Academy</title></svelte:head>
+<svelte:head><title>{m.nav_cart()} · Reanit Academy</title></svelte:head>
 
-<h1 class="text-3xl font-bold">កន្ត្រក</h1>
+<h1 class="text-3xl font-bold">{m.nav_cart()}</h1>
 
 {#if form?.code}
 	<p class="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">{errorMessage(form.code)}</p>
@@ -23,10 +25,10 @@
 
 {#if cart.items.length === 0}
 	<div class="mt-12 text-center text-slate-500">
-		<p>កន្ត្រករបស់អ្នកទទេ។</p>
+		<p>{m.cart_empty_message()}</p>
 		<p class="mt-4 space-x-4">
-			<a href="/courses" class="text-brand-600 hover:underline">មើលវគ្គសិក្សា</a>
-			<a href="/ebooks" class="text-brand-600 hover:underline">មើលសៀវភៅ</a>
+			<a href="/courses" class="text-brand-600 hover:underline">{m.browse_courses()}</a>
+			<a href="/ebooks" class="text-brand-600 hover:underline">{m.browse_ebooks()}</a>
 		</p>
 	</div>
 {:else}
@@ -43,7 +45,7 @@
 						{#if item.cover_url}<img src={item.cover_url} alt="" class="h-full w-full object-cover" />{/if}
 					</a>
 					<div class="min-w-0 flex-1">
-						<span class="text-xs text-slate-400">{item.kind === 'course' ? 'វគ្គសិក្សា' : 'សៀវភៅ'}</span>
+						<span class="text-xs text-slate-400">{item.kind === 'course' ? m.kind_course() : m.kind_ebook()}</span>
 						<a href="/{item.kind === 'course' ? 'courses' : 'ebooks'}/{item.slug}" class="line-clamp-2 font-semibold hover:text-brand-600">
 							{item.title}
 						</a>
@@ -53,7 +55,7 @@
 						<Price price={item.price_cents} sale={item.sale_price_cents} />
 						<form method="POST" action="?/remove" use:enhance>
 							<input type="hidden" name="id" value={item.id} />
-							<button class="mt-1 text-sm text-red-600 hover:underline">លុប</button>
+							<button class="mt-1 text-sm text-red-600 hover:underline">{m.remove()}</button>
 						</form>
 					</div>
 				</li>
@@ -62,33 +64,33 @@
 
 		<form method="POST" action="?/checkout" class="space-y-4 self-start rounded-xl border border-slate-200 bg-white p-5 shadow-sm lg:sticky lg:top-24">
 			<div class="flex items-baseline justify-between">
-				<span class="text-slate-600">សរុប ({khmerNumber(cart.items.length)})</span>
+				<span class="text-slate-600">{m.total()} ({formatNumber(cart.items.length)})</span>
 				<span class="text-2xl font-bold text-brand-600">{formatPrice(cart.total_cents)}</span>
 			</div>
 
 			{#if cart.total_cents > 0}
 				<fieldset class="space-y-2">
-					<legend class="mb-2 text-sm font-medium">ជ្រើសរើសវិធីបង់ប្រាក់</legend>
-					{#each data.methods as m (m.code)}
+					<legend class="mb-2 text-sm font-medium">{m.cart_choose_method()}</legend>
+					{#each data.methods as pm (pm.code)}
 						<label
-							class="flex cursor-pointer items-center gap-3 rounded-lg border p-3 {selected === m.code
+							class="flex cursor-pointer items-center gap-3 rounded-lg border p-3 {selected === pm.code
 								? 'border-brand-600 bg-brand-50'
 								: 'border-slate-200 hover:border-brand-500'}"
 						>
-							<input type="radio" name="payment_method" value={m.code} bind:group={selected} class="accent-brand-600" />
+							<input type="radio" name="payment_method" value={pm.code} bind:group={selected} class="accent-brand-600" />
 							<span>
-								<span class="block font-semibold">{m.name_km}</span>
-								<span class="block text-xs text-slate-500">ស្កេន QR ហើយបញ្ចូលលេខប្រតិបត្តិការ</span>
+								<span class="block font-semibold">{localized(pm.name_km, pm.name_en)}</span>
+								<span class="block text-xs text-slate-500">{m.cart_method_hint()}</span>
 							</span>
 						</label>
 					{:else}
-						<p class="text-sm text-red-700">មិនទាន់មានវិធីបង់ប្រាក់ទេ។</p>
+						<p class="text-sm text-red-700">{m.cart_no_methods()}</p>
 					{/each}
 				</fieldset>
 			{/if}
 
 			<button class="w-full rounded-lg bg-brand-600 py-2.5 font-semibold text-white hover:bg-brand-700">
-				{cart.total_cents > 0 ? 'បន្តទៅការបង់ប្រាក់' : 'ទទួលយកដោយឥតគិតថ្លៃ'}
+				{cart.total_cents > 0 ? m.cart_checkout() : m.cart_claim_free()}
 			</button>
 		</form>
 	</div>

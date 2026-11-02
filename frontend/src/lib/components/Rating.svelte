@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { m } from '$lib/paraglide/messages.js';
 	let { avg, count }: { avg: number; count: number } = $props();
 </script>
 
@@ -9,5 +10,5 @@
 		<span class="text-slate-400">({count})</span>
 	</span>
 {:else}
-	<span class="text-sm text-slate-400">មិនទាន់មានការវាយតម្លៃ</span>
+	<span class="text-sm text-slate-400">{m.rating_none()}</span>
 {/if}

@@ -1,10 +1,12 @@
 <script lang="ts">
+	import { m } from '$lib/paraglide/messages.js';
+	import { categoryName } from '$lib/i18n';
 	import BuyButtons from '$lib/components/BuyButtons.svelte';
 	import ProgressBar from '$lib/components/ProgressBar.svelte';
 	import Price from '$lib/components/Price.svelte';
 	import Rating from '$lib/components/Rating.svelte';
 	import Reviews from '$lib/components/Reviews.svelte';
-	import { formatClock, formatDuration, khmerNumber } from '$lib/format';
+	import { formatClock, formatDuration, formatNumber } from '$lib/format';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -19,28 +21,28 @@
 <div class="grid gap-8 lg:grid-cols-[1fr_340px]">
 	<div>
 		{#if course.category_name_km}
-			<a href="/courses?category={course.category_slug}" class="text-sm text-brand-600">#{course.category_name_km}</a>
+			<a href="/courses?category={course.category_slug}" class="text-sm text-brand-600">#{categoryName(course)}</a>
 		{/if}
 		<h1 class="mt-1 text-3xl font-bold">{course.title}</h1>
 		{#if course.summary}<p class="mt-2 text-lg text-slate-600">{course.summary}</p>{/if}
 		<div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-600">
 			<Rating avg={course.rating_avg} count={course.rating_count} />
-			<span>គ្រូ៖ <strong>{course.instructor_name}</strong></span>
-			<span>{khmerNumber(course.lesson_count)} មេរៀន · {formatDuration(course.total_duration_seconds)}</span>
+			<span>{m.course_instructor_label()} <strong>{course.instructor_name}</strong></span>
+			<span>{m.lessons_count({ count: course.lesson_count, n: formatNumber(course.lesson_count) })} · {formatDuration(course.total_duration_seconds)}</span>
 		</div>
 
 		{#if course.description}
-			<h2 class="mt-10 text-xl font-bold">អំពីវគ្គសិក្សា</h2>
+			<h2 class="mt-10 text-xl font-bold">{m.course_about()}</h2>
 			<p class="mt-3 whitespace-pre-line text-slate-700">{course.description}</p>
 		{/if}
 
-		<h2 class="mt-10 text-xl font-bold">មាតិកាវគ្គសិក្សា</h2>
+		<h2 class="mt-10 text-xl font-bold">{m.course_curriculum()}</h2>
 		<div class="mt-3 divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white">
 			{#each course.sections as section, i (section.id)}
 				<details open={i === 0}>
 					<summary class="flex cursor-pointer items-center justify-between bg-slate-50 px-4 py-3 font-semibold">
 						{section.title}
-						<span class="text-sm font-normal text-slate-500">{khmerNumber(section.lessons.length)} មេរៀន</span>
+						<span class="text-sm font-normal text-slate-500">{m.lessons_count({ count: section.lessons.length, n: formatNumber(section.lessons.length) })}</span>
 					</summary>
 					<ul>
 						{#each section.lessons as lesson (lesson.id)}
@@ -53,13 +55,13 @@
 								>
 									<span class="flex items-center gap-2">
 										{#if course.completed_lesson_ids.includes(lesson.id)}
-											<span class="text-green-600" aria-label="បានបញ្ចប់">✓</span>
+											<span class="text-green-600" aria-label={m.lesson_completed()}>✓</span>
 										{:else}
 											<span class="text-slate-400">{watchable ? '▶' : '🔒'}</span>
 										{/if}
 										{lesson.title}
 										{#if lesson.is_preview && !course.owned}
-											<span class="rounded bg-brand-50 px-1.5 text-xs text-brand-700">មើលសាកល្បង</span>
+											<span class="rounded bg-brand-50 px-1.5 text-xs text-brand-700">{m.lesson_preview()}</span>
 										{/if}
 									</span>
 									<span class="text-slate-400">{formatClock(lesson.duration_seconds)}</span>
@@ -72,7 +74,7 @@
 		</div>
 
 		{#if course.instructor_bio}
-			<h2 class="mt-10 text-xl font-bold">អំពីគ្រូ</h2>
+			<h2 class="mt-10 text-xl font-bold">{m.course_about_instructor()}</h2>
 			<div class="mt-3 flex gap-4">
 				{#if course.instructor_avatar_url}
 					<img src={course.instructor_avatar_url} alt={course.instructor_name} class="h-16 w-16 rounded-full object-cover" />
@@ -95,13 +97,13 @@
 			<div class="space-y-4 p-5">
 				<Price price={course.price_cents} sale={course.sale_price_cents} size="lg" />
 				{#if course.owned}
-					<p class="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">✓ អ្នកបានចុះឈ្មោះក្នុងវគ្គនេះរួចហើយ</p>
+					<p class="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">✓ {m.course_enrolled()}</p>
 					<ProgressBar done={course.completed_lesson_ids.length} total={course.lesson_count} />
 					<a
 						href="/courses/{course.slug}/learn"
 						class="block rounded-lg bg-brand-600 px-6 py-2.5 text-center font-semibold text-white hover:bg-brand-700"
 					>
-						បន្តការសិក្សា
+						{m.course_continue()}
 					</a>
 				{:else}
 					<BuyButtons {form} full />

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { m } from '$lib/paraglide/messages.js';
 	import OrderStatusBadge from '$lib/components/OrderStatusBadge.svelte';
 	import { formatDateTime, formatPrice } from '$lib/format';
 	import type { PageData } from './$types';
@@ -6,12 +7,12 @@
 	let { data }: { data: PageData } = $props();
 </script>
 
-<svelte:head><title>ការបញ្ជាទិញរបស់ខ្ញុំ · Reanit Academy</title></svelte:head>
+<svelte:head><title>{m.nav_orders()} · Reanit Academy</title></svelte:head>
 
-<h1 class="text-3xl font-bold">ការបញ្ជាទិញរបស់ខ្ញុំ</h1>
+<h1 class="text-3xl font-bold">{m.nav_orders()}</h1>
 
 {#if data.orders.length === 0}
-	<p class="mt-12 text-center text-slate-500">មិនទាន់មានការបញ្ជាទិញទេ។ <a href="/courses" class="text-brand-600 hover:underline">មើលវគ្គសិក្សា</a></p>
+	<p class="mt-12 text-center text-slate-500">{m.orders_empty()} <a href="/courses" class="text-brand-600 hover:underline">{m.browse_courses()}</a></p>
 {:else}
 	<ul class="mt-6 divide-y divide-slate-200 rounded-xl border border-slate-200 bg-white">
 		{#each data.orders as o (o.id)}

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { m } from '$lib/paraglide/messages.js';
 	import ProgressBar from '$lib/components/ProgressBar.svelte';
 	import type { PageData } from './$types';
 
@@ -6,18 +7,18 @@
 	const { courses, ebooks } = $derived(data.library);
 </script>
 
-<svelte:head><title>បណ្ណាល័យរបស់ខ្ញុំ · Reanit Academy</title></svelte:head>
+<svelte:head><title>{m.nav_library()} · Reanit Academy</title></svelte:head>
 
-<h1 class="text-3xl font-bold">បណ្ណាល័យរបស់ខ្ញុំ</h1>
+<h1 class="text-3xl font-bold">{m.nav_library()}</h1>
 
 {#if courses.length === 0 && ebooks.length === 0}
 	<p class="mt-12 text-center text-slate-500">
-		អ្នកមិនទាន់មានវគ្គសិក្សា ឬសៀវភៅនៅឡើយទេ។ <a href="/courses" class="text-brand-600 hover:underline">ស្វែងរកវគ្គសិក្សា</a>
+		{m.library_empty()} <a href="/courses" class="text-brand-600 hover:underline">{m.browse_courses()}</a>
 	</p>
 {/if}
 
 {#if courses.length}
-	<h2 class="mt-8 text-xl font-bold">វគ្គសិក្សារបស់ខ្ញុំ</h2>
+	<h2 class="mt-8 text-xl font-bold">{m.library_my_courses()}</h2>
 	<div class="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
 		{#each courses as c (c.id)}
 			<a href="/courses/{c.slug}/learn" class="group overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm hover:shadow-md">
@@ -35,7 +36,7 @@
 {/if}
 
 {#if ebooks.length}
-	<h2 class="mt-10 text-xl font-bold">សៀវភៅរបស់ខ្ញុំ</h2>
+	<h2 class="mt-10 text-xl font-bold">{m.library_my_ebooks()}</h2>
 	<div class="mt-4 grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-5">
 		{#each ebooks as e (e.id)}
 			<a href="/ebooks/{e.slug}/read" class="group overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm hover:shadow-md">

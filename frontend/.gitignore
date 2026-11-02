@@ -14,3 +14,6 @@ vite.config.ts.timestamp-*
 .env
 .env.*
 !.env.example
+
+# Paraglide output (generated from messages/ on dev/build)
+/src/lib/paraglide/

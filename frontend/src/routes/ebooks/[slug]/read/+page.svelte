@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { m } from '$lib/paraglide/messages.js';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -9,7 +10,7 @@
 
 <div class="flex flex-wrap items-center justify-between gap-3">
 	<div>
-		<a href="/ebooks/{ebook.slug}" class="text-sm text-brand-600 hover:underline">← ត្រឡប់ក្រោយ</a>
+		<a href="/ebooks/{ebook.slug}" class="text-sm text-brand-600 hover:underline">← {m.back()}</a>
 		<h1 class="text-2xl font-bold">{ebook.title}</h1>
 	</div>
 	{#if data.fileUrl}
@@ -18,7 +19,7 @@
 			data-sveltekit-reload
 			class="rounded-lg border border-brand-600 px-4 py-2 text-sm font-semibold text-brand-600 hover:bg-brand-50"
 		>
-			ទាញយក
+			{m.ebook_download()}
 		</a>
 	{/if}
 </div>
@@ -27,6 +28,6 @@
 	<iframe src={data.fileUrl} title={ebook.title} class="mt-4 h-[80vh] w-full rounded-xl border border-slate-200 bg-white"></iframe>
 {:else}
 	<p class="mt-10 rounded-xl border border-slate-200 bg-white p-8 text-center text-slate-500">
-		ឯកសារសៀវភៅនេះមិនទាន់អាចប្រើបានទេ។ សូមទាក់ទងក្រុមការងារ។
+		{m.ebook_file_unavailable()}
 	</p>
 {/if}

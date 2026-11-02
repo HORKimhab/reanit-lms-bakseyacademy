@@ -1,9 +1,11 @@
 <script lang="ts">
+	import { m } from '$lib/paraglide/messages.js';
+	import { categoryName } from '$lib/i18n';
 	import BuyButtons from '$lib/components/BuyButtons.svelte';
 	import Price from '$lib/components/Price.svelte';
 	import Rating from '$lib/components/Rating.svelte';
 	import Reviews from '$lib/components/Reviews.svelte';
-	import { khmerNumber } from '$lib/format';
+	import { formatNumber } from '$lib/format';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -21,28 +23,28 @@
 	</div>
 	<div>
 		{#if ebook.category_name_km}
-			<a href="/ebooks?category={ebook.category_slug}" class="text-sm text-brand-600">#{ebook.category_name_km}</a>
+			<a href="/ebooks?category={ebook.category_slug}" class="text-sm text-brand-600">#{categoryName(ebook)}</a>
 		{/if}
 		<h1 class="mt-1 text-3xl font-bold">{ebook.title}</h1>
-		<p class="mt-1 text-slate-600">អ្នកនិពន្ធ៖ <strong>{ebook.author_name}</strong></p>
+		<p class="mt-1 text-slate-600">{m.ebook_author_label()} <strong>{ebook.author_name}</strong></p>
 		<div class="mt-2 flex items-center gap-4 text-sm text-slate-600">
 			<Rating avg={ebook.rating_avg} count={ebook.rating_count} />
-			{#if ebook.page_count}<span>{khmerNumber(ebook.page_count)} ទំព័រ</span>{/if}
+			{#if ebook.page_count}<span>{m.pages_count({ count: ebook.page_count, n: formatNumber(ebook.page_count) })}</span>{/if}
 		</div>
 		<div class="mt-6"><Price price={ebook.price_cents} sale={ebook.sale_price_cents} size="lg" /></div>
 		<div class="mt-4">
 			{#if ebook.owned}
-				<p class="text-sm text-green-700">✓ អ្នកបានទិញសៀវភៅនេះរួចហើយ</p>
+				<p class="text-sm text-green-700">✓ {m.ebook_owned()}</p>
 				<div class="mt-3 flex flex-wrap gap-2">
 					<a href="/ebooks/{ebook.slug}/read" class="rounded-lg bg-brand-600 px-6 py-2.5 font-semibold text-white hover:bg-brand-700">
-						អានឥឡូវ
+						{m.ebook_read_now()}
 					</a>
 					<a
 						href="/ebooks/{ebook.slug}/download"
 						data-sveltekit-reload
 						class="rounded-lg border border-brand-600 px-6 py-2.5 font-semibold text-brand-600 hover:bg-brand-50"
 					>
-						ទាញយក
+						{m.ebook_download()}
 					</a>
 				</div>
 			{:else}

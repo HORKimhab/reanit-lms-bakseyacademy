@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { khmerNumber } from '$lib/format';
+	import { formatNumber } from '$lib/format';
 
 	let { done, total }: { done: number; total: number } = $props();
 	const percent = $derived(total > 0 ? Math.round((done / total) * 100) : 0);
@@ -15,5 +15,5 @@
 	>
 		<div class="h-full rounded-full bg-green-600" style="width: {percent}%"></div>
 	</div>
-	<span>{khmerNumber(percent)}%</span>
+	<span>{formatNumber(percent)}%</span>
 </div>

@@ -1,3 +1,4 @@
+import { m } from '$lib/paraglide/messages.js';
 import { error, fail, redirect } from '@sveltejs/kit';
 import { api, apiResult } from '$lib/server/api';
 import { requireToken } from '$lib/server/guard';
@@ -14,8 +15,8 @@ export const load: PageServerLoad = async ({ fetch, params, locals, url }) => {
 	if (!lesson.ok) {
 		if (lesson.status === 401) redirect(303, `/auth?redirectTo=${encodeURIComponent(url.pathname)}`);
 		if (lesson.status === 403) redirect(303, `/courses/${params.slug}`);
-		if (lesson.status === 404 || lesson.status === 400) error(404, 'រកមិនឃើញ');
-		error(502, 'មានបញ្ហាពីម៉ាស៊ីនមេ');
+		if (lesson.status === 404 || lesson.status === 400) error(404, m.error_not_found());
+		error(502, m.error_api_failed());
 	}
 	return { course, lesson: lesson.data };
 };

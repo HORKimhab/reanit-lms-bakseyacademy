@@ -1,3 +1,4 @@
+import { m } from '$lib/paraglide/messages.js';
 import { error, redirect } from '@sveltejs/kit';
 import { apiResult } from './api';
 import { requireToken } from './guard';
@@ -23,5 +24,5 @@ export async function ebookFileUrl(
 	if (res.status === 403) redirect(303, `/ebooks/${slug}`);
 	if (res.status === 404 && res.code === 'not_found') return null;
 	if (res.status === 503 && res.code === 'storage_unavailable') return null;
-	error(502, 'មានបញ្ហាពីម៉ាស៊ីនមេ');
+	error(502, m.error_api_failed());
 }

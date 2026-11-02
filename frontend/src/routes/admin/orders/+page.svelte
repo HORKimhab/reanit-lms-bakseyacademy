@@ -3,7 +3,7 @@
 	import OrderStatusBadge from '$lib/components/OrderStatusBadge.svelte';
 	import Pagination from '$lib/components/Pagination.svelte';
 	import { errorMessage } from '$lib/errors';
-	import { formatDateTime, formatPrice, khmerNumber } from '$lib/format';
+	import { formatDateTime, formatPrice, formatNumber } from '$lib/format';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -60,7 +60,7 @@
 	</p>
 {/if}
 
-<p class="mt-4 text-sm text-slate-500">{khmerNumber(data.orders.total)} ការបញ្ជាទិញ</p>
+<p class="mt-4 text-sm text-slate-500">{formatNumber(data.orders.total)} ការបញ្ជាទិញ</p>
 
 {#if data.orders.items.length === 0}
 	<p class="mt-10 text-center text-slate-500">មិនមានការបញ្ជាទិញទេ។</p>

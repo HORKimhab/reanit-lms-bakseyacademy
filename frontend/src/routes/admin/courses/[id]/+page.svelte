@@ -3,7 +3,7 @@
 	import CourseForm from '$lib/components/admin/CourseForm.svelte';
 	import { confirmClick, dangerButton, inputClass, primaryButton, secondaryButton } from '$lib/admin-ui';
 	import { errorMessage } from '$lib/errors';
-	import { formatClock, formatDateTime, khmerNumber } from '$lib/format';
+	import { formatClock, formatDateTime, formatNumber } from '$lib/format';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -51,7 +51,7 @@
 		{#each course.sections as section, si (section.id)}
 			<div class="rounded-xl border border-slate-200 bg-white">
 				<div class="flex flex-wrap items-center gap-2 border-b border-slate-100 bg-slate-50 px-4 py-2">
-					<span class="text-sm text-slate-400">{khmerNumber(si + 1)}.</span>
+					<span class="text-sm text-slate-400">{formatNumber(si + 1)}.</span>
 					<form method="POST" action="?/renameSection" use:enhance={keep} class="flex flex-1 gap-2">
 						<input type="hidden" name="id" value={section.id} />
 						<input name="title" required value={section.title} class="{inputClass} font-semibold" />

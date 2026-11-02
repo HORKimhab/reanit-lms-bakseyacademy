@@ -15,6 +15,7 @@ interface ProductBase {
 	sale_price_cents: number | null;
 	category_slug: string | null;
 	category_name_km: string | null;
+	category_name_en: string | null;
 	rating_avg: number;
 	rating_count: number;
 }

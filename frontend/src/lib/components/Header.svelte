@@ -1,12 +1,14 @@
 <script lang="ts">
+	import { m } from '$lib/paraglide/messages.js';
 	import { page } from '$app/state';
-	import { khmerNumber } from '$lib/format';
+	import { formatNumber } from '$lib/format';
+	import { getLocale, setLocale } from '$lib/paraglide/runtime';
 
 	const links = [
-		{ href: '/', label: 'ទំព័រដើម' },
-		{ href: '/courses', label: 'វគ្គសិក្សា' },
-		{ href: '/ebooks', label: 'សៀវភៅ' },
-		{ href: '/for-you', label: 'សម្រាប់អ្នក' }
+		{ href: '/', label: m.nav_home() },
+		{ href: '/courses', label: m.nav_courses() },
+		{ href: '/ebooks', label: m.nav_ebooks() },
+		{ href: '/for-you', label: m.nav_for_you() }
 	];
 
 	let menuOpen = $state(false);
@@ -55,25 +57,34 @@
 				name="q"
 				value={page.url.pathname === '/search' ? (page.url.searchParams.get('q') ?? '') : ''}
 				type="search"
-				placeholder="ស្វែងរកវគ្គសិក្សា ឬសៀវភៅ..."
+				placeholder={m.search_placeholder()}
 				class="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pr-12 pl-3 text-sm outline-none focus:border-brand-500 focus:bg-white"
 			/>
 			<kbd class="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded border border-slate-200 px-1.5 text-xs text-slate-400">⌘K</kbd>
 		</form>
 
 		{#if user}
-			<a href="/cart" class="relative ml-auto rounded-lg p-2 hover:bg-slate-100 sm:ml-0" aria-label="កន្ត្រក">
+			<a href="/cart" class="relative ml-auto rounded-lg p-2 hover:bg-slate-100 sm:ml-0" aria-label={m.nav_cart()}>
 				<svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
 					<path d="M3 4h2l2.4 11.2a1 1 0 0 0 1 .8h9.2a1 1 0 0 0 1-.8L20.5 8H6.2" stroke-linecap="round" stroke-linejoin="round" />
 					<circle cx="9" cy="20" r="1.3" /><circle cx="17" cy="20" r="1.3" />
 				</svg>
 				{#if cartCount}
 					<span class="absolute -top-0.5 -right-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-red-600 px-1 text-xs text-white">
-						{khmerNumber(cartCount)}
+						{formatNumber(cartCount)}
 					</span>
 				{/if}
 			</a>
 		{/if}
+
+		<button
+			onclick={() => setLocale(getLocale() === 'km' ? 'en' : 'km')}
+			class="rounded-lg px-2 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100 {user ? '' : 'ml-auto sm:ml-0'}"
+			lang={getLocale() === 'km' ? 'en' : 'km'}
+			aria-label={m.switch_language_label()}
+		>
+			{getLocale() === 'km' ? 'EN' : 'ខ្មែរ'}
+		</button>
 
 		<div class="hidden md:block">
 			{#if user}
@@ -85,26 +96,26 @@
 						<span class="max-w-32 truncate">{user.full_name}</span>
 					</summary>
 					<div class="absolute right-0 mt-2 w-48 rounded-xl border border-slate-200 bg-white p-1 text-sm shadow-lg">
-						<a href="/account/library" class="block rounded-lg px-3 py-2 hover:bg-slate-100">បណ្ណាល័យរបស់ខ្ញុំ</a>
-						<a href="/account/orders" class="block rounded-lg px-3 py-2 hover:bg-slate-100">ការបញ្ជាទិញរបស់ខ្ញុំ</a>
-						<a href="/account" class="block rounded-lg px-3 py-2 hover:bg-slate-100">គណនីរបស់ខ្ញុំ</a>
+						<a href="/account/library" class="block rounded-lg px-3 py-2 hover:bg-slate-100">{m.nav_library()}</a>
+						<a href="/account/orders" class="block rounded-lg px-3 py-2 hover:bg-slate-100">{m.nav_orders()}</a>
+						<a href="/account" class="block rounded-lg px-3 py-2 hover:bg-slate-100">{m.nav_account()}</a>
 						{#if user.role === 'admin'}
-							<a href="/admin/orders" class="block rounded-lg px-3 py-2 hover:bg-slate-100">ផ្ទាំងគ្រប់គ្រង</a>
+							<a href="/admin/orders" class="block rounded-lg px-3 py-2 hover:bg-slate-100">{m.nav_admin()}</a>
 						{/if}
 						<form method="POST" action="/auth?/logout">
-							<button class="w-full rounded-lg px-3 py-2 text-left text-red-600 hover:bg-red-50">ចាកចេញ</button>
+							<button class="w-full rounded-lg px-3 py-2 text-left text-red-600 hover:bg-red-50">{m.nav_logout()}</button>
 						</form>
 					</div>
 				</details>
 			{:else}
 				<a href={loginHref} class="rounded-lg bg-brand-600 px-4 py-1.5 text-sm font-semibold whitespace-nowrap text-white hover:bg-brand-700">
-					ចូលគណនី
+					{m.nav_login()}
 				</a>
 			{/if}
 		</div>
 
 		<button
-			class="rounded-lg p-2 hover:bg-slate-100 sm:ml-0 md:hidden {user ? '' : 'ml-auto'}"
+			class="rounded-lg p-2 hover:bg-slate-100 md:hidden"
 			aria-label="Menu"
 			aria-expanded={menuOpen}
 			onclick={() => (menuOpen = !menuOpen)}
@@ -119,17 +130,17 @@
 				<a href={link.href} class="block py-2" onclick={() => (menuOpen = false)}>{link.label}</a>
 			{/each}
 			{#if user}
-				<a href="/account/library" class="block py-2" onclick={() => (menuOpen = false)}>បណ្ណាល័យរបស់ខ្ញុំ</a>
-				<a href="/account/orders" class="block py-2" onclick={() => (menuOpen = false)}>ការបញ្ជាទិញរបស់ខ្ញុំ</a>
-				<a href="/account" class="block py-2" onclick={() => (menuOpen = false)}>គណនីរបស់ខ្ញុំ ({user.full_name})</a>
+				<a href="/account/library" class="block py-2" onclick={() => (menuOpen = false)}>{m.nav_library()}</a>
+				<a href="/account/orders" class="block py-2" onclick={() => (menuOpen = false)}>{m.nav_orders()}</a>
+				<a href="/account" class="block py-2" onclick={() => (menuOpen = false)}>{m.nav_account()} ({user.full_name})</a>
 				<form method="POST" action="/auth?/logout">
-					<button class="block py-2 text-red-600">ចាកចេញ</button>
+					<button class="block py-2 text-red-600">{m.nav_logout()}</button>
 				</form>
 			{:else}
-				<a href={loginHref} class="block py-2 font-semibold text-brand-600" onclick={() => (menuOpen = false)}>ចូលគណនី</a>
+				<a href={loginHref} class="block py-2 font-semibold text-brand-600" onclick={() => (menuOpen = false)}>{m.nav_login()}</a>
 			{/if}
 			<form action="/search" method="get" class="py-2 sm:hidden">
-				<input name="q" type="search" placeholder="ស្វែងរកវគ្គសិក្សា ឬសៀវភៅ..." class="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm" />
+				<input name="q" type="search" placeholder={m.search_placeholder()} class="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm" />
 			</form>
 		</nav>
 	{/if}

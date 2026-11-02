@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { m } from '$lib/paraglide/messages.js';
 	import type { Banner } from '$lib/types';
 
 	let { banners, interval = 6000 }: { banners: Banner[]; interval?: number } = $props();
@@ -21,7 +22,7 @@
 {#if count}
 	<section
 		class="relative overflow-hidden rounded-2xl"
-		aria-label="ស្លាយ"
+		aria-label={m.carousel_label()}
 		aria-roledescription="carousel"
 		onmouseenter={() => (paused = true)}
 		onmouseleave={() => (paused = false)}
@@ -48,7 +49,7 @@
 								tabindex={i === index ? 0 : -1}
 								class="mt-6 inline-block w-fit rounded-lg bg-white px-5 py-2.5 font-semibold text-brand-700 hover:bg-brand-50"
 							>
-								មើលបន្ថែម
+								{m.carousel_more()}
 							</a>
 						{/if}
 					</div>
@@ -59,19 +60,19 @@
 		{#if count > 1}
 			<button
 				class="absolute top-1/2 left-3 hidden -translate-y-1/2 rounded-full bg-white/80 px-3 py-1.5 text-slate-700 hover:bg-white sm:block"
-				aria-label="មុន"
+				aria-label={m.carousel_prev()}
 				onclick={() => go(index - 1)}>‹</button
 			>
 			<button
 				class="absolute top-1/2 right-3 hidden -translate-y-1/2 rounded-full bg-white/80 px-3 py-1.5 text-slate-700 hover:bg-white sm:block"
-				aria-label="បន្ទាប់"
+				aria-label={m.carousel_next()}
 				onclick={() => go(index + 1)}>›</button
 			>
 			<div class="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-2">
 				{#each banners as b, i (b.id)}
 					<button
 						class="h-2 rounded-full transition-all {i === index ? 'w-6 bg-white' : 'w-2 bg-white/50'}"
-						aria-label="ស្លាយ {i + 1}"
+						aria-label={m.carousel_slide({ n: i + 1 })}
 						aria-current={i === index}
 						onclick={() => go(i)}
 					></button>

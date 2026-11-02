@@ -1,0 +1,255 @@
+{
+	"$schema": "https://inlang.com/schema/inlang-message-format",
+	"nav_home": "Home",
+	"price_free": "Free",
+	"duration_minutes": "{minutes} min",
+	"duration_hours": "{hours} h",
+	"duration_hours_minutes": "{hours} h {minutes} min",
+	"nav_courses": "Courses",
+	"nav_ebooks": "Ebooks",
+	"nav_for_you": "For you",
+	"search_placeholder": "Search courses or ebooks...",
+	"nav_cart": "Cart",
+	"nav_library": "My library",
+	"nav_orders": "My orders",
+	"nav_account": "My account",
+	"nav_admin": "Admin",
+	"nav_logout": "Log out",
+	"nav_login": "Log in",
+	"switch_language_label": "ប្តូរទៅភាសាខ្មែរ",
+	"footer_browse": "Browse",
+	"footer_contact": "Contact",
+	"footer_follow": "Follow us",
+	"carousel_label": "Slides",
+	"carousel_more": "Learn more",
+	"carousel_prev": "Previous",
+	"carousel_next": "Next",
+	"carousel_slide": "Slide {n}",
+	"order_status_pending_payment": "Awaiting payment",
+	"order_status_awaiting_approval": "Awaiting approval",
+	"order_status_paid": "Paid",
+	"order_status_rejected": "Rejected",
+	"order_status_cancelled": "Cancelled",
+	"buy_now": "Buy now",
+	"add_to_cart": "Add to cart",
+	"added_to_cart": "Added to cart",
+	"view_cart": "View cart",
+	"rating_none": "No ratings yet",
+	"search_button": "Search",
+	"error_back_home": "Back to home",
+	"home_new_courses": "New courses",
+	"home_new_ebooks": "New ebooks",
+	"see_all": "See all",
+	"error_api_unavailable": "Cannot reach the server",
+	"error_not_found": "Not found",
+	"error_api_failed": "Server error",
+	"category_all": "All",
+	"courses_search_placeholder": "Search courses or instructors...",
+	"courses_none_found": "No courses found.",
+	"courses_count": [
+		{
+			"declarations": [
+				"input count",
+				"local countPlural = count: plural"
+			],
+			"selectors": [
+				"countPlural"
+			],
+			"match": {
+				"countPlural=one": "{n} course",
+				"countPlural=*": "{n} courses"
+			}
+		}
+	],
+	"ebooks_search_placeholder": "Search ebooks or authors...",
+	"ebooks_none_found": "No ebooks found.",
+	"ebooks_count": [
+		{
+			"declarations": [
+				"input count",
+				"local countPlural = count: plural"
+			],
+			"selectors": [
+				"countPlural"
+			],
+			"match": {
+				"countPlural=one": "{n} ebook",
+				"countPlural=*": "{n} ebooks"
+			}
+		}
+	],
+	"course_instructor_label": "Instructor:",
+	"lessons_count": [
+		{
+			"declarations": [
+				"input count",
+				"local countPlural = count: plural"
+			],
+			"selectors": [
+				"countPlural"
+			],
+			"match": {
+				"countPlural=one": "{n} lesson",
+				"countPlural=*": "{n} lessons"
+			}
+		}
+	],
+	"course_about": "About this course",
+	"course_curriculum": "Curriculum",
+	"lesson_completed": "Completed",
+	"lesson_preview": "Preview",
+	"course_about_instructor": "About the instructor",
+	"course_enrolled": "You are enrolled in this course",
+	"course_continue": "Continue learning",
+	"ebook_author_label": "Author:",
+	"pages_count": [
+		{
+			"declarations": [
+				"input count",
+				"local countPlural = count: plural"
+			],
+			"selectors": [
+				"countPlural"
+			],
+			"match": {
+				"countPlural=one": "{n} page",
+				"countPlural=*": "{n} pages"
+			}
+		}
+	],
+	"ebook_owned": "You own this ebook",
+	"ebook_read_now": "Read now",
+	"ebook_download": "Download",
+	"back": "Back",
+	"ebook_file_unavailable": "This ebook's file isn't available yet. Please contact support.",
+	"for_you_title": "Recommended for you",
+	"for_you_popular": "Popular",
+	"for_you_explain": "Based on what you own and what other learners chose.",
+	"for_you_buy_first": "Buy your first course or ebook to get personal recommendations.",
+	"for_you_login_suffix": "to get personal recommendations.",
+	"for_you_all_owned": "You already have everything!",
+	"search_title": "Search \"{q}\"",
+	"search_results": "Results for \"{q}\"",
+	"search_none": "No courses or ebooks found. Try another word.",
+	"library_empty": "You don't have any courses or ebooks yet.",
+	"browse_courses": "Browse courses",
+	"library_my_courses": "My courses",
+	"library_my_ebooks": "My ebooks",
+	"orders_empty": "No orders yet.",
+	"cart_method_hint": "Scan the QR, then enter the transaction ID",
+	"cart_empty_message": "Your cart is empty.",
+	"browse_ebooks": "Browse ebooks",
+	"kind_course": "Course",
+	"kind_ebook": "Ebook",
+	"remove": "Remove",
+	"total": "Total",
+	"cart_choose_method": "Choose a payment method",
+	"cart_no_methods": "No payment methods available yet.",
+	"cart_checkout": "Continue to payment",
+	"cart_claim_free": "Get it free",
+	"order_title": "Order #{id}",
+	"order_ref_received_before": "We received transaction ID",
+	"order_ref_received_after": ". An admin will review and approve it shortly.",
+	"order_paid_message": "Payment approved. You can start learning and reading now.",
+	"order_go_to_library": "Go to my library",
+	"order_rejected_title": "Payment rejected",
+	"order_rejected_hint": "Please check and enter the transaction ID again.",
+	"order_cancelled_message": "This order was cancelled.",
+	"order_scan_to_pay": "Scan to pay with {method}",
+	"order_step_scan": "Open your banking app and scan the QR.",
+	"order_step_pay_before": "Pay",
+	"order_step_pay_after": "exactly.",
+	"order_step_enter_ref": "Enter the transaction ID / hash below.",
+	"order_ref_label": "Transaction ID",
+	"order_submit_paid": "I have paid",
+	"order_cancel": "Cancel order",
+	"order_items": "Items",
+	"order_paid_via": "Paid with {method}",
+	"saved": "Saved",
+	"account_profile": "Profile",
+	"field_full_name": "Full name",
+	"field_phone": "Phone number",
+	"field_email": "Email",
+	"optional": "optional",
+	"save": "Save",
+	"account_change_password": "Change password",
+	"account_password_hint": "Your other devices will be signed out.",
+	"field_current_password": "Current password",
+	"field_new_password": "New password",
+	"field_confirm_new_password": "Confirm new password",
+	"auth_register": "Create account",
+	"field_password": "Password",
+	"auth_forgot_password": "Forgot password?",
+	"auth_login_submit": "Log in",
+	"field_confirm_password": "Confirm password",
+	"lesson_no_video": "No video for this lesson yet",
+	"lesson_position": "Lesson {n} of {total}",
+	"lesson_complete_and_next": "Complete and continue",
+	"lesson_mark_complete": "Mark as complete",
+	"lesson_preview_notice": "This is a free preview lesson.",
+	"lesson_buy_course": "Buy the course",
+	"lesson_buy_course_suffix": "to watch every lesson.",
+	"lesson_progress": "Progress · {done}/{total} lessons",
+	"reviews_title": "Reviews",
+	"reviews_thanks": "Thanks for your review!",
+	"reviews_deleted": "Your review was deleted",
+	"reviews_your_rating": "Your rating",
+	"stars_count": [
+		{
+			"declarations": [
+				"input count",
+				"local countPlural = count: plural"
+			],
+			"selectors": [
+				"countPlural"
+			],
+			"match": {
+				"countPlural=one": "{n} star",
+				"countPlural=*": "{n} stars"
+			}
+		}
+	],
+	"reviews_comment_placeholder": "Share your experience (optional)",
+	"cancel": "Cancel",
+	"reviews_yours": "Your review:",
+	"edit": "Edit",
+	"reviews_none": "No reviews yet.",
+	"error_invalid_credentials": "Wrong phone number or password",
+	"error_phone_taken": "This phone number is already registered",
+	"error_email_taken": "This email is already in use",
+	"error_invalid_phone": "Invalid phone number",
+	"error_invalid_email": "Invalid email",
+	"error_invalid_name": "Please enter your full name",
+	"error_weak_password": "Password must be at least 8 characters",
+	"error_wrong_password": "Current password is wrong",
+	"error_password_mismatch": "Passwords do not match",
+	"error_already_owned": "You already own this",
+	"error_invalid_item": "Invalid item",
+	"error_cart_empty": "Your cart is empty",
+	"error_invalid_payment_method": "Please choose a payment method",
+	"error_invalid_payment_ref": "Please enter the transaction ID (at least 3 characters)",
+	"error_invalid_status": "This order can no longer be changed",
+	"error_invalid_note": "Please enter a reason",
+	"error_invalid_rating": "Please pick 1 to 5 stars",
+	"error_invalid_comment": "Review is too long (max 2000 characters)",
+	"error_invalid_slug": "Slug must be lowercase letters, digits and hyphens (e.g. rust-for-beginners)",
+	"error_slug_taken": "This slug is already used",
+	"error_invalid_price": "Invalid price (sale price must be below the price)",
+	"error_invalid_title": "Please enter a title",
+	"error_invalid_summary": "Summary is too long",
+	"error_invalid_description": "Description is too long",
+	"error_invalid_subtitle": "Subtitle is too long",
+	"error_invalid_bio": "Bio is too long",
+	"error_invalid_url": "URL must start with / or https://",
+	"error_invalid_reference": "The selected instructor or category no longer exists",
+	"error_invalid_duration": "Invalid duration (e.g. 12:30)",
+	"error_invalid_video_id": "Invalid video ID",
+	"error_invalid_page_count": "Invalid page count",
+	"error_invalid_file_key": "Invalid file key",
+	"error_has_buyers": "Already bought by someone, so it can’t be deleted — unpublish it instead",
+	"error_in_use": "Still used by courses, so it can’t be deleted",
+	"error_forbidden": "You don’t have permission",
+	"error_unauthorized": "Please log in again",
+	"error_unavailable": "Cannot reach the server",
+	"error_generic": "Something went wrong, please try again"
+}

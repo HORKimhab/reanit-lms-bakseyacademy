@@ -30,6 +30,10 @@ bun install
 bun run dev                    # http://localhost:5173
 ```
 
+## i18n
+
+Khmer by default; the header button switches to English (cookie `PARAGLIDE_LOCALE`). Copy lives in `frontend/messages/km.json` / `en.json`; Paraglide compiles it into `src/lib/paraglide/` on `bun run dev` / `build` (it fetches its inlang plugins from jsDelivr on first compile). The admin area is Khmer-only.
+
 ## Admin
 
 Make an account an admin (it then sees **ផ្ទាំងគ្រប់គ្រង** in the account menu → `/admin`: orders, courses + curriculum, ebooks, banners, categories, instructors):
@@ -104,4 +108,4 @@ Task-level breakdown: [`TODO.md`](TODO.md).
 3. ~~Cart → orders → QR payment (Bakong KHQR / ABA PayWay) + admin approval → enrollments~~ (automatic confirmation: see TODO "Later")
 4. ~~Lesson player (Bunny Stream signed URLs), progress tracking, ebook signed downloads~~
 5. ~~Reviews write API, search upgrade (Postgres trigram), "for you" recommendations, admin~~
-6. i18n (Paraglide: km/en)
+6. ~~i18n (Paraglide: km/en)~~

@@ -2,7 +2,7 @@
 	import { enhance } from '$app/forms';
 	import RowStatus from '$lib/components/admin/RowStatus.svelte';
 	import { confirmClick, dangerButton, inputClass, primaryButton, secondaryButton } from '$lib/admin-ui';
-	import { khmerNumber } from '$lib/format';
+	import { formatNumber } from '$lib/format';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -24,7 +24,7 @@
 				<textarea name="bio" rows="2" placeholder="ប្រវត្តិរូប" class="{inputClass} md:col-span-3">{i.bio ?? ''}</textarea>
 			</form>
 			<div class="mt-2 flex items-center justify-between text-xs text-slate-500">
-				<span>{khmerNumber(i.course_count)} វគ្គសិក្សា</span>
+				<span>{formatNumber(i.course_count)} វគ្គសិក្សា</span>
 				<form method="POST" action="?/delete" use:enhance>
 					<input type="hidden" name="id" value={i.id} />
 					<button class={dangerButton} onclick={confirmClick(`លុប "${i.name}"?`)}>លុប</button>

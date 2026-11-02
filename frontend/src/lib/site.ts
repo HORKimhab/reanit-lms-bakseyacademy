@@ -2,8 +2,8 @@
 // Placeholders: replace with Reanit's real details before launch. Leave a field empty to hide it.
 export const site = {
 	name: 'Reanit Academy',
-	tagline: 'វេទិកាសិក្សាតាមអនឡាញ',
-	address: 'ភ្នំពេញ, កម្ពុជា',
+	tagline: { km: 'វេទិកាសិក្សាតាមអនឡាញ', en: 'Online learning platform' },
+	address: { km: 'ភ្នំពេញ, កម្ពុជា', en: 'Phnom Penh, Cambodia' },
 	mapUrl: '',
 	email: 'contact@example.com',
 	phones: ['+855 12 345 678'],
