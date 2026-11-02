@@ -48,8 +48,9 @@ pub fn router(state: AppState) -> Router {
         .route("/api/admin/orders/{id}/reject", post(admin::reject))
         .route(
             "/api/admin/media",
-            post(media::upload).layer(DefaultBodyLimit::max(2100 * 1024 * 1024)),
+            get(media::list).post(media::upload).layer(DefaultBodyLimit::max(2100 * 1024 * 1024)),
         )
+        .route("/api/telegram/webhook", post(media::webhook))
         .route("/api/admin/categories", get(admin_catalog::list_categories).post(admin_catalog::create_category))
         .route(
             "/api/admin/categories/{id}",

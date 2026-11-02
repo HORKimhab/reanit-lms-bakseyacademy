@@ -8,8 +8,17 @@
 	let {
 		mediaId = null,
 		mediaName = null,
-		accept = ''
-	}: { mediaId?: string | null; mediaName?: string | null; accept?: string } = $props();
+		accept = '',
+		library = [],
+		onuploaded
+	}: {
+		mediaId?: string | null;
+		mediaName?: string | null;
+		accept?: string;
+		/** Recent media to pick from instead of uploading (e.g. files imported from the channel). */
+		library?: AdminMedia[];
+		onuploaded?: (media: AdminMedia) => void;
+	} = $props();
 
 	// Follows the saved value from the server; uploads / "remove" override it until the next save.
 	let id = $derived(mediaId);
@@ -39,6 +48,7 @@
 				if (media.duration_seconds && duration instanceof HTMLInputElement && (!duration.value || duration.value === '0:00')) {
 					duration.value = formatClock(media.duration_seconds);
 				}
+				onuploaded?.(media);
 			} else {
 				failure = errorMessage(res.error ?? 'unknown');
 			}
@@ -70,6 +80,20 @@
 			{id ? 'ប្តូរឯកសារ' : 'ផ្ទុកឡើង Telegram'}
 			<input bind:this={fileInput} type="file" {accept} class="sr-only" onchange={upload} />
 		</label>
+	{/if}
+	{#if library.length && progress === null}
+		<select
+			class="max-w-48 rounded border border-slate-200 bg-white px-1 py-0.5"
+			aria-label="ជ្រើសពីបណ្ណាល័យ"
+			onchange={(e) => {
+				const picked = library.find((m) => m.id === e.currentTarget.value);
+				if (picked) ((id = picked.id), (name = picked.file_name));
+				e.currentTarget.value = '';
+			}}
+		>
+			<option value="">ជ្រើសពីបណ្ណាល័យ…</option>
+			{#each library as m (m.id)}<option value={m.id}>{m.file_name ?? m.id}</option>{/each}
+		</select>
 	{/if}
 	{#if failure}<span class="text-red-600" role="alert">{failure}</span>{/if}
 </span>

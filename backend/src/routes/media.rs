@@ -2,8 +2,9 @@
 
 use axum::{
     Json,
-    extract::{Multipart, State},
-    http::StatusCode,
+    body::Bytes as BodyBytes,
+    extract::{Multipart, Query, State},
+    http::{HeaderMap, StatusCode},
 };
 use bytes::Bytes;
 use futures_util::stream;
@@ -13,8 +14,8 @@ use crate::{
     AppState,
     auth::AdminUser,
     error::{AppError, AppResult},
-    models::AdminMedia,
-    telegram::{StoredFile, UploadKind},
+    models::{AdminMedia, ListParams, Page},
+    telegram::{StoredFile, UploadKind, channel_post_file},
 };
 
 pub(crate) const MEDIA_COLUMNS: &str = "id, provider, file_name, mime_type, size_bytes, duration_seconds, created_at";
@@ -111,6 +112,42 @@ pub(crate) async fn insert_telegram(db: &sqlx::PgPool, f: &StoredFile) -> sqlx::
     .bind(f.duration_seconds)
     .fetch_one(db)
     .await
+}
+
+/// `GET /api/admin/media?q=&page=&per_page=`: the media library, newest first; `q` searches file names.
+pub async fn list(State(st): State<AppState>, _: AdminUser, Query(p): Query<ListParams>) -> AppResult<Json<Page<AdminMedia>>> {
+    let pattern = p.search_pattern();
+    let list_sql = format!(
+        "SELECT {MEDIA_COLUMNS} FROM media_files WHERE ($1::text IS NULL OR file_name ILIKE $1)
+         ORDER BY created_at DESC LIMIT $2 OFFSET $3"
+    );
+    let (items, total) = tokio::try_join!(
+        sqlx::query_as::<_, AdminMedia>(&list_sql)
+            .bind(pattern.as_deref())
+            .bind(p.per_page())
+            .bind(p.offset())
+            .fetch_all(&st.db),
+        sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM media_files WHERE ($1::text IS NULL OR file_name ILIKE $1)")
+            .bind(pattern.as_deref())
+            .fetch_one(&st.db),
+    )?;
+    Ok(Json(Page { items, total, page: p.page(), per_page: p.per_page() }))
+}
+
+/// `POST /api/telegram/webhook`: Telegram delivers channel posts here (`setWebhook` with
+/// `secret_token`). Videos/documents posted in the storage channel become `media_files` rows.
+/// Anything else is acknowledged with 200 so Telegram doesn't retry it.
+pub async fn webhook(State(st): State<AppState>, headers: HeaderMap, body: BodyBytes) -> AppResult<StatusCode> {
+    let tg = st.telegram.as_ref().ok_or(AppError::NotFound)?;
+    let secret = headers.get("x-telegram-bot-api-secret-token").map(|v| v.as_bytes());
+    if !tg.webhook_authorized(secret) {
+        return Err(AppError::Unauthorized("unauthorized"));
+    }
+    if let Some(file) = channel_post_file(&body, tg.channel_id()) {
+        let media = insert_telegram(&st.db, &file).await?;
+        tracing::info!(media_id = %media.id, file_name = ?media.file_name, "imported channel post");
+    }
+    Ok(StatusCode::OK)
 }
 
 /// Keeps a display/download name: path separators and control characters dropped, ≤ 200 chars.

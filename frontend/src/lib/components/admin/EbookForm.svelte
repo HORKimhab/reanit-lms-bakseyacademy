@@ -2,15 +2,17 @@
 	import { enhance } from '$app/forms';
 	import { inputClass, labelClass, primaryButton } from '$lib/admin-ui';
 	import MediaField from './MediaField.svelte';
-	import type { AdminCategory, AdminEbook } from '$lib/types';
+	import type { AdminCategory, AdminEbook, AdminMedia } from '$lib/types';
 
 	let {
 		ebook = null,
 		categories,
+		library = [],
 		action
 	}: {
 		ebook?: AdminEbook | null;
 		categories: AdminCategory[];
+		library?: AdminMedia[];
 		action: string;
 	} = $props();
 
@@ -87,7 +89,7 @@
 				class="{inputClass} font-mono"
 			/>
 		</label>
-		<p class="mt-1"><MediaField mediaId={ebook?.media_id} mediaName={ebook?.media_file_name} accept=".pdf,.epub,application/pdf,application/epub+zip" /></p>
+		<p class="mt-1"><MediaField mediaId={ebook?.media_id} mediaName={ebook?.media_file_name} accept=".pdf,.epub,application/pdf,application/epub+zip" {library} /></p>
 		{#if ebook}
 			<p class="mt-1 flex items-center gap-3 text-xs {ebook.has_file ? 'text-green-700' : 'text-amber-700'}">
 				{ebook.has_file ? '✓ មានឯកសារ' : 'មិនទាន់មានឯកសារ'}

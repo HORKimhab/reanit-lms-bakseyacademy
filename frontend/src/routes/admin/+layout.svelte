@@ -6,6 +6,7 @@
 		{ href: '/admin/orders', label: 'ការបញ្ជាទិញ' },
 		{ href: '/admin/courses', label: 'វគ្គសិក្សា' },
 		{ href: '/admin/ebooks', label: 'សៀវភៅ' },
+		{ href: '/admin/media', label: 'ឯកសារ' },
 		{ href: '/admin/banners', label: 'ផ្ទាំងផ្សាយ' },
 		{ href: '/admin/categories', label: 'ប្រភេទ' },
 		{ href: '/admin/instructors', label: 'គ្រូ' }

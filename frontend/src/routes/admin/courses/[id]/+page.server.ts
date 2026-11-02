@@ -3,17 +3,19 @@ import { adminCall, checked, seconds, text } from '$lib/server/admin';
 import { api } from '$lib/server/api';
 import { courseBody } from '$lib/server/catalog-forms';
 import { requireToken } from '$lib/server/guard';
-import type { AdminCategory, AdminCourse, AdminInstructor } from '$lib/types';
+import type { AdminCategory, AdminCourse, AdminInstructor, AdminMedia, Paged } from '$lib/types';
 import type { Action, Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals, fetch, url, params }) => {
 	const token = requireToken(locals, url.pathname);
-	const [course, instructors, categories] = await Promise.all([
+	const [course, instructors, categories, media] = await Promise.all([
 		api<AdminCourse>(fetch, `/api/admin/courses/${encodeURIComponent(params.id)}`, { token }),
 		api<AdminInstructor[]>(fetch, '/api/admin/instructors', { token }),
-		api<AdminCategory[]>(fetch, '/api/admin/categories', { token })
+		api<AdminCategory[]>(fetch, '/api/admin/categories', { token }),
+		api<Paged<AdminMedia>>(fetch, '/api/admin/media?per_page=48', { token })
 	]);
-	return { course, instructors, categories };
+	const videos = media.items.filter((m) => m.mime_type?.startsWith('video/'));
+	return { course, instructors, categories, videos };
 };
 
 const lessonBody = (d: FormData) => ({

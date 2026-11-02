@@ -3,16 +3,18 @@ import { adminCall } from '$lib/server/admin';
 import { api } from '$lib/server/api';
 import { ebookBody } from '$lib/server/catalog-forms';
 import { requireToken } from '$lib/server/guard';
-import type { AdminCategory, AdminEbook } from '$lib/types';
+import type { AdminCategory, AdminEbook, AdminMedia, Paged } from '$lib/types';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals, fetch, url, params }) => {
 	const token = requireToken(locals, url.pathname);
-	const [ebook, categories] = await Promise.all([
+	const [ebook, categories, media] = await Promise.all([
 		api<AdminEbook>(fetch, `/api/admin/ebooks/${encodeURIComponent(params.id)}`, { token }),
-		api<AdminCategory[]>(fetch, '/api/admin/categories', { token })
+		api<AdminCategory[]>(fetch, '/api/admin/categories', { token }),
+		api<Paged<AdminMedia>>(fetch, '/api/admin/media?per_page=48', { token })
 	]);
-	return { ebook, categories };
+	const documents = media.items.filter((m) => !m.mime_type?.startsWith('video/'));
+	return { ebook, categories, documents };
 };
 
 export const actions: Actions = {

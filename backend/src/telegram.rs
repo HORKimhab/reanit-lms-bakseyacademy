@@ -22,6 +22,8 @@ pub struct Telegram {
     token: String,
     channel_id: String,
     local: Option<LocalDir>,
+    /// Expected `X-Telegram-Bot-Api-Secret-Token` on webhook calls; `None` disables the webhook.
+    webhook_secret: Option<String>,
     http: reqwest::Client,
 }
 
@@ -51,7 +53,33 @@ pub enum OpenError {
 
 impl Telegram {
     pub fn new(api_url: &str, token: String, channel_id: String, local: Option<LocalDir>) -> Self {
-        Self { api_url: api_url.trim_end_matches('/').to_owned(), token, channel_id, local, http: reqwest::Client::new() }
+        Self {
+            api_url: api_url.trim_end_matches('/').to_owned(),
+            token,
+            channel_id,
+            local,
+            webhook_secret: None,
+            http: reqwest::Client::new(),
+        }
+    }
+
+    pub fn with_webhook_secret(mut self, secret: Option<String>) -> Self {
+        self.webhook_secret = secret;
+        self
+    }
+
+    pub fn channel_id(&self) -> &str {
+        &self.channel_id
+    }
+
+    /// Whether a webhook call carries our secret (constant-time compare). False when no secret is set.
+    pub fn webhook_authorized(&self, header: Option<&[u8]>) -> bool {
+        match (&self.webhook_secret, header) {
+            (Some(secret), Some(got)) if secret.len() == got.len() => {
+                secret.bytes().zip(got).fold(0u8, |acc, (a, b)| acc | (a ^ b)) == 0
+            }
+            _ => false,
+        }
     }
 
     /// Largest file `upload` accepts: 2000 MB through a `--local` server, 50 MB on the public API.
@@ -236,32 +264,67 @@ pub fn local_path(file_path: &str, local: &LocalDir) -> Option<PathBuf> {
 
 /// `sendVideo` / `sendDocument` response body → the stored file.
 fn parse_sent_message(body: &[u8]) -> anyhow::Result<StoredFile> {
-    #[derive(Deserialize)]
-    struct Message {
-        message_id: i64,
-        video: Option<FileMeta>,
-        document: Option<FileMeta>,
-    }
-    #[derive(Deserialize)]
-    struct FileMeta {
-        file_id: String,
-        file_unique_id: String,
-        mime_type: Option<String>,
-        file_size: Option<i64>,
-        file_name: Option<String>,
-        duration: Option<i32>,
-    }
     let msg: Message = parse_envelope(body)?;
-    let f = msg.video.or(msg.document).ok_or_else(|| anyhow::anyhow!("telegram: message has no file"))?;
-    Ok(StoredFile {
-        file_id: f.file_id,
-        file_unique_id: f.file_unique_id,
-        message_id: msg.message_id,
-        mime_type: f.mime_type,
-        size_bytes: f.file_size,
-        file_name: f.file_name,
-        duration_seconds: f.duration,
-    })
+    msg.into_stored_file().ok_or_else(|| anyhow::anyhow!("telegram: message has no file"))
+}
+
+/// A video/document posted in `channel` (as configured: numeric id or `@username`), from a webhook
+/// `Update` body. `None` for anything else (other chats, text posts, edits, malformed JSON).
+pub fn channel_post_file(update: &[u8], channel: &str) -> Option<StoredFile> {
+    #[derive(Deserialize)]
+    struct Update {
+        channel_post: Option<Message>,
+    }
+    let msg = serde_json::from_slice::<Update>(update).ok()?.channel_post?;
+    let chat = msg.chat.as_ref()?;
+    let ours = match channel.strip_prefix('@') {
+        Some(name) => chat.username.as_deref().is_some_and(|u| u.eq_ignore_ascii_case(name)),
+        None => chat.id.to_string() == channel,
+    };
+    if !ours {
+        return None;
+    }
+    msg.into_stored_file()
+}
+
+#[derive(Deserialize)]
+struct Message {
+    message_id: i64,
+    #[serde(default)]
+    chat: Option<Chat>,
+    video: Option<FileMeta>,
+    document: Option<FileMeta>,
+}
+
+#[derive(Deserialize)]
+struct Chat {
+    id: i64,
+    username: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct FileMeta {
+    file_id: String,
+    file_unique_id: String,
+    mime_type: Option<String>,
+    file_size: Option<i64>,
+    file_name: Option<String>,
+    duration: Option<i32>,
+}
+
+impl Message {
+    fn into_stored_file(self) -> Option<StoredFile> {
+        let f = self.video.or(self.document)?;
+        Some(StoredFile {
+            file_id: f.file_id,
+            file_unique_id: f.file_unique_id,
+            message_id: self.message_id,
+            mime_type: f.mime_type,
+            size_bytes: f.file_size,
+            file_name: f.file_name,
+            duration_seconds: f.duration,
+        })
+    }
 }
 
 /// Bot API `{"ok": true, "result": …}` / `{"ok": false, "description": …}`.
@@ -443,6 +506,27 @@ mod tests {
         ] {
             assert_eq!(local_path(bad, &local), None, "{bad}");
         }
+    }
+
+    #[test]
+    fn picks_files_posted_in_the_storage_channel() {
+        let post = |chat: &str, body: &str| {
+            format!(r#"{{"update_id":9,"channel_post":{{"message_id":31,"date":1,"chat":{chat},{body}}}}}"#)
+        };
+        let ours = r#"{"id":-100777,"type":"channel","username":"reanit_files"}"#;
+        let video = r#""video":{"file_id":"V1","file_unique_id":"UV1","duration":90,"mime_type":"video/mp4","file_size":5}"#;
+        let doc = r#""document":{"file_id":"D1","file_unique_id":"UD1","file_name":"a.pdf","mime_type":"application/pdf"}"#;
+
+        let got = channel_post_file(post(ours, video).as_bytes(), "-100777").unwrap();
+        assert_eq!((got.file_id.as_str(), got.message_id, got.duration_seconds), ("V1", 31, Some(90)));
+        assert_eq!(channel_post_file(post(ours, doc).as_bytes(), "@reanit_files").unwrap().file_id, "D1");
+
+        let other = r#"{"id":-100999,"type":"channel"}"#;
+        assert_eq!(channel_post_file(post(other, video).as_bytes(), "-100777"), None);
+        assert_eq!(channel_post_file(post(ours, r#""text":"hello""#).as_bytes(), "-100777"), None);
+        let edited = format!(r#"{{"update_id":9,"edited_channel_post":{{"message_id":31,"date":1,"chat":{ours},{video}}}}}"#);
+        assert_eq!(channel_post_file(edited.as_bytes(), "-100777"), None);
+        assert_eq!(channel_post_file(b"not json", "-100777"), None);
     }
 
     #[test]

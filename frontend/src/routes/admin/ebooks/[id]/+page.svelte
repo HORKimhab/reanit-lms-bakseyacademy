@@ -36,6 +36,6 @@
 
 <section class="mt-4 rounded-xl border border-slate-200 bg-white p-5">
 	{#key ebook.updated_at}
-		<EbookForm {ebook} categories={data.categories} action="?/save" />
+		<EbookForm {ebook} categories={data.categories} library={data.documents} action="?/save" />
 	{/key}
 </section>

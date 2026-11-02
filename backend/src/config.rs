@@ -41,7 +41,8 @@ impl Config {
                         server_dir: optional("TELEGRAM_SERVER_DIR").unwrap_or_else(|| "/var/lib/telegram-bot-api".into()),
                         host_dir: host_dir.into(),
                     }),
-                )),
+                )
+                .with_webhook_secret(optional("TELEGRAM_WEBHOOK_SECRET"))),
             },
             storage: match optional("STORAGE_BUCKET") {
                 None => None,
