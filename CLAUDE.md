@@ -24,12 +24,13 @@ Khmer-first online course + ebook store. `backend/` is a Rust API (Axum 0.8, SQL
 Paid content stays server-side until enrollment exists (roadmap step 3–4):
 - Lesson `video_id` is exposed only as `preview_video_id` on `is_preview` lessons; playback goes through `GET /api/courses/{slug}/lessons/{id}`, which checks enrollment and returns a signed URL (`src/video.rs`).
 - Ebook file keys are never serialized; owners get a short-lived presigned URL from `GET /api/ebooks/{slug}/file` (`src/storage.rs`).
-Admin endpoints (`/api/admin/*`, `AdminUser`) may return lesson `video_id`, but ebook `file_key` stays write-only there too (`has_file`).
+Admin endpoints (`/api/admin/*`, `AdminUser`) may return lesson `video_id`, but ebook `file_key` stays write-only there too (`has_file`). Telegram file ids, file paths and the bot token never leave the API: Telegram-stored media is reachable only through short-lived signed `/media/{token}` links (`src/media_token.rs`).
 Preserve these when touching course/ebook responses.
 
 ## Frontend conventions
 
 - All API calls go through `api()` in `src/lib/server/api.ts`, from `+page.server.ts` / `+layout.server.ts` loads only. The browser never talks to the Rust API directly; `API_URL` is a private env var.
+- Exception for streamed bodies: `+server.ts` proxy routes use `apiStream()` and pipe bytes without parsing: `/media/[token]` (Telegram media, `Range` passthrough), `/admin/media/upload` (admin uploads → Telegram) and `/telegram/webhook`. Don't route uploads through form actions: `request.formData()` buffers the whole file.
 - `src/lib/types.ts` mirrors the Rust response structs by hand; update both sides together.
 - Components use Svelte 5 runes (`$props()`, `$state`, `$derived`).
 - UI copy is Khmer-first with English via Paraglide: strings live in `frontend/messages/{km,en}.json` and are used as `m.key()` (`$lib/paraglide/messages.js`, generated on dev/build, gitignored). Add both locales together; English counts use plural variants (see `courses_count`). Locale comes from the `PARAGLIDE_LOCALE` cookie (header switcher), default `km`. The admin area (`/admin`) is Khmer-only, but its error codes still go through `errors.ts`.
