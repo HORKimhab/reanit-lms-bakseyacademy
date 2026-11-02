@@ -263,5 +263,6 @@
 	"order_proof_uploaded": "Screenshot sent to the admins",
 	"order_proof_upload": "Upload",
 	"order_proof_replace": "Replace",
-	"error_invalid_image": "Please choose a PNG, JPEG or WebP image"
+	"error_invalid_image": "Please choose a PNG, JPEG or WebP image",
+	"error_too_many_attempts": "Too many wrong attempts. Please wait 15 minutes and try again."
 }

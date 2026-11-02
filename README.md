@@ -92,7 +92,7 @@ Authenticated routes take `Authorization: Bearer <token>` (the token from regist
 | PUT / DELETE | `/api/ebooks/{slug}/review` | same as course reviews, for buyers |
 | GET | `/api/ebooks/{slug}/file?disposition=inline\|attachment` | Bearer, owners only → `{url, expires_at}`: `/media/{token}` for uploaded Telegram media, else a presigned (1 h) S3/R2 link; 403 not bought, 404 no file, 503 `storage_unavailable` |
 | POST | `/api/auth/register` | `{full_name, phone, password}` → 201 `{token, max_age, user}`; 409 `phone_taken`, 422 `invalid_phone` / `invalid_name` / `weak_password` |
-| POST | `/api/auth/login` | `{phone, password}` → `{token, max_age, user}`; 401 `invalid_credentials` |
+| POST | `/api/auth/login` | `{phone, password}` → `{token, max_age, user}`; 401 `invalid_credentials`; 429 `too_many_attempts` after 10 wrong passwords for a number within 15 min |
 | POST | `/api/auth/logout` | Bearer → 204, deletes the session |
 | GET | `/api/me` | Bearer → user; 401 `unauthorized` |
 | PATCH | `/api/me` | Bearer, `{full_name, email}` (empty email clears it) → user; 409 `email_taken`, 422 `invalid_email` / `invalid_name` |

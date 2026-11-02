@@ -193,5 +193,6 @@
 	"order_proof_uploaded": "បានផ្ញើរូបភាពទៅអ្នកគ្រប់គ្រងហើយ",
 	"order_proof_upload": "ផ្ញើរូបភាព",
 	"order_proof_replace": "ប្តូររូបភាព",
-	"error_invalid_image": "សូមជ្រើសរើសរូបភាព PNG, JPEG ឬ WebP"
+	"error_invalid_image": "សូមជ្រើសរើសរូបភាព PNG, JPEG ឬ WebP",
+	"error_too_many_attempts": "ព្យាយាមខុសច្រើនដងពេក សូមរង់ចាំ ១៥ នាទី ហើយព្យាយាមម្តងទៀត"
 }

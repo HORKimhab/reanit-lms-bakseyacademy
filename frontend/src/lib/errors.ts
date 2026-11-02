@@ -3,6 +3,7 @@ import { m } from '$lib/paraglide/messages.js';
 // Messages (messages/{km,en}.json → `error_<code>`) for API error codes (`{"error": code}`) shown in forms.
 const messages: Record<string, () => string> = {
 	invalid_credentials: m.error_invalid_credentials,
+	too_many_attempts: m.error_too_many_attempts,
 	phone_taken: m.error_phone_taken,
 	email_taken: m.error_email_taken,
 	invalid_phone: m.error_invalid_phone,

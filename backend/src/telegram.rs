@@ -152,8 +152,8 @@ impl Telegram {
         if matches!(kind, UploadKind::Video) {
             form = form.text("supports_streaming", "true");
         }
-        let res = self.http.post(self.method_url(method)).multipart(form).send().await?;
-        parse_sent_message(&res.bytes().await?)
+        let res = self.http.post(self.method_url(method)).multipart(form).send().await.map_err(redact)?;
+        parse_sent_message(&res.bytes().await.map_err(redact)?)
     }
 
     /// `getFile`: a download path (public API) or an absolute path on the `--local` server's disk.
@@ -168,8 +168,9 @@ impl Telegram {
             .post(self.method_url("getFile"))
             .json(&serde_json::json!({ "file_id": file_id }))
             .send()
-            .await?;
-        let file: File = parse_envelope(&res.bytes().await?)?;
+            .await
+            .map_err(redact)?;
+        let file: File = parse_envelope(&res.bytes().await.map_err(redact)?)?;
         file.file_path.ok_or_else(|| anyhow::anyhow!("telegram: file has no path (too big for this Bot API server?)"))
     }
 
@@ -229,7 +230,7 @@ impl Telegram {
         if let Some(range) = range {
             req = req.header(reqwest::header::RANGE, range);
         }
-        let res = req.send().await.map_err(anyhow::Error::from)?;
+        let res = req.send().await.map_err(redact)?;
         let status = res.status();
         if status == StatusCode::RANGE_NOT_SATISFIABLE {
             return Err(OpenError::RangeNotSatisfiable);
@@ -246,9 +247,14 @@ impl Telegram {
             status,
             content_length: res.content_length(),
             content_range,
-            stream: Box::pin(res.bytes_stream().map_err(std::io::Error::other)),
+            stream: Box::pin(res.bytes_stream().map_err(|e| std::io::Error::other(e.without_url()))),
         })
     }
+}
+
+/// reqwest errors print their URL, which contains the bot token: drop it before the error can be logged.
+fn redact(e: reqwest::Error) -> anyhow::Error {
+    anyhow::Error::from(e.without_url())
 }
 
 /// `--local` server: read the file from the shared directory.
@@ -502,6 +508,18 @@ mod tests {
         assert_eq!(collect(part).await, b"2345");
 
         assert!(matches!(tg.open(&path, Some("bytes=50-")).await, Err(OpenError::RangeNotSatisfiable)));
+    }
+
+    #[tokio::test]
+    async fn network_errors_never_carry_the_bot_token() {
+        // Nothing listens on port 9 (discard) here: every call fails at the connection.
+        let tg = Telegram::new("http://127.0.0.1:9", TOKEN.into(), "-1".into(), None);
+        let upload = tg.upload_to("-1", None, UploadKind::Document, "a.pdf", "application/pdf", 1, vec![0u8].into()).await;
+        let get = tg.file_path("FID").await;
+        let open = tg.open("documents/a.pdf", None).await;
+        for err in [upload.unwrap_err().to_string(), get.unwrap_err().to_string(), format!("{:?}", open.err().unwrap())] {
+            assert!(!err.contains(TOKEN), "{err}");
+        }
     }
 
     #[tokio::test]

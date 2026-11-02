@@ -46,7 +46,7 @@ pub fn optional_url(s: Option<&str>) -> AppResult<Option<String>> {
     };
     let site_path = url.starts_with('/') && !url.starts_with("//") && !url.starts_with("/\\");
     let http = url.starts_with("https://") || url.starts_with("http://");
-    if !(site_path || http) || url.contains(char::is_whitespace) {
+    if !(site_path || http) || url.contains(|c: char| c.is_whitespace() || c.is_control()) {
         return Err(AppError::Validation("invalid_url"));
     }
     Ok(Some(url))
@@ -115,7 +115,7 @@ mod tests {
         assert_eq!(optional_url(Some(" /courses?category=x ")).unwrap().as_deref(), Some("/courses?category=x"));
         assert_eq!(optional_url(Some("https://cdn.example.com/a.jpg")).unwrap().as_deref(), Some("https://cdn.example.com/a.jpg"));
         assert_eq!(optional_url(Some("")).unwrap(), None);
-        for bad in ["javascript:alert(1)", "//evil.com", "/\\evil.com", "data:text/html,x", "ftp://x", "https://a b"] {
+        for bad in ["javascript:alert(1)", "//evil.com", "/\\evil.com", "data:text/html,x", "ftp://x", "https://a b", "/\t/evil.com", "/\n/evil.com", "/\u{0}/evil.com"] {
             assert_eq!(code(optional_url(Some(bad))), "invalid_url", "{bad}");
         }
     }

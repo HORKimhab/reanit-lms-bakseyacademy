@@ -20,6 +20,9 @@ pub enum AppError {
     /// Missing/expired session (`unauthorized`) or failed login (`invalid_credentials`).
     #[error("unauthorized: {0}")]
     Unauthorized(&'static str),
+    /// Rate limited (e.g. `too_many_attempts` after repeated wrong passwords).
+    #[error("too many requests: {0}")]
+    TooManyRequests(&'static str),
     /// Signed in but not allowed (e.g. not an admin).
     #[error("forbidden")]
     Forbidden,
@@ -40,6 +43,7 @@ impl IntoResponse for AppError {
             AppError::Conflict(code) => (StatusCode::CONFLICT, *code),
             AppError::Unauthorized(code) => (StatusCode::UNAUTHORIZED, *code),
             AppError::Forbidden => (StatusCode::FORBIDDEN, "forbidden"),
+            AppError::TooManyRequests(code) => (StatusCode::TOO_MANY_REQUESTS, *code),
             AppError::Unavailable(code) => (StatusCode::SERVICE_UNAVAILABLE, *code),
             AppError::Db(e) => {
                 tracing::error!(error = %e, "database error");

@@ -5,6 +5,7 @@ mod media_token;
 mod models;
 mod routes;
 mod storage;
+mod throttle;
 mod telegram;
 mod validate;
 mod video;
@@ -26,6 +27,7 @@ pub struct AppState {
     pub storage: Option<storage::ObjectStorage>,
     pub telegram: Option<telegram::Telegram>,
     pub media_key: std::sync::Arc<[u8]>,
+    pub login_throttle: std::sync::Arc<throttle::LoginThrottle>,
 }
 
 #[tokio::main]
@@ -66,6 +68,7 @@ async fn main() -> anyhow::Result<()> {
         storage: config.storage,
         telegram: config.telegram,
         media_key: config.media_key.into(),
+        login_throttle: Default::default(),
     })
         // Ranged media bodies (Accept-Ranges) must keep their exact bytes and Content-Length.
         .layer(CompressionLayer::new().compress_when(DefaultPredicate::new().and(

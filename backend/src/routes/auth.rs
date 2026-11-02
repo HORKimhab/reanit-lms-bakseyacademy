@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use axum::{Json, extract::State, http::StatusCode};
 use serde::Deserialize;
 
@@ -67,7 +69,13 @@ pub async fn login(
     State(st): State<AppState>,
     Json(body): Json<LoginBody>,
 ) -> AppResult<Json<AuthResponse>> {
-    let row = match auth::normalize_phone(&body.phone) {
+    let phone = auth::normalize_phone(&body.phone);
+    // Throttle per number (normalized when valid) against online password guessing.
+    let throttle_key = phone.clone().unwrap_or_else(|| body.phone.trim().to_owned());
+    if !st.login_throttle.allowed(&throttle_key, Instant::now()) {
+        return Err(AppError::TooManyRequests("too_many_attempts"));
+    }
+    let row = match phone {
         Some(phone) => {
             sqlx::query_as::<_, LoginRow>(&format!(
                 "SELECT {USER_COLUMNS}, password_hash FROM users WHERE phone = $1"
@@ -84,8 +92,12 @@ pub async fn login(
     };
     let user = match (auth::verify_password(body.password, stored).await?, user) {
         (true, Some(user)) => user,
-        _ => return Err(AppError::Unauthorized("invalid_credentials")),
+        _ => {
+            st.login_throttle.record_failure(&throttle_key, Instant::now());
+            return Err(AppError::Unauthorized("invalid_credentials"));
+        }
     };
+    st.login_throttle.record_success(&throttle_key);
 
     sqlx::query("DELETE FROM sessions WHERE user_id = $1 AND expires_at <= now()")
         .bind(user.id)
