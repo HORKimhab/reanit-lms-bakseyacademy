@@ -24,7 +24,7 @@ Payment now: the user picks Bakong KHQR or ABA PayWay, scans that method's stati
 - [x] C5 `/account/orders`, `/account/library`, `owned` flag on detail pages ("Continue learning" / "Read")
 
 ## D. Learning (roadmap 4)
-- [ ] D1 `GET /api/courses/{slug}/lessons/{id}`: signed video URL for enrolled users only
+- [x] D1 `GET /api/courses/{slug}/lessons/{id}`: signed video URL for enrolled users only
 - [ ] D2 Lesson player page + curriculum sidebar
 - [ ] D3 Progress tracking (`lesson_progress`, mark complete, % on cards)
 - [ ] D4 Ebook signed download / reader for owners

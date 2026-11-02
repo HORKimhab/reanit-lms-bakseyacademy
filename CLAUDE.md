@@ -22,7 +22,7 @@ Khmer-first online course + ebook store. `backend/` is a Rust API (Axum 0.8, SQL
 ## Access-control invariants
 
 Paid content stays server-side until enrollment exists (roadmap step 3–4):
-- Lesson `video_id` is exposed only as `preview_video_id` on `is_preview` lessons.
+- Lesson `video_id` is exposed only as `preview_video_id` on `is_preview` lessons; playback goes through `GET /api/courses/{slug}/lessons/{id}`, which checks enrollment and returns a signed URL (`src/video.rs`).
 - Ebook file keys are never serialized.
 Preserve these when touching course/ebook responses.
 

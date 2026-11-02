@@ -17,7 +17,7 @@ createdb reanit_lms            # skip if it already exists
 
 # 2. API — applies migrations on start
 cd backend
-cp .env.example .env           # adjust DATABASE_URL if needed
+cp .env.example .env           # adjust DATABASE_URL; BUNNY_* for lesson videos
 cargo run                      # http://127.0.0.1:8080/api/health
 
 # 3. demo data (dev only — truncates tables!)
@@ -51,6 +51,7 @@ Authenticated routes take `Authorization: Bearer <token>` (the token from regist
 | GET | `/api/categories` | |
 | GET | `/api/courses?q=&category=&page=&per_page=` | paged, search title/instructor |
 | GET | `/api/courses/{slug}` | detail + curriculum (video id only for preview lessons); optional Bearer → `owned` |
+| GET | `/api/courses/{slug}/lessons/{id}` | optional Bearer → lesson + signed Bunny Stream `video_url` (`expires_at`); enrolled users (even if unpublished) or preview lessons; 401 signed out, 403 not enrolled |
 | GET | `/api/ebooks?q=&category=&page=&per_page=` | paged, search title/author |
 | GET | `/api/ebooks/{slug}` | detail (file key never exposed); optional Bearer → `owned` |
 | POST | `/api/auth/register` | `{full_name, phone, password}` → 201 `{token, max_age, user}`; 409 `phone_taken`, 422 `invalid_phone` / `invalid_name` / `weak_password` |

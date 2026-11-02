@@ -5,6 +5,7 @@ mod categories;
 mod courses;
 mod ebooks;
 mod home;
+mod lessons;
 mod library;
 mod orders;
 
@@ -41,6 +42,7 @@ pub fn router(state: AppState) -> Router {
         .route("/api/categories", get(categories::list))
         .route("/api/courses", get(courses::list))
         .route("/api/courses/{slug}", get(courses::detail))
+        .route("/api/courses/{slug}/lessons/{id}", get(lessons::lesson))
         .route("/api/ebooks", get(ebooks::list))
         .route("/api/ebooks/{slug}", get(ebooks::detail))
         .with_state(state)

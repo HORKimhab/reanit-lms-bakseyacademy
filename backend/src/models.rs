@@ -193,8 +193,33 @@ pub struct LessonOut {
     pub title: String,
     pub duration_seconds: i32,
     pub is_preview: bool,
-    /// Only exposed for free preview lessons; paid lessons need an enrollment check (todo).
+    /// Only exposed for free preview lessons; enrolled users get playback via `/lessons/{id}`.
     pub preview_video_id: Option<String>,
+}
+
+#[derive(FromRow)]
+pub struct LessonAccessRow {
+    pub id: Uuid,
+    pub section_id: Uuid,
+    pub title: String,
+    pub duration_seconds: i32,
+    pub is_preview: bool,
+    pub video_id: Option<String>,
+    pub published: bool,
+    pub enrolled: bool,
+}
+
+/// A lesson the caller may watch. `video_url` is a signed embed URL (`None` when the lesson has
+/// no video or no provider is configured); `expires_at` is set when the URL is signed.
+#[derive(Serialize)]
+pub struct LessonPlayback {
+    pub id: Uuid,
+    pub section_id: Uuid,
+    pub title: String,
+    pub duration_seconds: i32,
+    pub is_preview: bool,
+    pub video_url: Option<String>,
+    pub expires_at: Option<DateTime<Utc>>,
 }
 
 #[derive(Serialize)]
