@@ -8,11 +8,12 @@ anyhow = "1"
 argon2 = "0.5"
 axum = "0.8"
 base64 = "0.22"
+chrono = { version = "0.4", default-features = false, features = ["serde", "clock", "std"] }
 dotenvy = "0.15"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 sha2 = "0.10"
-sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "postgres", "uuid", "macros", "migrate"] }
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "postgres", "uuid", "chrono", "macros", "migrate"] }
 thiserror = "2"
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "net", "signal"] }
 tower-http = { version = "0.6", features = ["trace", "compression-gzip"] }

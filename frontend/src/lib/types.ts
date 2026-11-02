@@ -106,3 +106,39 @@ export interface Cart {
 	items: CartItem[];
 	total_cents: number;
 }
+
+export interface PaymentMethod {
+	code: string;
+	name_km: string;
+	name_en: string;
+	account_name: string;
+	account_number: string;
+	qr_image_url: string | null;
+}
+
+export type OrderStatus = 'pending_payment' | 'awaiting_approval' | 'paid' | 'rejected' | 'cancelled';
+
+export interface OrderItem {
+	kind: 'course' | 'ebook';
+	course_id: string | null;
+	ebook_id: string | null;
+	title: string;
+	price_cents: number;
+}
+
+export interface OrderSummary {
+	id: string;
+	status: OrderStatus;
+	total_cents: number;
+	payment_method_code: string | null;
+	payment_ref: string | null;
+	admin_note: string | null;
+	created_at: string;
+	submitted_at: string | null;
+	paid_at: string | null;
+}
+
+export interface OrderDetail extends OrderSummary {
+	payment_method: PaymentMethod | null;
+	items: OrderItem[];
+}

@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use uuid::Uuid;
@@ -60,6 +61,47 @@ impl Cart {
         let total_cents = items.iter().map(|i| i64::from(i.effective_price_cents())).sum();
         Self { items, total_cents }
     }
+}
+
+#[derive(Serialize, FromRow)]
+pub struct PaymentMethod {
+    pub code: String,
+    pub name_km: String,
+    pub name_en: String,
+    pub account_name: String,
+    pub account_number: String,
+    pub qr_image_url: Option<String>,
+}
+
+#[derive(Serialize, FromRow)]
+pub struct OrderItem {
+    pub kind: String,
+    pub course_id: Option<Uuid>,
+    pub ebook_id: Option<Uuid>,
+    pub title: String,
+    pub price_cents: i32,
+}
+
+/// One order row; `OrderDetail` adds its items and payment method.
+#[derive(Serialize, FromRow)]
+pub struct OrderSummary {
+    pub id: Uuid,
+    pub status: String,
+    pub total_cents: i32,
+    pub payment_method_code: Option<String>,
+    pub payment_ref: Option<String>,
+    pub admin_note: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub submitted_at: Option<DateTime<Utc>>,
+    pub paid_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Serialize)]
+pub struct OrderDetail {
+    #[serde(flatten)]
+    pub order: OrderSummary,
+    pub payment_method: Option<PaymentMethod>,
+    pub items: Vec<OrderItem>,
 }
 
 #[derive(Serialize, FromRow)]

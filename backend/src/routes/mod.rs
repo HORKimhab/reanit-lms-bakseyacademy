@@ -4,6 +4,7 @@ mod categories;
 mod courses;
 mod ebooks;
 mod home;
+mod orders;
 
 use axum::{
     Json, Router,
@@ -25,6 +26,11 @@ pub fn router(state: AppState) -> Router {
         .route("/api/me/password", post(auth::change_password))
         .route("/api/cart", get(cart::get).post(cart::add))
         .route("/api/cart/{id}", delete(cart::remove))
+        .route("/api/payment-methods", get(orders::payment_methods))
+        .route("/api/orders", post(orders::checkout))
+        .route("/api/orders/{id}", get(orders::detail))
+        .route("/api/orders/{id}/submit", post(orders::submit))
+        .route("/api/orders/{id}/cancel", post(orders::cancel))
         .route("/api/categories", get(categories::list))
         .route("/api/courses", get(courses::list))
         .route("/api/courses/{slug}", get(courses::detail))

@@ -22,3 +22,22 @@ export function formatClock(seconds: number): string {
 	const s = seconds % 60;
 	return `${m}:${String(s).padStart(2, '0')}`;
 }
+
+/** Date + time in Phnom Penh time with Khmer month names and digits, e.g. "២ វិច្ឆិកា ២០២៦ ១៤:០៥". */
+export function formatDateTime(iso: string): string {
+	const d = new Date(iso);
+	const parts = new Intl.DateTimeFormat('en-GB', {
+		timeZone: 'Asia/Phnom_Penh',
+		day: 'numeric',
+		month: 'numeric',
+		year: 'numeric',
+		hour: '2-digit',
+		minute: '2-digit',
+		hour12: false
+	}).formatToParts(d);
+	const get = (t: string) => parts.find((p) => p.type === t)?.value ?? '';
+	const month = KHMER_MONTHS[Number(get('month')) - 1];
+	return khmerNumber(`${Number(get('day'))} ${month} ${get('year')} ${get('hour')}:${get('minute')}`);
+}
+
+const KHMER_MONTHS = ['មករា', 'កុម្ភៈ', 'មីនា', 'មេសា', 'ឧសភា', 'មិថុនា', 'កក្កដា', 'សីហា', 'កញ្ញា', 'តុលា', 'វិច្ឆិកា', 'ធ្នូ'];

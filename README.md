@@ -52,6 +52,11 @@ Authenticated routes take `Authorization: Bearer <token>` (the token from regist
 | GET | `/api/cart` | Bearer → `{items, total_cents}` (published items; total uses sale price) |
 | POST | `/api/cart` | Bearer, `{course_id}` or `{ebook_id}` → cart; 404, 409 `already_owned`, 422 `invalid_item` |
 | DELETE | `/api/cart/{id}` | Bearer → cart |
+| GET | `/api/payment-methods` | active methods with QR image and account |
+| POST | `/api/orders` | Bearer, `{payment_method}` → 201 order (cart → `pending_payment`; free → `paid` + granted); 422 `cart_empty` / `invalid_payment_method` |
+| GET | `/api/orders/{id}` | Bearer, own orders only → order with items + payment method |
+| POST | `/api/orders/{id}/submit` | Bearer, `{payment_ref}` → `awaiting_approval` (from `pending_payment` or `rejected`); 409 `invalid_status` |
+| POST | `/api/orders/{id}/cancel` | Bearer → `cancelled` (from `pending_payment` only) |
 
 ## Roadmap
 

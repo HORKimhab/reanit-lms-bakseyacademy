@@ -11,6 +11,11 @@ const messages: Record<string, string> = {
 	password_mismatch: 'ពាក្យសម្ងាត់មិនដូចគ្នាទេ',
 	already_owned: 'អ្នកមានវារួចហើយ',
 	invalid_item: 'ទំនិញមិនត្រឹមត្រូវ',
+	cart_empty: 'កន្ត្រករបស់អ្នកទទេ',
+	invalid_payment_method: 'សូមជ្រើសរើសវិធីបង់ប្រាក់',
+	invalid_payment_ref: 'សូមបញ្ចូលលេខប្រតិបត្តិការ (យ៉ាងហោចណាស់ ៣ តួ)',
+	invalid_status: 'ការបញ្ជាទិញនេះមិនអាចកែប្រែបានទៀតទេ',
+	not_found: 'រកមិនឃើញ',
 	unauthorized: 'សូមចូលគណនីម្តងទៀត',
 	unavailable: 'មិនអាចភ្ជាប់ទៅម៉ាស៊ីនមេបានទេ'
 };
