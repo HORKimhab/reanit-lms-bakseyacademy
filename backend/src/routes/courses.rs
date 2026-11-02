@@ -78,10 +78,13 @@ pub async fn detail(
     current: Option<CurrentUser>,
     Path(slug): Path<String>,
 ) -> AppResult<Json<CourseDetail>> {
+    // Enrolled users keep seeing (and learning) a course after it is unpublished.
     let card = sqlx::query_as::<_, CourseCard>(&format!(
-        "{CARD_SELECT} WHERE c.published AND c.slug = $1"
+        "{CARD_SELECT} WHERE c.slug = $1 AND (c.published OR EXISTS (
+             SELECT 1 FROM enrollments en WHERE en.course_id = c.id AND en.user_id = $2))"
     ))
     .bind(&slug)
+    .bind(current.as_ref().map(|c| c.user.id))
     .fetch_optional(&st.db)
     .await?
     .ok_or(AppError::NotFound)?;

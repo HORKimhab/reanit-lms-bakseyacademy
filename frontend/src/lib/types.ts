@@ -31,6 +31,17 @@ export interface Lesson {
 	preview_video_id: string | null;
 }
 
+/** `GET /api/courses/{slug}/lessons/{id}`: a lesson the caller may watch. */
+export interface LessonPlayback {
+	id: string;
+	section_id: string;
+	title: string;
+	duration_seconds: number;
+	is_preview: boolean;
+	video_url: string | null;
+	expires_at: string | null;
+}
+
 export interface Section {
 	id: string;
 	title: string;

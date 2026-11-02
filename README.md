@@ -50,7 +50,7 @@ Authenticated routes take `Authorization: Bearer <token>` (the token from regist
 | GET | `/api/home` | published banners + 8 newest courses + ebooks |
 | GET | `/api/categories` | |
 | GET | `/api/courses?q=&category=&page=&per_page=` | paged, search title/instructor |
-| GET | `/api/courses/{slug}` | detail + curriculum (video id only for preview lessons); optional Bearer → `owned` |
+| GET | `/api/courses/{slug}` | detail + curriculum (video id only for preview lessons); optional Bearer → `owned` (enrolled users also see unpublished courses) |
 | GET | `/api/courses/{slug}/lessons/{id}` | optional Bearer → lesson + signed Bunny Stream `video_url` (`expires_at`); enrolled users (even if unpublished) or preview lessons; 401 signed out, 403 not enrolled |
 | GET | `/api/ebooks?q=&category=&page=&per_page=` | paged, search title/author |
 | GET | `/api/ebooks/{slug}` | detail (file key never exposed); optional Bearer → `owned` |
