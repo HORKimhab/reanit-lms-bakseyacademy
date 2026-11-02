@@ -17,6 +17,9 @@ pub enum AppError {
     /// The request conflicts with existing data (e.g. `phone_taken`).
     #[error("conflict: {0}")]
     Conflict(&'static str),
+    /// Missing/expired session (`unauthorized`) or failed login (`invalid_credentials`).
+    #[error("unauthorized: {0}")]
+    Unauthorized(&'static str),
     #[error(transparent)]
     Db(#[from] sqlx::Error),
     #[error(transparent)]
@@ -29,6 +32,7 @@ impl IntoResponse for AppError {
             AppError::NotFound => (StatusCode::NOT_FOUND, "not_found"),
             AppError::Validation(code) => (StatusCode::UNPROCESSABLE_ENTITY, *code),
             AppError::Conflict(code) => (StatusCode::CONFLICT, *code),
+            AppError::Unauthorized(code) => (StatusCode::UNAUTHORIZED, *code),
             AppError::Db(e) => {
                 tracing::error!(error = %e, "database error");
                 (StatusCode::INTERNAL_SERVER_ERROR, "internal_error")

@@ -1,18 +1,28 @@
 //! Phone normalization, password hashing and session tokens.
 
+use std::sync::LazyLock;
+
 use argon2::{
-    Argon2, PasswordHasher,
+    Argon2, PasswordHash, PasswordHasher, PasswordVerifier,
     password_hash::{
         SaltString,
         rand_core::{OsRng, RngCore},
     },
+};
+use axum::{
+    extract::FromRequestParts,
+    http::{header::AUTHORIZATION, request::Parts},
 };
 use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
 use sha2::{Digest, Sha256};
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::error::{AppError, AppResult};
+use crate::{
+    AppState,
+    error::{AppError, AppResult},
+    models::User,
+};
 
 /// Sessions last 30 days from login.
 pub const SESSION_TTL_SECS: i64 = 30 * 24 * 60 * 60;
@@ -66,6 +76,33 @@ pub async fn hash_password(password: String) -> AppResult<String> {
     .map_err(AppError::from)
 }
 
+/// Checks `password` against a stored hash. With no stored hash (unknown phone or a
+/// passwordless account) it still runs a full verify so timing doesn't reveal which phones exist.
+pub async fn verify_password(password: String, stored: Option<String>) -> AppResult<bool> {
+    static DUMMY_HASH: LazyLock<String> = LazyLock::new(|| {
+        let salt = SaltString::generate(&mut OsRng);
+        Argon2::default()
+            .hash_password(b"dummy password", &salt)
+            .expect("hash dummy password")
+            .to_string()
+    });
+    tokio::task::spawn_blocking(move || {
+        let (hash, real) = match &stored {
+            Some(h) => (h.as_str(), true),
+            None => (DUMMY_HASH.as_str(), false),
+        };
+        let parsed =
+            PasswordHash::new(hash).map_err(|e| anyhow::anyhow!("parse password hash: {e}"))?;
+        let ok = Argon2::default()
+            .verify_password(password.as_bytes(), &parsed)
+            .is_ok();
+        Ok::<_, anyhow::Error>(real && ok)
+    })
+    .await
+    .map_err(anyhow::Error::from)?
+    .map_err(AppError::from)
+}
+
 /// Opaque random token for the client, and the SHA-256 we store for it.
 fn new_token() -> (String, Vec<u8>) {
     let mut bytes = [0u8; 32];
@@ -92,6 +129,38 @@ pub async fn create_session(db: &PgPool, user_id: Uuid) -> AppResult<String> {
     .execute(db)
     .await?;
     Ok(token)
+}
+
+/// The signed-in user, resolved from `Authorization: Bearer <token>`.
+/// Rejects with 401 `unauthorized` when the token is missing, unknown or expired.
+pub struct CurrentUser {
+    pub user: User,
+    pub token_hash: Vec<u8>,
+}
+
+impl FromRequestParts<AppState> for CurrentUser {
+    type Rejection = AppError;
+
+    async fn from_request_parts(parts: &mut Parts, st: &AppState) -> Result<Self, Self::Rejection> {
+        let token = parts
+            .headers
+            .get(AUTHORIZATION)
+            .and_then(|v| v.to_str().ok())
+            .and_then(|v| v.strip_prefix("Bearer "))
+            .filter(|t| !t.is_empty())
+            .ok_or(AppError::Unauthorized("unauthorized"))?;
+        let token_hash = hash_token(token);
+        let user = sqlx::query_as::<_, User>(
+            "SELECT u.id, u.full_name, u.phone, u.email, u.role \
+             FROM sessions s JOIN users u ON u.id = s.user_id \
+             WHERE s.token_hash = $1 AND s.expires_at > now()",
+        )
+        .bind(&token_hash)
+        .fetch_optional(&st.db)
+        .await?
+        .ok_or(AppError::Unauthorized("unauthorized"))?;
+        Ok(Self { user, token_hash })
+    }
 }
 
 #[cfg(test)]
@@ -141,6 +210,26 @@ mod tests {
         assert_ne!(a, b);
         assert_eq!(hash_token(&a), ha);
         assert_eq!(a.len(), 43);
+    }
+
+    #[tokio::test]
+    async fn verifies_passwords() {
+        let hash = hash_password("correct horse".into()).await.unwrap();
+        assert!(
+            verify_password("correct horse".into(), Some(hash.clone()))
+                .await
+                .unwrap()
+        );
+        assert!(
+            !verify_password("wrong horse".into(), Some(hash))
+                .await
+                .unwrap()
+        );
+        assert!(
+            !verify_password("dummy password".into(), None)
+                .await
+                .unwrap()
+        );
     }
 
     #[test]

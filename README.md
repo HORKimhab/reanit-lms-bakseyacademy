@@ -32,6 +32,8 @@ bun run dev                    # http://localhost:5173
 
 ## API
 
+Authenticated routes take `Authorization: Bearer <token>` (the token from register/login).
+
 | Method | Path | Notes |
 |---|---|---|
 | GET | `/api/health` | DB ping |
@@ -42,6 +44,9 @@ bun run dev                    # http://localhost:5173
 | GET | `/api/ebooks?q=&category=&page=&per_page=` | paged, search title/author |
 | GET | `/api/ebooks/{slug}` | detail (file key never exposed) |
 | POST | `/api/auth/register` | `{full_name, phone, password}` → 201 `{token, max_age, user}`; 409 `phone_taken`, 422 `invalid_phone` / `invalid_name` / `weak_password` |
+| POST | `/api/auth/login` | `{phone, password}` → `{token, max_age, user}`; 401 `invalid_credentials` |
+| POST | `/api/auth/logout` | Bearer → 204, deletes the session |
+| GET | `/api/me` | Bearer → user; 401 `unauthorized` |
 
 ## Roadmap
 
