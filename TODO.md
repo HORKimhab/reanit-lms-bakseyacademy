@@ -3,7 +3,7 @@
 Feature parity with a typical Khmer course + ebook store (reference: bakseyacademy.com — features and layout only; no copied branding, content or contact details). One task = one commit; run the checks in `CLAUDE.md` before each commit and tick the box in the same commit.
 
 ## A. Layout
-- [ ] A1 Footer: address, phones, email and social links (Facebook / Telegram / YouTube) from one config, `frontend/src/lib/site.ts` (placeholders until real details exist)
+- [x] A1 Footer: address, phones, email and social links (Facebook / Telegram / YouTube) from one config, `frontend/src/lib/site.ts` (placeholders until real details exist)
 - [ ] A2 Homepage slideshow: `banners` table + `GET /api/banners`, `Carousel.svelte` replaces the gradient hero
 
 ## B. Accounts (roadmap 2)
