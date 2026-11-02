@@ -35,7 +35,7 @@ bun run dev                    # http://localhost:5173
 Lesson videos and ebook files can live as posts in a private Telegram channel instead of Bunny / R2. The bot stores and fetches them; the API streams every byte through signed, expiring `/media/{token}` links, so the bot token and Telegram file URLs never reach the browser.
 
 1. **Bot + channel.** Create a bot with [@BotFather](https://t.me/BotFather), create a **private** channel, and add the bot as an admin that can post. The channel id is the `-100…` number (e.g. forward a channel post to [@userinfobot](https://t.me/userinfobot)).
-2. **API env** (`backend/.env`): `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHANNEL_ID`, `MEDIA_SIGNING_KEY` (any long random string; without it links break on every restart), `TELEGRAM_WEBHOOK_SECRET`.
+2. **API env** (`backend/.env`): `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHANNEL_ID`, `MEDIA_SIGNING_KEY` (any long random string; without it links break on every restart), `TELEGRAM_WEBHOOK_SECRET`, and `TELEGRAM_ADMIN_CHAT_ID`: the admins' group/channel (bot added) that receives buyers' payment screenshots with the order details, so admins get notified (defaults to the storage channel).
 3. **Large files: self-hosted Bot API.** The public API only uploads ≤ 50 MB and downloads ≤ 20 MB, too small for course videos. Run the `--local` server (uploads ≤ 2000 MB) with `api_id` / `api_hash` from <https://my.telegram.org>:
    ```sh
    TELEGRAM_API_ID=… TELEGRAM_API_HASH=… docker compose --profile telegram up -d telegram-bot-api
@@ -51,7 +51,7 @@ Lesson videos and ebook files can live as posts in a private Telegram channel in
    curl "$TELEGRAM_API_URL/bot$TOKEN/setWebhook" -d url=https://<site>/telegram/webhook \
         -d secret_token=$TELEGRAM_WEBHOOK_SECRET -d 'allowed_updates=["channel_post"]'
    ```
-5. **Upload size on the web side.** Uploads stream through SvelteKit (`/admin/media/upload`). adapter-node rejects bodies over `BODY_SIZE_LIMIT` (default 512 KB): start the built frontend with e.g. `BODY_SIZE_LIMIT=2200M node build`, and raise any reverse-proxy limit too (nginx `client_max_body_size 2200m`).
+5. **Upload size on the web side.** Uploads stream through SvelteKit (`/admin/media/upload`; payment screenshots ≤ 10 MB go through the order page's form action). adapter-node rejects bodies over `BODY_SIZE_LIMIT` (default 512 KB): start the built frontend with e.g. `BODY_SIZE_LIMIT=2200M node build`, and raise any reverse-proxy limit too (nginx `client_max_body_size 2200m`).
 6. **Disk.** The local server keeps a copy of every file it serves under `.telegram-bot-api/<bot>/`. Prune old copies, e.g. daily: `find .telegram-bot-api -type f -mtime +7 -delete`; a pruned file is fetched from Telegram again on the next request.
 7. **Check it:** `SITE=http://localhost:5173 API=http://127.0.0.1:8080 SESSION=<admin session cookie> scripts/telegram-smoke.sh` uploads a 25 MB file, streams it back and seeks (`SIZE_MB=` to change).
 
@@ -107,6 +107,7 @@ Authenticated routes take `Authorization: Bearer <token>` (the token from regist
 | POST | `/api/orders` | Bearer, `{payment_method}` → 201 order (cart → `pending_payment`; free → `paid` + granted); 422 `cart_empty` / `invalid_payment_method` |
 | GET | `/api/orders/{id}` | Bearer, own orders only → order with items + payment method |
 | POST | `/api/orders/{id}/submit` | Bearer, `{payment_ref}` → `awaiting_approval` (from `pending_payment` or `rejected`); 409 `invalid_status` |
+| POST | `/api/orders/{id}/proof` | Bearer, own order in `pending_payment` / `awaiting_approval` / `rejected`; multipart `size` then `file` (PNG/JPEG/WebP ≤ 10 MB) → order with `payment_proof_url`; the screenshot is posted with the order details to `TELEGRAM_ADMIN_CHAT_ID`; 409 `invalid_status`, 422 `invalid_image` / `file_too_large` |
 | POST | `/api/orders/{id}/cancel` | Bearer → `cancelled` (from `pending_payment` only) |
 | GET | `/api/admin/orders?status=&q=&page=&per_page=` | admin → paged orders with buyer + items; `awaiting_approval` oldest first; 403 `forbidden` |
 | POST | `/api/admin/orders/{id}/approve` | admin → `paid` + grants enrollments / ebooks (idempotent; also from `pending_payment` / `rejected`) |

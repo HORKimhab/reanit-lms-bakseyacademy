@@ -174,6 +174,8 @@ export interface OrderSummary {
 	created_at: string;
 	submitted_at: string | null;
 	paid_at: string | null;
+	/** Signed link (1 h) to the attached payment screenshot. */
+	payment_proof_url: string | null;
 }
 
 export interface OrderDetail extends OrderSummary {

@@ -12,6 +12,7 @@ mod lessons;
 mod library;
 mod media;
 mod orders;
+mod proofs;
 mod recommendations;
 mod reviews;
 
@@ -43,6 +44,10 @@ pub fn router(state: AppState) -> Router {
         .route("/api/orders/{id}", get(orders::detail))
         .route("/api/orders/{id}/submit", post(orders::submit))
         .route("/api/orders/{id}/cancel", post(orders::cancel))
+        .route(
+            "/api/orders/{id}/proof",
+            post(proofs::upload).layer(DefaultBodyLimit::max(11 * 1024 * 1024)),
+        )
         .route("/api/admin/orders", get(admin::list_orders))
         .route("/api/admin/orders/{id}/approve", post(admin::approve))
         .route("/api/admin/orders/{id}/reject", post(admin::reject))

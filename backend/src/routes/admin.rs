@@ -5,7 +5,10 @@ use axum::{
 use serde::Deserialize;
 use uuid::Uuid;
 
-use super::orders::{ORDER_COLUMNS, grant_order, items_by_order, load_order};
+use super::{
+    orders::{ORDER_COLUMNS, grant_order, items_by_order, load_order},
+    proofs,
+};
 use crate::{
     AppState,
     auth::AdminUser,
@@ -75,9 +78,12 @@ pub async fn list_orders(
 
     let items = rows
         .into_iter()
-        .map(|r| AdminOrder {
+        .map(|mut r| AdminOrder {
             items: items_by_order.remove(&r.order.id).unwrap_or_default(),
-            order: r.order,
+            order: {
+                proofs::attach_proof_url(&st, &mut r.order);
+                r.order
+            },
             user_full_name: r.user_full_name,
             user_phone: r.user_phone,
         })
@@ -120,7 +126,7 @@ pub async fn approve(
         Some(_) => return Err(AppError::Conflict("invalid_status")),
     }
     tx.commit().await?;
-    Ok(Json(load_order(&st.db, id, None).await?))
+    Ok(Json(load_order(&st, id, None).await?))
 }
 
 #[derive(Deserialize)]
@@ -149,7 +155,7 @@ pub async fn reject(
     .execute(&st.db)
     .await?
     .rows_affected();
-    let order = load_order(&st.db, id, None).await?;
+    let order = load_order(&st, id, None).await?;
     if updated == 0 {
         return Err(AppError::Conflict("invalid_status"));
     }

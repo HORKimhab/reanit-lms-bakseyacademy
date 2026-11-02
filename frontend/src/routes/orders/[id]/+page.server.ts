@@ -19,6 +19,19 @@ export const actions: Actions = {
 		if (!res.ok) return fail(res.status, { code: res.code, payment_ref });
 	},
 
+	/** Payment screenshot → API (which posts it to the admins' Telegram chat). */
+	proof: async ({ locals, fetch, params, request }) => {
+		const token = requireToken(locals, `/orders/${params.id}`);
+		const file = (await request.formData()).get('screenshot');
+		if (!(file instanceof File) || file.size === 0) return fail(422, { code: 'missing_file', payment_ref: '' });
+		const form = new FormData();
+		form.append('size', String(file.size)); // before the file: the API streams it to Telegram
+		form.append('file', file, file.name);
+		const res = await apiResult(fetch, `${path(params.id)}/proof`, { method: 'POST', token, form });
+		if (!res.ok) return fail(res.status, { code: res.code, payment_ref: '' });
+		return { proofUploaded: true };
+	},
+
 	cancel: async ({ locals, fetch, params }) => {
 		const token = requireToken(locals, `/orders/${params.id}`);
 		const res = await apiResult(fetch, `${path(params.id)}/cancel`, { method: 'POST', token });

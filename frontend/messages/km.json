@@ -187,5 +187,11 @@
 	"error_missing_file": "សូមជ្រើសរើសឯកសារ",
 	"error_invalid_form": "ទម្រង់មិនត្រឹមត្រូវ",
 	"error_telegram_unavailable": "មិនទាន់កំណត់ Telegram storage ទេ",
-	"error_telegram_failed": "ផ្ទុកឡើង Telegram មិនបានសម្រេច"
+	"error_telegram_failed": "ផ្ទុកឡើង Telegram មិនបានសម្រេច",
+	"order_proof_title": "រូបភាពបញ្ជាក់ការបង់ប្រាក់",
+	"order_proof_hint": "ស្រេចចិត្ត៖ ភ្ជាប់រូបថតអេក្រង់នៃការបង់ប្រាក់ (PNG/JPEG ≤ ១០ MB) ដើម្បីឲ្យអ្នកគ្រប់គ្រងអនុម័តលឿនជាងមុន។",
+	"order_proof_uploaded": "បានផ្ញើរូបភាពទៅអ្នកគ្រប់គ្រងហើយ",
+	"order_proof_upload": "ផ្ញើរូបភាព",
+	"order_proof_replace": "ប្តូររូបភាព",
+	"error_invalid_image": "សូមជ្រើសរើសរូបភាព PNG, JPEG ឬ WebP"
 }

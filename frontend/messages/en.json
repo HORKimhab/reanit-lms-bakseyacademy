@@ -257,5 +257,11 @@
 	"error_missing_file": "Please choose a file",
 	"error_invalid_form": "Invalid form",
 	"error_telegram_unavailable": "Telegram storage is not configured",
-	"error_telegram_failed": "Upload to Telegram failed"
+	"error_telegram_failed": "Upload to Telegram failed",
+	"order_proof_title": "Payment screenshot",
+	"order_proof_hint": "Optional: attach a screenshot of the payment (PNG/JPEG ≤ 10 MB) so an admin can approve it faster.",
+	"order_proof_uploaded": "Screenshot sent to the admins",
+	"order_proof_upload": "Upload",
+	"order_proof_replace": "Replace",
+	"error_invalid_image": "Please choose a PNG, JPEG or WebP image"
 }

@@ -10,6 +10,8 @@ export interface ApiOptions {
 	body?: unknown;
 	/** Session token from the `session` cookie; sent as `Authorization: Bearer`. */
 	token?: string | null;
+	/** Sent as multipart instead of JSON `body` (small files from form actions, e.g. screenshots). */
+	form?: FormData;
 }
 
 export type ApiResult<T> = { ok: true; status: number; data: T } | { ok: false; status: number; code: string };
@@ -20,14 +22,14 @@ export type ApiResult<T> = { ok: true; status: number; data: T } | { ok: false; 
  */
 export async function apiResult<T>(fetchFn: typeof fetch, path: string, opts: ApiOptions = {}): Promise<ApiResult<T>> {
 	const headers: Record<string, string> = {};
-	if (opts.body !== undefined) headers['content-type'] = 'application/json';
+	if (opts.body !== undefined && !opts.form) headers['content-type'] = 'application/json';
 	if (opts.token) headers.authorization = `Bearer ${opts.token}`;
 	let res: Response;
 	try {
 		res = await fetchFn(`${base()}${path}`, {
 			method: opts.method ?? 'GET',
 			headers,
-			body: opts.body === undefined ? undefined : JSON.stringify(opts.body)
+			body: opts.form ?? (opts.body === undefined ? undefined : JSON.stringify(opts.body))
 		});
 	} catch {
 		return { ok: false, status: 503, code: 'unavailable' };

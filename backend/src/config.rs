@@ -53,7 +53,8 @@ impl Config {
                         host_dir: host_dir.into(),
                     }),
                 )
-                .with_webhook_secret(optional("TELEGRAM_WEBHOOK_SECRET"))),
+                .with_webhook_secret(optional("TELEGRAM_WEBHOOK_SECRET"))
+                .with_admin_chat(optional("TELEGRAM_ADMIN_CHAT_ID"))),
             },
             storage: match optional("STORAGE_BUCKET") {
                 None => None,

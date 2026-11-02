@@ -36,6 +36,7 @@ const messages: Record<string, () => string> = {
 	invalid_file_key: m.error_invalid_file_key,
 	has_buyers: m.error_has_buyers,
 	in_use: m.error_in_use,
+	invalid_image: m.error_invalid_image,
 	invalid_size: m.error_invalid_size,
 	file_too_large: m.error_file_too_large,
 	missing_file: m.error_missing_file,

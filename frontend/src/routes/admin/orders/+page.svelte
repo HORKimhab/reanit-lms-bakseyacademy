@@ -92,6 +92,11 @@
 						{#if o.payment_ref}
 							<p class="mt-1 rounded bg-slate-100 px-2 py-0.5 font-mono text-sm select-all">{o.payment_ref}</p>
 						{/if}
+						{#if o.payment_proof_url}
+							<a href={o.payment_proof_url} target="_blank" class="mt-2 ml-auto block w-24 overflow-hidden rounded border border-slate-200" title="រូបភាពបង់ប្រាក់">
+								<img src={o.payment_proof_url} alt="រូបភាពបង់ប្រាក់" class="w-full" />
+							</a>
+						{/if}
 					</div>
 				</div>
 

@@ -26,6 +26,8 @@ pub struct Telegram {
     local: Option<LocalDir>,
     /// Expected `X-Telegram-Bot-Api-Secret-Token` on webhook calls; `None` disables the webhook.
     webhook_secret: Option<String>,
+    /// Admins' chat (group/channel) for payment screenshots; falls back to the storage channel.
+    admin_chat_id: Option<String>,
     /// `file_id` → (`file_path`, fetched at). Telegram keeps download paths valid ≥ 1 h.
     paths: Arc<Mutex<HashMap<String, (String, Instant)>>>,
     http: reqwest::Client,
@@ -66,6 +68,7 @@ impl Telegram {
             channel_id,
             local,
             webhook_secret: None,
+            admin_chat_id: None,
             paths: Arc::default(),
             http: reqwest::Client::new(),
         }
@@ -76,8 +79,18 @@ impl Telegram {
         self
     }
 
+    pub fn with_admin_chat(mut self, chat_id: Option<String>) -> Self {
+        self.admin_chat_id = chat_id;
+        self
+    }
+
     pub fn channel_id(&self) -> &str {
         &self.channel_id
+    }
+
+    /// Where payment screenshots go: the admins' chat, else the storage channel.
+    pub fn admin_chat_id(&self) -> &str {
+        self.admin_chat_id.as_deref().unwrap_or(&self.channel_id)
     }
 
     /// Whether a webhook call carries our secret (constant-time compare). False when no secret is set.
@@ -95,9 +108,24 @@ impl Telegram {
         if self.local.is_some() { 2000 * 1024 * 1024 } else { 50 * 1024 * 1024 }
     }
 
-    /// Posts a file of `len` bytes to the channel, streaming `body` (not buffered in memory).
+    /// Posts a file of `len` bytes to the storage channel, streaming `body` (not buffered in memory).
     pub async fn upload(
         &self,
+        kind: UploadKind,
+        file_name: &str,
+        mime_type: &str,
+        len: u64,
+        body: reqwest::Body,
+    ) -> anyhow::Result<StoredFile> {
+        self.upload_to(&self.channel_id, None, kind, file_name, mime_type, len, body).await
+    }
+
+    /// [`Self::upload`] to any chat the bot can post in, with an optional caption.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn upload_to(
+        &self,
+        chat_id: &str,
+        caption: Option<&str>,
         kind: UploadKind,
         file_name: &str,
         mime_type: &str,
@@ -111,7 +139,10 @@ impl Telegram {
         let part = reqwest::multipart::Part::stream_with_length(body, len)
             .file_name(file_name.to_owned())
             .mime_str(mime_type)?;
-        let mut form = reqwest::multipart::Form::new().text("chat_id", self.channel_id.clone()).part(field, part);
+        let mut form = reqwest::multipart::Form::new().text("chat_id", chat_id.to_owned()).part(field, part);
+        if let Some(caption) = caption {
+            form = form.text("caption", caption.to_owned());
+        }
         if matches!(kind, UploadKind::Video) {
             form = form.text("supports_streaming", "true");
         }

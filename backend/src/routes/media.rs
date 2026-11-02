@@ -19,7 +19,7 @@ use crate::{
     error::{AppError, AppResult},
     media_token::{self, MediaGrant},
     models::{AdminMedia, ListParams, Page},
-    telegram::{OpenError, StoredFile, UploadKind, channel_post_file},
+    telegram::{OpenError, StoredFile, Telegram, UploadKind, channel_post_file},
 };
 
 pub(crate) const MEDIA_COLUMNS: &str = "id, provider, file_name, mime_type, size_bytes, duration_seconds, created_at";
@@ -27,8 +27,26 @@ pub(crate) const MEDIA_COLUMNS: &str = "id, provider, file_name, mime_type, size
 /// `POST /api/admin/media`, multipart: a `size` field (bytes), then `file`. The file is streamed to
 /// the Telegram channel as it arrives (never held in memory) and recorded in `media_files`.
 /// 422 `invalid_size` / `file_too_large` / `missing_file`, 503 `telegram_unavailable` / `telegram_failed`.
-pub async fn upload(State(st): State<AppState>, _: AdminUser, mut form: Multipart) -> AppResult<(StatusCode, Json<AdminMedia>)> {
+pub async fn upload(State(st): State<AppState>, _: AdminUser, form: Multipart) -> AppResult<(StatusCode, Json<AdminMedia>)> {
     let tg = st.telegram.as_ref().ok_or(AppError::Unavailable("telegram_unavailable"))?;
+    let check = |_: &str, size: u64| {
+        if size > tg.max_upload_bytes() { Err(AppError::Validation("file_too_large")) } else { Ok(()) }
+    };
+    let stored = upload_form_to_telegram(tg, form, check, tg.channel_id(), None).await?;
+    let media = with_preview(&st, insert_telegram(&st.db, &stored).await?);
+    Ok((StatusCode::CREATED, Json(media)))
+}
+
+/// Reads a multipart form of `size` (bytes) then `file`, checks `(mime, size)` with `check`, and
+/// streams the file to `chat_id` as it arrives. The body must be exactly `size` bytes (it is the
+/// length announced to Telegram): longer or shorter aborts with 422 `invalid_size`.
+pub(crate) async fn upload_form_to_telegram(
+    tg: &Telegram,
+    mut form: Multipart,
+    check: impl Fn(&str, u64) -> AppResult<()>,
+    chat_id: &str,
+    caption: Option<&str>,
+) -> AppResult<StoredFile> {
     let bad_form = |_| AppError::Validation("invalid_form");
     let mut size: Option<u64> = None;
     while let Some(mut field) = form.next_field().await.map_err(bad_form)? {
@@ -36,11 +54,9 @@ pub async fn upload(State(st): State<AppState>, _: AdminUser, mut form: Multipar
             Some("size") => size = field.text().await.map_err(bad_form)?.trim().parse().ok(),
             Some("file") => {
                 let size = size.filter(|s| *s > 0).ok_or(AppError::Validation("invalid_size"))?;
-                if size > tg.max_upload_bytes() {
-                    return Err(AppError::Validation("file_too_large"));
-                }
-                let file_name = safe_file_name(field.file_name().unwrap_or("file"));
                 let mime = field.content_type().unwrap_or("application/octet-stream").to_owned();
+                check(&mime, size)?;
+                let file_name = safe_file_name(field.file_name().unwrap_or("file"));
                 let kind = if mime.starts_with("video/") { UploadKind::Video } else { UploadKind::Document };
 
                 // Pump multipart chunks into the request body while the upload runs.
@@ -48,8 +64,6 @@ pub async fn upload(State(st): State<AppState>, _: AdminUser, mut form: Multipar
                 let body = reqwest::Body::wrap_stream(stream::unfold(rx, |mut rx| async move {
                     rx.recv().await.map(|chunk| (chunk, rx))
                 }));
-                // The declared `size` is the multipart length sent to Telegram, so the body must match it:
-                // abort the upload as soon as it runs over, or if it ends short.
                 let pump = async move {
                     let mut sent = 0u64;
                     loop {
@@ -76,16 +90,15 @@ pub async fn upload(State(st): State<AppState>, _: AdminUser, mut form: Multipar
                     }
                     true
                 };
-                let (complete, stored) = tokio::join!(pump, tg.upload(kind, &file_name, &mime, size, body));
+                let upload = tg.upload_to(chat_id, caption, kind, &file_name, &mime, size, body);
+                let (complete, stored) = tokio::join!(pump, upload);
                 if !complete {
                     return Err(AppError::Validation("invalid_size"));
                 }
-                let stored = stored.map_err(|e| {
+                return stored.map_err(|e| {
                     tracing::error!(error = %e, "telegram upload failed");
                     AppError::Unavailable("telegram_failed")
-                })?;
-                let media = with_preview(&st, insert_telegram(&st.db, &stored).await?);
-                return Ok((StatusCode::CREATED, Json(media)));
+                });
             }
             _ => {}
         }

@@ -9,7 +9,7 @@ use serde::Deserialize;
 use sqlx::{PgConnection, PgExecutor};
 use uuid::Uuid;
 
-use super::cart::load_cart;
+use super::{cart::load_cart, proofs};
 use crate::{
     AppState,
     auth::CurrentUser,
@@ -18,7 +18,7 @@ use crate::{
 };
 
 pub(crate) const ORDER_COLUMNS: &str = "o.id, o.status, o.total_cents, o.payment_method AS payment_method_code, \
-     o.payment_ref, o.admin_note, o.created_at, o.submitted_at, o.paid_at";
+     o.payment_ref, o.admin_note, o.created_at, o.submitted_at, o.paid_at, o.payment_proof_media_id";
 const METHOD_COLUMNS: &str = "code, name_km, name_en, account_name, account_number, qr_image_url";
 
 pub async fn payment_methods(State(st): State<AppState>) -> AppResult<Json<Vec<PaymentMethod>>> {
@@ -32,11 +32,12 @@ pub async fn payment_methods(State(st): State<AppState>) -> AppResult<Json<Vec<P
 
 /// Loads an order with items and payment method. `user_id = None` skips the owner check (admin).
 pub(crate) async fn load_order(
-    db: &sqlx::PgPool,
+    st: &AppState,
     id: Uuid,
     user_id: Option<Uuid>,
 ) -> AppResult<OrderDetail> {
-    let order = sqlx::query_as::<_, OrderSummary>(&format!(
+    let db = &st.db;
+    let mut order = sqlx::query_as::<_, OrderSummary>(&format!(
         "SELECT {ORDER_COLUMNS} FROM orders o WHERE o.id = $1 AND ($2::uuid IS NULL OR o.user_id = $2)"
     ))
     .bind(id)
@@ -44,6 +45,7 @@ pub(crate) async fn load_order(
     .fetch_optional(db)
     .await?
     .ok_or(AppError::NotFound)?;
+    proofs::attach_proof_url(st, &mut order);
     let method_sql = format!("SELECT {METHOD_COLUMNS} FROM payment_methods WHERE code = $1");
     let (items, payment_method) = tokio::try_join!(
         sqlx::query_as::<_, OrderItem>(
@@ -89,12 +91,13 @@ pub async fn my_orders(
     State(st): State<AppState>,
     current: CurrentUser,
 ) -> AppResult<Json<Vec<OrderWithItems>>> {
-    let orders = sqlx::query_as::<_, OrderSummary>(&format!(
+    let mut orders = sqlx::query_as::<_, OrderSummary>(&format!(
         "SELECT {ORDER_COLUMNS} FROM orders o WHERE o.user_id = $1 ORDER BY o.created_at DESC LIMIT 100"
     ))
     .bind(current.user.id)
     .fetch_all(&st.db)
     .await?;
+    orders.iter_mut().for_each(|o| proofs::attach_proof_url(&st, o));
     let ids: Vec<Uuid> = orders.iter().map(|o| o.id).collect();
     let mut items = items_by_order(&st.db, &ids).await?;
     Ok(Json(
@@ -211,7 +214,7 @@ pub async fn checkout(
 
     Ok((
         StatusCode::CREATED,
-        Json(load_order(&st.db, order_id, Some(user_id)).await?),
+        Json(load_order(&st, order_id, Some(user_id)).await?),
     ))
 }
 
@@ -232,7 +235,7 @@ pub async fn detail(
     current: CurrentUser,
     Path(id): Path<Uuid>,
 ) -> AppResult<Json<OrderDetail>> {
-    Ok(Json(load_order(&st.db, id, Some(current.user.id)).await?))
+    Ok(Json(load_order(&st, id, Some(current.user.id)).await?))
 }
 
 #[derive(Deserialize)]
@@ -296,7 +299,7 @@ async fn transition(
         .execute(&st.db)
         .await?
         .rows_affected();
-    let order = load_order(&st.db, id, Some(user_id)).await?;
+    let order = load_order(st, id, Some(user_id)).await?;
     if updated == 0 {
         return Err(AppError::Conflict("invalid_status"));
     }

@@ -89,6 +89,27 @@
 				</section>
 			{/if}
 
+			{#if method && (canSubmit || order.status === 'awaiting_approval')}
+				<section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+					<h2 class="font-semibold">{m.order_proof_title()}</h2>
+					<p class="mt-1 text-sm text-slate-500">{m.order_proof_hint()}</p>
+					{#if order.payment_proof_url}
+						<a href={order.payment_proof_url} target="_blank" class="mt-3 block w-32 overflow-hidden rounded-lg border border-slate-200">
+							<img src={order.payment_proof_url} alt={m.order_proof_title()} class="w-full" />
+						</a>
+					{/if}
+					{#if form && 'proofUploaded' in form}
+						<p class="mt-2 text-sm text-green-700" role="status">✓ {m.order_proof_uploaded()}</p>
+					{/if}
+					<form method="POST" action="?/proof" enctype="multipart/form-data" use:enhance class="mt-3 flex flex-wrap items-center gap-2">
+						<input name="screenshot" type="file" required accept="image/png,image/jpeg,image/webp" class="min-w-0 flex-1 text-sm" />
+						<button class="rounded-lg border border-brand-600 px-4 py-1.5 text-sm font-semibold text-brand-600 hover:bg-brand-50">
+							{order.payment_proof_url ? m.order_proof_replace() : m.order_proof_upload()}
+						</button>
+					</form>
+				</section>
+			{/if}
+
 			<section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
 				<h2 class="font-semibold">{m.order_items()}</h2>
 				<ul class="mt-3 divide-y divide-slate-100 text-sm">

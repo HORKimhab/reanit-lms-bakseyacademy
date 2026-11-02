@@ -97,6 +97,11 @@ pub struct OrderSummary {
     pub created_at: DateTime<Utc>,
     pub submitted_at: Option<DateTime<Utc>>,
     pub paid_at: Option<DateTime<Utc>>,
+    #[serde(skip)]
+    pub payment_proof_media_id: Option<uuid::Uuid>,
+    /// Signed `/media/…` link to the attached payment screenshot (1 h); set by the handlers.
+    #[sqlx(skip)]
+    pub payment_proof_url: Option<String>,
 }
 
 #[derive(Serialize)]
