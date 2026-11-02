@@ -1,9 +1,14 @@
+mod auth;
 mod categories;
 mod courses;
 mod ebooks;
 mod home;
 
-use axum::{Json, Router, extract::State, routing::get};
+use axum::{
+    Json, Router,
+    extract::State,
+    routing::{get, post},
+};
 use serde_json::{Value, json};
 
 use crate::{AppState, error::AppResult};
@@ -12,6 +17,7 @@ pub fn router(state: AppState) -> Router {
     Router::new()
         .route("/api/health", get(health))
         .route("/api/home", get(home::home))
+        .route("/api/auth/register", post(auth::register))
         .route("/api/categories", get(categories::list))
         .route("/api/courses", get(courses::list))
         .route("/api/courses/{slug}", get(courses::detail))

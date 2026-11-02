@@ -11,6 +11,23 @@ pub struct Category {
 }
 
 #[derive(Serialize, FromRow)]
+pub struct User {
+    pub id: Uuid,
+    pub full_name: String,
+    pub phone: Option<String>,
+    pub email: Option<String>,
+    pub role: String,
+}
+
+/// Returned by register/login. `token` goes into the frontend's HttpOnly cookie.
+#[derive(Serialize)]
+pub struct AuthResponse {
+    pub token: String,
+    pub max_age: i64,
+    pub user: User,
+}
+
+#[derive(Serialize, FromRow)]
 pub struct Banner {
     pub id: Uuid,
     pub title: String,

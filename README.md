@@ -41,6 +41,7 @@ bun run dev                    # http://localhost:5173
 | GET | `/api/courses/{slug}` | detail + curriculum (video id only for preview lessons) |
 | GET | `/api/ebooks?q=&category=&page=&per_page=` | paged, search title/author |
 | GET | `/api/ebooks/{slug}` | detail (file key never exposed) |
+| POST | `/api/auth/register` | `{full_name, phone, password}` → 201 `{token, max_age, user}`; 409 `phone_taken`, 422 `invalid_phone` / `invalid_name` / `weak_password` |
 
 ## Roadmap
 

@@ -9,8 +9,8 @@ Feature parity with a typical Khmer course + ebook store (reference: bakseyacade
 ## B. Accounts (roadmap 2)
 Login: phone (+855) + password, email optional. SvelteKit keeps the session token in an HttpOnly cookie and sends it to the API as `Authorization: Bearer`.
 - [x] B1 Migration: `users.phone` (unique, E.164), `email` nullable, `sessions` table
-- [ ] B2 `POST /api/auth/register` (name, phone, password; argon2); `AppError::Conflict`, `AppError::Unauthorized`
-- [ ] B3 `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/me` (HttpOnly session cookie)
+- [x] B2 `POST /api/auth/register` (name, phone, password; argon2); `AppError::Validation`, `AppError::Conflict`
+- [ ] B3 `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/me` (Bearer token; `AppError::Unauthorized`)
 - [ ] B4 `/auth` page (login / register tabs, +855 prefix); `hooks.server.ts` forwards the cookie through `api()`, `locals.user`
 - [ ] B5 Header account menu + logout; `/account` (profile, change password)
 - [ ] B6 Forgot password: Telegram support link first, SMS/OTP reset later
