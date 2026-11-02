@@ -2,10 +2,13 @@
 
 use axum::{
     Json,
-    body::Bytes as BodyBytes,
-    extract::{Multipart, Query, State},
-    http::{HeaderMap, StatusCode},
+    body::{Body, Bytes as BodyBytes},
+    extract::{Multipart, Path, Query, State},
+    http::{HeaderMap, HeaderValue, StatusCode, header},
+    response::{IntoResponse, Response},
 };
+use chrono::{DateTime, Duration, Utc};
+use uuid::Uuid;
 use bytes::Bytes;
 use futures_util::stream;
 use tokio::sync::mpsc;
@@ -14,8 +17,9 @@ use crate::{
     AppState,
     auth::AdminUser,
     error::{AppError, AppResult},
+    media_token::{self, MediaGrant},
     models::{AdminMedia, ListParams, Page},
-    telegram::{StoredFile, UploadKind, channel_post_file},
+    telegram::{OpenError, StoredFile, UploadKind, channel_post_file},
 };
 
 pub(crate) const MEDIA_COLUMNS: &str = "id, provider, file_name, mime_type, size_bytes, duration_seconds, created_at";
@@ -150,6 +154,96 @@ pub async fn webhook(State(st): State<AppState>, headers: HeaderMap, body: BodyB
     Ok(StatusCode::OK)
 }
 
+/// A site-relative link (`/media/{token}`, served by the SvelteKit proxy) to stream `media_id`
+/// for `ttl`, and when it stops working.
+pub(crate) fn signed_url(st: &AppState, media_id: Uuid, ttl: Duration, attachment: bool) -> (String, DateTime<Utc>) {
+    let expires = Utc::now() + ttl;
+    let token = media_token::sign(&st.media_key, &MediaGrant { media_id, expires: expires.timestamp(), attachment });
+    (format!("/media/{token}"), expires)
+}
+
+/// `GET /api/media/{token}`: streams a Telegram-stored file the token grants, honoring `Range`
+/// (video seeking, PDF viewers). Invalid/expired tokens and unknown media are 404 alike.
+pub async fn stream(State(st): State<AppState>, Path(token): Path<String>, headers: HeaderMap) -> AppResult<Response> {
+    let grant = media_token::verify(&st.media_key, &token, Utc::now().timestamp()).ok_or(AppError::NotFound)?;
+    let tg = st.telegram.as_ref().ok_or(AppError::Unavailable("telegram_unavailable"))?;
+    let (file_id, mime, file_name, size): (Option<String>, Option<String>, Option<String>, Option<i64>) =
+        sqlx::query_as(
+            "SELECT telegram_file_id, mime_type, file_name, size_bytes FROM media_files
+             WHERE id = $1 AND provider = 'telegram'",
+        )
+        .bind(grant.media_id)
+        .fetch_optional(&st.db)
+        .await?
+        .ok_or(AppError::NotFound)?;
+    let file_id = file_id.ok_or(AppError::NotFound)?;
+    let range = headers.get(header::RANGE).and_then(|v| v.to_str().ok());
+
+    let telegram_failed = |e: anyhow::Error| {
+        tracing::error!(error = %e, media_id = %grant.media_id, "telegram stream failed");
+        AppError::Unavailable("telegram_failed")
+    };
+    // A cached download path can go stale; retry once with a fresh one.
+    let mut opened = None;
+    for fresh in [false, true] {
+        let path = tg.file_path_cached(&file_id, fresh).await.map_err(telegram_failed)?;
+        match tg.open(&path, range).await {
+            Ok(body) => {
+                opened = Some(body);
+                break;
+            }
+            Err(OpenError::RangeNotSatisfiable) => {
+                let mut res = StatusCode::RANGE_NOT_SATISFIABLE.into_response();
+                if let Some(Ok(v)) = size.map(|s| HeaderValue::from_str(&format!("bytes */{s}"))) {
+                    res.headers_mut().insert(header::CONTENT_RANGE, v);
+                }
+                return Ok(res);
+            }
+            Err(OpenError::Other(e)) if fresh => return Err(telegram_failed(e)),
+            Err(OpenError::Other(_)) => continue,
+        }
+    }
+    let body = opened.ok_or(AppError::NotFound)?;
+
+    let mut res = Response::new(Body::from_stream(body.stream));
+    *res.status_mut() = body.status;
+    let h = res.headers_mut();
+    let mime = mime.as_deref().and_then(|m| HeaderValue::from_str(m).ok());
+    h.insert(header::CONTENT_TYPE, mime.unwrap_or(HeaderValue::from_static("application/octet-stream")));
+    h.insert(header::ACCEPT_RANGES, HeaderValue::from_static("bytes"));
+    h.insert(header::CACHE_CONTROL, HeaderValue::from_static("private, max-age=3600"));
+    h.insert(header::X_CONTENT_TYPE_OPTIONS, HeaderValue::from_static("nosniff"));
+    if let Some(len) = body.content_length {
+        h.insert(header::CONTENT_LENGTH, len.into());
+    }
+    if let Some(Ok(v)) = body.content_range.map(|r| HeaderValue::from_str(&r)) {
+        h.insert(header::CONTENT_RANGE, v);
+    }
+    if let Ok(v) = HeaderValue::from_str(&content_disposition(grant.attachment, file_name.as_deref().unwrap_or("file"))) {
+        h.insert(header::CONTENT_DISPOSITION, v);
+    }
+    Ok(res)
+}
+
+/// `inline` / `attachment` with an ASCII fallback name and the real (e.g. Khmer) name per RFC 6266.
+fn content_disposition(attachment: bool, file_name: &str) -> String {
+    let kind = if attachment { "attachment" } else { "inline" };
+    let ascii: String = file_name
+        .chars()
+        .map(|c| if c.is_ascii_graphic() && c != '"' && c != '\\' || c == ' ' { c } else { '_' })
+        .collect();
+    let encoded: String = file_name
+        .bytes()
+        .map(|b| match b {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'!' | b'#' | b'$' | b'&' | b'+' | b'-' | b'.' | b'^' | b'_' | b'`' | b'|' | b'~' => {
+                (b as char).to_string()
+            }
+            _ => format!("%{b:02X}"),
+        })
+        .collect();
+    format!("{kind}; filename=\"{ascii}\"; filename*=UTF-8''{encoded}")
+}
+
 /// Keeps a display/download name: path separators and control characters dropped, ≤ 200 chars.
 fn safe_file_name(name: &str) -> String {
     let base = name.rsplit(['/', '\\']).next().unwrap_or(name);
@@ -161,6 +255,15 @@ fn safe_file_name(name: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn disposition_keeps_unicode_names_via_filename_star() {
+        assert_eq!(
+            content_disposition(true, "មេរៀន 1.pdf"),
+            "attachment; filename=\"_____ 1.pdf\"; filename*=UTF-8''%E1%9E%98%E1%9F%81%E1%9E%9A%E1%9F%80%E1%9E%93%201.pdf"
+        );
+        assert_eq!(content_disposition(false, "a\"b.mp4"), "inline; filename=\"a_b.mp4\"; filename*=UTF-8''a%22b.mp4");
+    }
 
     #[test]
     fn file_names_are_reduced_to_a_safe_base_name() {

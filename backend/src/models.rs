@@ -375,6 +375,7 @@ pub struct LessonAccessRow {
     pub published: bool,
     pub enrolled: bool,
     pub completed: bool,
+    pub media_id: Option<Uuid>,
 }
 
 /// A lesson the caller may watch. `video_url` is a signed embed URL (`None` when the lesson has
@@ -387,6 +388,8 @@ pub struct LessonPlayback {
     pub duration_seconds: i32,
     pub is_preview: bool,
     pub video_url: Option<String>,
+    /// `embed` (Bunny iframe) or `file` (a `/media/…` stream for a native `<video>`).
+    pub video_type: &'static str,
     pub expires_at: Option<DateTime<Utc>>,
     /// The caller marked it complete (false when signed out).
     pub completed: bool,

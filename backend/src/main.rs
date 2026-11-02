@@ -1,6 +1,7 @@
 mod auth;
 mod config;
 mod error;
+mod media_token;
 mod models;
 mod routes;
 mod storage;
@@ -9,7 +10,13 @@ mod validate;
 mod video;
 
 use sqlx::postgres::PgPoolOptions;
-use tower_http::{compression::CompressionLayer, trace::TraceLayer};
+use tower_http::{
+    compression::{
+        CompressionLayer,
+        predicate::{DefaultPredicate, Predicate},
+    },
+    trace::TraceLayer,
+};
 use tracing_subscriber::EnvFilter;
 
 #[derive(Clone)]
@@ -18,6 +25,7 @@ pub struct AppState {
     pub video: Option<video::BunnyStream>,
     pub storage: Option<storage::ObjectStorage>,
     pub telegram: Option<telegram::Telegram>,
+    pub media_key: std::sync::Arc<[u8]>,
 }
 
 #[tokio::main]
@@ -42,6 +50,8 @@ async fn main() -> anyhow::Result<()> {
     }
     if config.telegram.is_none() {
         tracing::warn!("TELEGRAM_BOT_TOKEN not set: Telegram channel storage is off");
+    } else if config.media_key_is_random {
+        tracing::warn!("MEDIA_SIGNING_KEY not set: using a random key, media links break on restart");
     }
 
     let db = PgPoolOptions::new()
@@ -50,8 +60,19 @@ async fn main() -> anyhow::Result<()> {
         .await?;
     sqlx::migrate!("./migrations").run(&db).await?;
 
-    let app = routes::router(AppState { db, video: config.video, storage: config.storage, telegram: config.telegram })
-        .layer(CompressionLayer::new())
+    let app = routes::router(AppState {
+        db,
+        video: config.video,
+        storage: config.storage,
+        telegram: config.telegram,
+        media_key: config.media_key.into(),
+    })
+        // Ranged media bodies (Accept-Ranges) must keep their exact bytes and Content-Length.
+        .layer(CompressionLayer::new().compress_when(DefaultPredicate::new().and(
+            |_: axum::http::StatusCode, _: axum::http::Version, h: &axum::http::HeaderMap, _: &axum::http::Extensions| {
+                !h.contains_key(axum::http::header::ACCEPT_RANGES)
+            },
+        )))
         .layer(TraceLayer::new_for_http());
 
     let listener = tokio::net::TcpListener::bind(&config.bind_addr).await?;

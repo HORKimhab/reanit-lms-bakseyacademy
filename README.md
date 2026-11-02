@@ -58,12 +58,12 @@ Authenticated routes take `Authorization: Bearer <token>` (the token from regist
 | GET | `/api/courses?q=&category=&page=&per_page=` | paged; `q` matches title/instructor by substring or typo-tolerant trigram similarity (`pg_trgm`), best match first |
 | GET | `/api/courses/{slug}` | detail + curriculum (video id only for preview lessons); `reviews` (latest 10); optional Bearer → `owned`, `my_review`, `completed_lesson_ids` (enrolled users also see unpublished courses) |
 | PUT / DELETE | `/api/courses/{slug}/review` | Bearer, owners only; PUT `{rating: 1–5, comment?}` → review (upsert), DELETE → 204; 403 not enrolled, 422 `invalid_rating` / `invalid_comment` |
-| GET | `/api/courses/{slug}/lessons/{id}` | optional Bearer → lesson + signed Bunny Stream `video_url` (`expires_at`), `completed`; enrolled users (even if unpublished) or preview lessons; 401 signed out, 403 not enrolled |
+| GET | `/api/courses/{slug}/lessons/{id}` | optional Bearer → lesson + signed `video_url` (`expires_at`) + `video_type`: `embed` (Bunny iframe) or `file` (`/media/{token}` for uploaded Telegram media, which wins), `completed`; enrolled users (even if unpublished) or preview lessons; 401 signed out, 403 not enrolled |
 | PUT / DELETE | `/api/courses/{slug}/lessons/{id}/complete` | Bearer → 204; mark / unmark complete (PUT needs enrollment, 403 otherwise) |
 | GET | `/api/ebooks?q=&category=&page=&per_page=` | paged; `q` matches title/author like courses |
 | GET | `/api/ebooks/{slug}` | detail (file key never exposed), `reviews`; optional Bearer → `owned`, `my_review` (owners also see unpublished ebooks) |
 | PUT / DELETE | `/api/ebooks/{slug}/review` | same as course reviews, for buyers |
-| GET | `/api/ebooks/{slug}/file?disposition=inline\|attachment` | Bearer, owners only → `{url, expires_at}` presigned (1 h) S3/R2 link; 403 not bought, 404 no file, 503 `storage_unavailable` |
+| GET | `/api/ebooks/{slug}/file?disposition=inline\|attachment` | Bearer, owners only → `{url, expires_at}`: `/media/{token}` for uploaded Telegram media, else a presigned (1 h) S3/R2 link; 403 not bought, 404 no file, 503 `storage_unavailable` |
 | POST | `/api/auth/register` | `{full_name, phone, password}` → 201 `{token, max_age, user}`; 409 `phone_taken`, 422 `invalid_phone` / `invalid_name` / `weak_password` |
 | POST | `/api/auth/login` | `{phone, password}` → `{token, max_age, user}`; 401 `invalid_credentials` |
 | POST | `/api/auth/logout` | Bearer → 204, deletes the session |
@@ -95,6 +95,7 @@ Authenticated routes take `Authorization: Bearer <token>` (the token from regist
 | GET / POST | `/api/admin/ebooks?q=&page=` | admin → paged ebooks incl. drafts (`has_file`) / create (same fields as courses minus instructor, plus `author_name`, `page_count?`, `file_key?`) |
 | GET / PUT / DELETE | `/api/admin/ebooks/{id}` | admin; `file_key` is write-only (blank keeps, `remove_file: true` clears); DELETE 409 `has_buyers` |
 | POST | `/api/admin/ebooks/{id}/publish` | admin, `{published}` → 204 |
+| GET | `/api/media/{token}` | streams a Telegram-stored file; `token` (from the lesson / ebook-file endpoints) is HMAC-signed with `MEDIA_SIGNING_KEY` and expires (4 h video, 1 h files); honors `Range` → 206 / 416; 404 for bad or expired tokens |
 | GET | `/api/admin/media?q=&page=&per_page=` | admin → paged media library (newest first, `q` searches file names) |
 | POST | `/api/telegram/webhook` | Telegram only (`X-Telegram-Bot-Api-Secret-Token` = `TELEGRAM_WEBHOOK_SECRET`, else 401): videos/documents posted in the storage channel are imported as media (idempotent) |
 | POST | `/api/admin/media` | admin, multipart `size` then `file` → 201 media; the file is streamed to the Telegram storage channel (≤ 50 MB public Bot API, ≤ 2000 MB with a `--local` server); 422 `invalid_size` / `file_too_large` / `missing_file`, 503 `telegram_unavailable` / `telegram_failed`. Lessons / ebooks take `media_id`, which wins over `video_id` / `file_key` |

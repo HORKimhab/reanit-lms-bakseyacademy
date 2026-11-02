@@ -13,6 +13,9 @@ pub struct Config {
     pub video: Option<BunnyStream>,
     /// Ebook file bucket; `None` (no `STORAGE_BUCKET`) means downloads are unavailable.
     pub storage: Option<ObjectStorage>,
+    /// HMAC key for `/media/{token}` links (`MEDIA_SIGNING_KEY`); random per process when unset.
+    pub media_key: Vec<u8>,
+    pub media_key_is_random: bool,
     /// Telegram channel storage; `None` without `TELEGRAM_BOT_TOKEN`.
     pub telegram: Option<Telegram>,
 }
@@ -24,7 +27,15 @@ fn optional(key: &str) -> Option<String> {
 
 impl Config {
     pub fn from_env() -> anyhow::Result<Self> {
+        let media_key = optional("MEDIA_SIGNING_KEY");
         Ok(Self {
+            media_key_is_random: media_key.is_none(),
+            media_key: media_key.map(String::into_bytes).unwrap_or_else(|| {
+                use argon2::password_hash::rand_core::{OsRng, RngCore};
+                let mut key = vec![0u8; 32];
+                OsRng.fill_bytes(&mut key);
+                key
+            }),
             database_url: std::env::var("DATABASE_URL").context("DATABASE_URL must be set")?,
             bind_addr: std::env::var("BIND_ADDR").unwrap_or_else(|_| "127.0.0.1:8080".into()),
             video: optional("BUNNY_LIBRARY_ID").map(|library_id| BunnyStream {

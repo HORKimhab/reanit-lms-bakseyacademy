@@ -5,10 +5,12 @@
 //!
 //! File URLs contain the bot token: nothing from here may reach the browser except bytes.
 
-// The client lands before its callers (TODO G3 upload, G5 streaming).
-#![allow(dead_code)]
-
-use std::path::{Component, Path, PathBuf};
+use std::{
+    collections::HashMap,
+    path::{Component, Path, PathBuf},
+    sync::{Arc, Mutex},
+    time::{Duration, Instant},
+};
 
 use axum::http::StatusCode;
 use bytes::Bytes;
@@ -24,8 +26,13 @@ pub struct Telegram {
     local: Option<LocalDir>,
     /// Expected `X-Telegram-Bot-Api-Secret-Token` on webhook calls; `None` disables the webhook.
     webhook_secret: Option<String>,
+    /// `file_id` → (`file_path`, fetched at). Telegram keeps download paths valid ≥ 1 h.
+    paths: Arc<Mutex<HashMap<String, (String, Instant)>>>,
     http: reqwest::Client,
 }
+
+/// Re-resolve cached `getFile` paths after this long (inside Telegram's 1 h guarantee).
+const PATH_TTL: Duration = Duration::from_secs(50 * 60);
 
 /// How a file is posted: videos get a duration and in-app streaming; everything else is a document.
 #[derive(Clone, Copy)]
@@ -59,6 +66,7 @@ impl Telegram {
             channel_id,
             local,
             webhook_secret: None,
+            paths: Arc::default(),
             http: reqwest::Client::new(),
         }
     }
@@ -126,6 +134,19 @@ impl Telegram {
             .await?;
         let file: File = parse_envelope(&res.bytes().await?)?;
         file.file_path.ok_or_else(|| anyhow::anyhow!("telegram: file has no path (too big for this Bot API server?)"))
+    }
+
+    /// [`Self::file_path`] with a cache; `fresh` bypasses it (e.g. after a failed open).
+    pub async fn file_path_cached(&self, file_id: &str, fresh: bool) -> anyhow::Result<String> {
+        if !fresh {
+            let cache = self.paths.lock().expect("path cache lock");
+            if let Some((path, _)) = cache.get(file_id).filter(|(_, at)| at.elapsed() < PATH_TTL) {
+                return Ok(path.clone());
+            }
+        }
+        let path = self.file_path(file_id).await?;
+        self.paths.lock().expect("path cache lock").insert(file_id.to_owned(), (path.clone(), Instant::now()));
+        Ok(path)
     }
 
     /// Opens `file_path` (from [`Self::file_path`]) honoring an HTTP `Range` header.

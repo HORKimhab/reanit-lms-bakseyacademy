@@ -6,6 +6,7 @@ use axum::{
 use chrono::{Duration, Utc};
 use uuid::Uuid;
 
+use super::media;
 use crate::{
     AppState,
     auth::CurrentUser,
@@ -38,10 +39,21 @@ pub async fn lesson(
     let row = load_lesson(&st, &slug, id, current.as_ref()).await?;
     check_access(row.published, row.is_preview, current.is_some(), row.enrolled)?;
 
-    let expires = Utc::now() + VIDEO_URL_TTL;
-    let video = st.video.as_ref().zip(row.video_id.as_deref());
-    let video_url = video.map(|(bunny, vid)| bunny.embed_url(vid, expires.timestamp()));
-    let expires_at = video.and_then(|(bunny, _)| bunny.token_key.as_ref()).map(|_| expires);
+    // Uploaded (Telegram) media wins over a Bunny video id.
+    let (video_url, video_type, expires_at) = match (row.media_id, &st.telegram) {
+        (Some(media_id), Some(_)) => {
+            let (url, expires) = media::signed_url(&st, media_id, VIDEO_URL_TTL, false);
+            (Some(url), "file", Some(expires))
+        }
+        (Some(_), None) => (None, "file", None),
+        (None, _) => {
+            let expires = Utc::now() + VIDEO_URL_TTL;
+            let video = st.video.as_ref().zip(row.video_id.as_deref());
+            let url = video.map(|(bunny, vid)| bunny.embed_url(vid, expires.timestamp()));
+            let expires_at = video.and_then(|(bunny, _)| bunny.token_key.as_ref()).map(|_| expires);
+            (url, "embed", expires_at)
+        }
+    };
 
     Ok(Json(LessonPlayback {
         id: row.id,
@@ -50,6 +62,7 @@ pub async fn lesson(
         duration_seconds: row.duration_seconds,
         is_preview: row.is_preview,
         video_url,
+        video_type,
         expires_at,
         completed: row.completed,
     }))
@@ -63,7 +76,7 @@ async fn load_lesson(
     current: Option<&CurrentUser>,
 ) -> AppResult<LessonAccessRow> {
     sqlx::query_as::<_, LessonAccessRow>(
-        "SELECT l.id, l.section_id, l.title, l.duration_seconds, l.is_preview, l.video_id, c.published,
+        "SELECT l.id, l.section_id, l.title, l.duration_seconds, l.is_preview, l.video_id, l.media_id, c.published,
                 EXISTS (SELECT 1 FROM enrollments e WHERE e.course_id = c.id AND e.user_id = $3) AS enrolled,
                 EXISTS (SELECT 1 FROM lesson_progress p WHERE p.lesson_id = l.id AND p.user_id = $3) AS completed
          FROM lessons l

@@ -51,6 +51,7 @@ pub fn router(state: AppState) -> Router {
             get(media::list).post(media::upload).layer(DefaultBodyLimit::max(2100 * 1024 * 1024)),
         )
         .route("/api/telegram/webhook", post(media::webhook))
+        .route("/api/media/{token}", get(media::stream))
         .route("/api/admin/categories", get(admin_catalog::list_categories).post(admin_catalog::create_category))
         .route(
             "/api/admin/categories/{id}",

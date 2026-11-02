@@ -7,7 +7,7 @@ use serde::Deserialize;
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use super::reviews;
+use super::{media, reviews};
 use crate::{
     AppState,
     auth::CurrentUser,
@@ -142,8 +142,8 @@ pub async fn file(
         Some("attachment") => true,
         Some(_) => return Err(AppError::Validation("invalid_disposition")),
     };
-    let (file_key, published, owned): (Option<String>, bool, bool) = sqlx::query_as(
-        "SELECT e.file_key, e.published,
+    let (file_key, media_id, published, owned): (Option<String>, Option<Uuid>, bool, bool) = sqlx::query_as(
+        "SELECT e.file_key, e.media_id, e.published,
                 EXISTS (SELECT 1 FROM ebook_purchases p WHERE p.ebook_id = e.id AND p.user_id = $2)
          FROM ebooks e WHERE e.slug = $1",
     )
@@ -154,6 +154,14 @@ pub async fn file(
     .ok_or(AppError::NotFound)?;
     if !owned {
         return Err(if published { AppError::Forbidden } else { AppError::NotFound });
+    }
+    // Uploaded (Telegram) media wins over the S3 key; streamed through `/media/…`.
+    if let Some(media_id) = media_id {
+        if st.telegram.is_none() {
+            return Err(AppError::Unavailable("storage_unavailable"));
+        }
+        let (url, expires_at) = media::signed_url(&st, media_id, FILE_URL_TTL, attachment);
+        return Ok(Json(EbookFile { url, expires_at }));
     }
     let file_key = file_key.ok_or(AppError::NotFound)?;
     let storage = st.storage.as_ref().ok_or(AppError::Unavailable("storage_unavailable"))?;
