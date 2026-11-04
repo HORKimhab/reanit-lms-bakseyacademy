@@ -1,4 +1,5 @@
 mod auth;
+mod cleanup;
 mod config;
 mod error;
 mod http_range;
@@ -65,6 +66,7 @@ async fn main() -> anyhow::Result<()> {
         .connect(&config.database_url)
         .await?;
     sqlx::migrate!("./migrations").run(&db).await?;
+    cleanup::spawn(db.clone(), config.order_abandon_days);
 
     let app = routes::router(AppState {
         db,

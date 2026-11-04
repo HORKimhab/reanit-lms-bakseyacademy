@@ -172,3 +172,31 @@ async fn dashboard_counts_paid_orders(db: PgPool) {
     assert_eq!(s["top_courses"][0]["sales"], 1);
     assert_eq!(s["top_ebooks"][0]["revenue_cents"], 500);
 }
+
+#[sqlx::test(migrations = "./migrations")]
+async fn cleanup_sweeps_expired_sessions_and_abandoned_orders(db: PgPool) {
+    let c = catalog(&db).await;
+    let (_, buyer) = user(&db, "+85510000001", "student").await;
+    let (_, other) = user(&db, "+85510000002", "student").await;
+    let (_, gone) = user(&db, "+85510000003", "student").await;
+    let old = order_both(&db, &buyer, &c).await;
+    let submitted = order_both(&db, &other, &c).await;
+    post(&db, &format!("/api/orders/{submitted}/submit"), Some(&other), json!({ "payment_ref": "TX-1" })).await;
+    sqlx::query("UPDATE orders SET created_at = now() - interval '8 days'").execute(&db).await.unwrap();
+    sqlx::query("UPDATE sessions SET expires_at = now() - interval '1 second' WHERE token_hash = $1")
+        .bind(crate::auth::hash_token(&gone))
+        .execute(&db)
+        .await
+        .unwrap();
+
+    let swept = crate::cleanup::run_once(&db, 7).await.unwrap();
+    assert_eq!(swept, crate::cleanup::Swept { sessions: 1, orders: 1 });
+    assert_eq!(get(&db, &format!("/api/orders/{old}"), Some(&buyer)).await.json()["status"], "cancelled");
+    // Submitted orders wait for an admin.
+    assert_eq!(get(&db, &format!("/api/orders/{submitted}"), Some(&other)).await.json()["status"], "awaiting_approval");
+    assert_eq!(get(&db, "/api/me", Some(&gone)).await.status, StatusCode::UNAUTHORIZED);
+    // The items can be ordered again.
+    let r = post(&db, "/api/cart", Some(&buyer), json!({ "course_id": c.course_id })).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text);
+    assert_eq!(crate::cleanup::run_once(&db, 7).await.unwrap(), crate::cleanup::Swept { sessions: 0, orders: 0 });
+}

@@ -30,6 +30,10 @@ bun install
 bun run dev                    # http://localhost:5173
 ```
 
+The API runs a cleanup pass on start and then hourly: it deletes expired sessions and cancels `pending_payment` orders older than `ORDER_ABANDON_DAYS` (optional env var, 1–365, default 7), so their items can be ordered again and coupon uses are released. Orders awaiting approval are never touched.
+
+Tests: `cd backend && cargo test` runs unit tests and the integration tests in `src/tests/`, which create a throwaway database per test on the server in `DATABASE_URL` (the role needs `CREATEDB`). CI (`.github/workflows/ci.yml`) runs them against a Postgres service, plus clippy, `bun run build` and `bun run check`.
+
 ## Telegram channel storage
 
 Lesson videos and ebook files can live as posts in a private Telegram channel instead of Bunny / R2. The bot stores and fetches them; the API streams every byte through signed, expiring `/media/{token}` links, so the bot token and Telegram file URLs never reach the browser.

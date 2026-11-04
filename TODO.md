@@ -72,7 +72,7 @@ Constraints that shape the design:
 ## J. Polish
 - [x] J1 Resume a course at the last lesson watched ("Continue learning" goes to it)
 - [x] J2 Bundles: several courses / ebooks sold at one price
-- [ ] J3 Cleanup job: delete expired sessions and cancel long-abandoned `pending_payment` orders
+- [x] J3 Cleanup job: delete expired sessions and cancel long-abandoned `pending_payment` orders
 
 ## Later
 - [ ] Automatic payment confirmation: Bakong KHQR dynamic QR + status check, ABA PayWay checkout + pushback webhook (same grant path as admin approval)

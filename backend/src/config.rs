@@ -18,6 +18,9 @@ pub struct Config {
     pub media_key: Vec<u8>,
     /// Telegram channel storage; `None` without `TELEGRAM_BOT_TOKEN`.
     pub telegram: Option<Telegram>,
+    /// Unpaid (`pending_payment`) orders older than this many days are cancelled (`ORDER_ABANDON_DAYS`,
+    /// default 7).
+    pub order_abandon_days: i32,
 }
 
 /// Unset or blank → `None`.
@@ -31,7 +34,16 @@ impl Config {
         if media_key.is_none() && optional("TELEGRAM_BOT_TOKEN").is_some() {
             anyhow::bail!("MEDIA_SIGNING_KEY must be set with TELEGRAM_BOT_TOKEN (it signs /media links)");
         }
+        let order_abandon_days = match optional("ORDER_ABANDON_DAYS") {
+            None => 7,
+            Some(v) => v
+                .parse::<i32>()
+                .ok()
+                .filter(|d| (1..=365).contains(d))
+                .context("ORDER_ABANDON_DAYS must be a number of days between 1 and 365")?,
+        };
         Ok(Self {
+            order_abandon_days,
             media_key: media_key.map(String::into_bytes).unwrap_or_else(|| {
                 use argon2::password_hash::rand_core::{OsRng, RngCore};
                 let mut key = vec![0u8; 32];
