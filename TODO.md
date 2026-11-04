@@ -55,6 +55,25 @@ Constraints that shape the design:
 - [x] G7 Player + reader: lessons whose media is `telegram` play in a native `<video>` (seeking via Range) instead of the Bunny iframe; ebook reader / download use the same proxy URL. Mark complete keeps working unchanged
 - [x] G8 Ops: README section (create channel, add bot as admin, run `telegram-bot-api --local` via `docker-compose.yml`, env vars), on-disk cache limits for the local Bot API server, and a smoke test that uploads → plays with seeking → downloads a > 20 MB file
 
+## H. Launch readiness
+- [ ] H1 CI: GitHub Actions workflow running `cargo check`, `cargo clippy -- -D warnings`, `cargo test` (backend) and `bun run check` (frontend) on every push / PR
+- [ ] H2 Access-control integration tests (`sqlx::test` on a throwaway DB): lesson `video_id`, ebook `file_key` and Telegram ids never reach non-owners; owners keep access after unpublish; approving an order grants enrollment / purchase exactly once
+- [ ] H3 Buyer notification on order approve / reject (Telegram bot message and/or header notice), so buyers don't have to poll `/orders/{id}`
+- [ ] H4 SEO: `og:title` / `og:description` / `og:image` on course and ebook detail pages (for Facebook / Telegram link previews), `sitemap.xml` of published items, `robots.txt`
+- [ ] H5 Admin dashboard at `/admin`: count of orders awaiting approval, revenue over time, top-selling courses / ebooks
+
+## I. Growth
+- [ ] I1 Coupons / discount codes: `coupons` table (percent or fixed cents, expiry, usage limit), applied at checkout, discount snapshot on the order
+- [ ] I2 Completion certificates: PDF (km / en) issued when course progress reaches 100%, listed in `/account/library`
+- [ ] I3 Wishlist for logged-in users (heart on cards and detail pages, `/account/wishlist`)
+- [ ] I4 Lesson Q&A / comments: enrolled users ask, instructors / admins answer
+- [ ] I5 Admin user management: search users, grant / revoke enrollments and ebook purchases manually (refunds, support), promote to admin
+
+## J. Polish
+- [ ] J1 Resume a course at the last lesson watched ("Continue learning" goes to it)
+- [ ] J2 Bundles: several courses / ebooks sold at one price
+- [ ] J3 Cleanup job: delete expired sessions and cancel long-abandoned `pending_payment` orders
+
 ## Later
 - [ ] Automatic payment confirmation: Bakong KHQR dynamic QR + status check, ABA PayWay checkout + pushback webhook (same grant path as admin approval)
 - [x] Payment screenshot upload: the user attaches a screenshot on `/orders/{id}`; the bot posts it (with order id, buyer, amount, reference) to a private **admin** Telegram channel/group, which also notifies admins; `orders.payment_proof_media_id` → shown in `/admin/orders` through the G5/G6 proxy (builds on G1–G2)
