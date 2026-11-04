@@ -349,3 +349,14 @@ export interface AdminMedia {
 	/** Signed `/media/…` link (1 h) for admins to open the file. */
 	preview_url: string | null;
 }
+
+/** `GET /api/sitemap`: published catalog slugs. */
+export interface SitemapEntry {
+	slug: string;
+	updated_at: string;
+}
+
+export interface Sitemap {
+	courses: SitemapEntry[];
+	ebooks: SitemapEntry[];
+}

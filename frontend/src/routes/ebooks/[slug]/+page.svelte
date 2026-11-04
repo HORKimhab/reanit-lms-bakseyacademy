@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Seo from '$lib/components/Seo.svelte';
 	import { m } from '$lib/paraglide/messages.js';
 	import { categoryName } from '$lib/i18n';
 	import BuyButtons from '$lib/components/BuyButtons.svelte';
@@ -12,10 +13,7 @@
 	const ebook = $derived(data.ebook);
 </script>
 
-<svelte:head>
-	<title>{ebook.title} · Reanit Academy</title>
-	{#if ebook.summary}<meta name="description" content={ebook.summary} />{/if}
-</svelte:head>
+<Seo title={ebook.title} description={ebook.summary} image={ebook.cover_url} type="book" />
 
 <div class="grid gap-8 md:grid-cols-[280px_1fr]">
 	<div class="aspect-[3/4] overflow-hidden rounded-xl bg-gradient-to-br from-brand-500 to-sky-400 shadow">

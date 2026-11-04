@@ -6,6 +6,7 @@
 	import Price from '$lib/components/Price.svelte';
 	import Rating from '$lib/components/Rating.svelte';
 	import Reviews from '$lib/components/Reviews.svelte';
+	import Seo from '$lib/components/Seo.svelte';
 	import { formatClock, formatDuration, formatNumber } from '$lib/format';
 	import type { ActionData, PageData } from './$types';
 
@@ -13,10 +14,7 @@
 	const course = $derived(data.course);
 </script>
 
-<svelte:head>
-	<title>{course.title} · Reanit Academy</title>
-	{#if course.summary}<meta name="description" content={course.summary} />{/if}
-</svelte:head>
+<Seo title={course.title} description={course.summary} image={course.cover_url} type="article" />
 
 <div class="grid gap-8 lg:grid-cols-[1fr_340px]">
 	<div>

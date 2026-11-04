@@ -82,6 +82,7 @@ Authenticated routes take `Authorization: Bearer <token>` (the token from regist
 | GET | `/api/health` | DB ping |
 | GET | `/api/home` | published banners + 8 newest courses + ebooks |
 | GET | `/api/categories` | |
+| GET | `/api/sitemap` | `{courses, ebooks}`: `{slug, updated_at}` of every published item (feeds the storefront's `/sitemap.xml`) |
 | GET | `/api/courses?q=&category=&page=&per_page=` | paged; `q` matches title/instructor by substring or typo-tolerant trigram similarity (`pg_trgm`), best match first |
 | GET | `/api/courses/{slug}` | detail + curriculum (video id only for preview lessons); `reviews` (latest 10); optional Bearer → `owned`, `my_review`, `completed_lesson_ids` (enrolled users also see unpublished courses) |
 | PUT / DELETE | `/api/courses/{slug}/review` | Bearer, owners only; PUT `{rating: 1–5, comment?}` → review (upsert), DELETE → 204; 403 not enrolled, 422 `invalid_rating` / `invalid_comment` |

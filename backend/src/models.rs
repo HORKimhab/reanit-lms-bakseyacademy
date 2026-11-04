@@ -490,6 +490,19 @@ pub struct EbookFile {
     pub expires_at: DateTime<Utc>,
 }
 
+#[derive(Serialize, FromRow)]
+pub struct SitemapEntry {
+    pub slug: String,
+    pub updated_at: DateTime<Utc>,
+}
+
+/// Published catalog URLs (`GET /api/sitemap`).
+#[derive(Serialize)]
+pub struct Sitemap {
+    pub courses: Vec<SitemapEntry>,
+    pub ebooks: Vec<SitemapEntry>,
+}
+
 #[derive(Serialize)]
 pub struct Page<T> {
     pub items: Vec<T>,

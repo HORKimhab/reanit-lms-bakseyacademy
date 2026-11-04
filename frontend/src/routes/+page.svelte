@@ -1,4 +1,7 @@
 <script lang="ts">
+	import Seo from '$lib/components/Seo.svelte';
+	import { getLocale } from '$lib/paraglide/runtime';
+	import { site } from '$lib/site';
 	import { m } from '$lib/paraglide/messages.js';
 	import Carousel from '$lib/components/Carousel.svelte';
 	import ProductCard from '$lib/components/ProductCard.svelte';
@@ -8,7 +11,7 @@
 	let { data }: { data: PageData } = $props();
 </script>
 
-<svelte:head><title>Reanit Academy</title></svelte:head>
+<Seo title={site.name} description={site.tagline[getLocale()]} />
 
 <Carousel banners={data.home.banners} />
 

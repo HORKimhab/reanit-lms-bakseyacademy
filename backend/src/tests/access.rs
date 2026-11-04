@@ -18,6 +18,9 @@ async fn course_detail_exposes_only_preview_video(db: PgPool) {
         assert!(r.text.contains(PREVIEW_VIDEO));
         assert_eq!(r.json()["owned"], false);
     }
+    let r = get(&db, "/api/sitemap", None).await;
+    assert_eq!(r.json()["courses"][0]["slug"], "demo-course");
+    assert_eq!(r.json()["ebooks"][0]["slug"], "demo-ebook");
     // Even an owner's detail page never carries paid video ids: playback goes through /lessons/{id}.
     let (owner_id, owner) = user(&db, "+85510000002", "student").await;
     grant_both(&db, owner_id, &c).await;
@@ -148,6 +151,8 @@ async fn owners_keep_access_after_unpublish(db: PgPool) {
     assert_eq!(get(&db, "/api/ebooks/demo-ebook/file", Some(&stranger)).await.status, StatusCode::NOT_FOUND);
     let r = get(&db, "/api/courses?q=demo", None).await;
     assert_eq!(r.json()["total"], 0);
+    let r = get(&db, "/api/sitemap", None).await;
+    assert_eq!(r.json(), serde_json::json!({ "courses": [], "ebooks": [] }));
 
     assert_eq!(get(&db, "/api/courses/demo-course", Some(&owner)).await.status, StatusCode::OK);
     assert_eq!(get(&db, &paid, Some(&owner)).await.status, StatusCode::OK);
