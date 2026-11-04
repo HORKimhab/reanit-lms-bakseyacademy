@@ -181,6 +181,8 @@ export interface PaymentMethod {
 	account_name: string;
 	account_number: string;
 	qr_image_url: string | null;
+	/** Confirmed automatically (Bakong KHQR / ABA PayWay configured on the API). */
+	automatic: boolean;
 }
 
 export type OrderStatus = 'pending_payment' | 'awaiting_approval' | 'paid' | 'rejected' | 'cancelled';
@@ -207,6 +209,7 @@ export interface OrderSummary {
 	created_at: string;
 	submitted_at: string | null;
 	paid_at: string | null;
+	paid_via: 'free' | 'admin' | 'bakong' | 'payway' | null;
 	/** Signed link (1 h) to the attached payment screenshot. */
 	payment_proof_url: string | null;
 }
@@ -559,4 +562,17 @@ export interface AdminBundle {
 	ebooks: EbookCard[];
 	other_courses: ItemOption[];
 	other_ebooks: ItemOption[];
+}
+
+/** `POST /api/orders/{id}/khqr`: the order's dynamic Bakong KHQR. */
+export interface KhqrPayment {
+	qr: string;
+	amount_cents: number;
+	expires_at: string;
+}
+
+/** `POST /api/orders/{id}/payway`: fields the browser posts to PayWay's hosted checkout. */
+export interface PaywayCheckout {
+	action_url: string;
+	fields: [string, string][];
 }

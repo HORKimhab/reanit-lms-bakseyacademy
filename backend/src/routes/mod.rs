@@ -18,6 +18,7 @@ mod library;
 mod media;
 mod notifications;
 mod orders;
+pub(crate) mod payments;
 mod proofs;
 mod questions;
 mod recommendations;
@@ -33,6 +34,11 @@ use axum::{
 use serde_json::{Value, json};
 
 use crate::{AppState, error::AppResult};
+
+/// Background confirmation of automatic payments (see `payments::spawn_poller`).
+pub fn spawn_payment_poller(state: AppState) {
+    payments::spawn_poller(state);
+}
 
 pub fn router(state: AppState) -> Router {
     Router::new()
@@ -59,6 +65,10 @@ pub fn router(state: AppState) -> Router {
         .route("/api/orders/{id}", get(orders::detail))
         .route("/api/orders/{id}/submit", post(orders::submit))
         .route("/api/orders/{id}/cancel", post(orders::cancel))
+        .route("/api/orders/{id}/khqr", post(payments::khqr))
+        .route("/api/orders/{id}/payway", post(payments::payway))
+        .route("/api/orders/{id}/check-payment", post(payments::check_payment))
+        .route("/api/payments/payway/pushback", post(payments::payway_pushback))
         .route(
             "/api/orders/{id}/proof",
             post(proofs::upload).layer(DefaultBodyLimit::max(11 * 1024 * 1024)),

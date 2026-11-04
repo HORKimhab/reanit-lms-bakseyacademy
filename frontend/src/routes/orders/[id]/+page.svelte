@@ -3,6 +3,7 @@
 	import { m } from '$lib/paraglide/messages.js';
 	import { localized } from '$lib/i18n';
 	import { enhance } from '$app/forms';
+	import { invalidateAll } from '$app/navigation';
 	import OrderStatusBadge from '$lib/components/OrderStatusBadge.svelte';
 	import { errorMessage } from '$lib/errors';
 	import { formatDateTime, formatPrice } from '$lib/format';
@@ -12,6 +13,21 @@
 	const order = $derived(data.order);
 	const method = $derived(order.payment_method);
 	const canSubmit = $derived(order.status === 'pending_payment' || order.status === 'rejected');
+	const canPay = $derived(canSubmit || order.status === 'awaiting_approval');
+	const automatic = $derived(canPay && !!method?.automatic);
+	const payway = $derived(form && 'payway' in form ? form.payway : null);
+	let paywayForm: HTMLFormElement | undefined = $state();
+
+	// While an automatic payment is pending, reload (the server asks the provider) every 5 s.
+	$effect(() => {
+		if (!automatic) return;
+		const timer = setInterval(() => invalidateAll(), 5000);
+		return () => clearInterval(timer);
+	});
+	// Hand the signed checkout over to PayWay as soon as we have it.
+	$effect(() => {
+		if (payway && paywayForm) paywayForm.submit();
+	});
 	const shortId = $derived(order.id.slice(0, 8).toUpperCase());
 </script>
 
@@ -47,8 +63,32 @@
 		<p class="mt-6 rounded-xl bg-slate-100 p-4 text-slate-600">{m.order_cancelled_message()}</p>
 	{/if}
 
-	<div class="mt-6 grid gap-6 {canSubmit && method ? 'md:grid-cols-2' : ''}">
-		{#if canSubmit && method}
+	{#if automatic && method}
+		<section class="mt-6 rounded-2xl border border-brand-200 bg-white p-5 text-center shadow-sm">
+			{#if data.khqr}
+				<h2 class="font-semibold">{m.order_khqr_title()}</h2>
+				<div class="mx-auto mt-4 w-64 max-w-full [&_svg]:h-auto [&_svg]:w-full">{@html data.khqr.svg}</div>
+				<p class="mt-4 text-3xl font-bold text-brand-600">{formatPrice(data.khqr.amount_cents)}</p>
+				<p class="mt-1 text-sm text-slate-500">{m.order_khqr_expires({ time: formatDateTime(data.khqr.expires_at) })}</p>
+			{:else if method.code === 'aba_payway'}
+				<h2 class="font-semibold">{m.order_payway_title()}</h2>
+				<p class="mt-4 text-3xl font-bold text-brand-600">{formatPrice(order.total_cents)}</p>
+				<form method="POST" action="?/payway" use:enhance class="mt-4">
+					<button class="rounded-lg bg-brand-600 px-6 py-2.5 font-semibold text-white hover:bg-brand-700">{m.order_payway_button()}</button>
+				</form>
+				{#if payway}
+					<form bind:this={paywayForm} method="POST" action={payway.action_url} enctype="multipart/form-data" class="mt-3">
+						{#each payway.fields as [name, value] (name)}<input type="hidden" {name} {value} />{/each}
+						<button class="text-sm text-brand-600 underline">{m.order_payway_continue()}</button>
+					</form>
+				{/if}
+			{/if}
+			<p class="mt-4 text-sm text-slate-600" role="status" aria-live="polite">⏳ {m.order_auto_waiting()}</p>
+		</section>
+	{/if}
+
+	<div class="mt-6 grid gap-6 {canSubmit && method && !automatic ? 'md:grid-cols-2' : ''}">
+		{#if canSubmit && method && !automatic}
 			<section class="rounded-2xl border border-slate-200 bg-white p-5 text-center shadow-sm">
 				<h2 class="font-semibold">{m.order_scan_to_pay({ method: localized(method.name_km, method.name_en) })}</h2>
 				{#if method.qr_image_url}
@@ -63,6 +103,7 @@
 		<div class="space-y-6">
 			{#if canSubmit && method}
 				<section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+					{#if automatic}<p class="mb-3 text-sm text-slate-500">{m.order_auto_fallback()}</p>{/if}
 					<ol class="list-decimal space-y-1 pl-5 text-sm text-slate-700">
 						<li>{m.order_step_scan()}</li>
 						<li>{m.order_step_pay_before()} <strong>{formatPrice(order.total_cents)}</strong> {m.order_step_pay_after()}</li>

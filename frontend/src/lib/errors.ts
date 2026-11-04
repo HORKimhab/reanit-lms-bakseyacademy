@@ -54,6 +54,7 @@ const messages: Record<string, () => string> = {
 	invalid_body: m.error_invalid_body,
 	invalid_role: m.error_invalid_role,
 	own_role: m.error_own_role,
+	payment_unavailable: m.error_payment_unavailable,
 	forbidden: m.error_forbidden,
 	not_found: m.error_not_found,
 	unauthorized: m.error_unauthorized,

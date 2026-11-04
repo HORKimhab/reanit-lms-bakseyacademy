@@ -41,16 +41,71 @@ pub(crate) fn bundle_item_not_owned(bundle: &str, user: &str) -> String {
 }
 
 pub(crate) const ORDER_COLUMNS: &str = "o.id, o.status, o.total_cents, o.discount_cents, o.coupon_code, o.payment_method AS payment_method_code, \
-     o.payment_ref, o.admin_note, o.created_at, o.submitted_at, o.paid_at, o.payment_proof_media_id";
+     o.payment_ref, o.admin_note, o.created_at, o.submitted_at, o.paid_at, o.paid_via, o.payment_proof_media_id";
 const METHOD_COLUMNS: &str = "code, name_km, name_en, account_name, account_number, qr_image_url";
 
 pub async fn payment_methods(State(st): State<AppState>) -> AppResult<Json<Vec<PaymentMethod>>> {
-    let rows = sqlx::query_as::<_, PaymentMethod>(&format!(
+    let mut rows = sqlx::query_as::<_, PaymentMethod>(&format!(
         "SELECT {METHOD_COLUMNS} FROM payment_methods WHERE active ORDER BY position, code"
     ))
     .fetch_all(&st.db)
     .await?;
+    rows.iter_mut().for_each(|m| m.automatic = st.payments.automatic(&m.code));
     Ok(Json(rows))
+}
+
+/// How an order got paid (`orders.paid_via`).
+#[derive(Clone, Copy)]
+pub(crate) enum PaidVia {
+    Admin(Uuid),
+    Provider(&'static str),
+}
+
+pub(crate) enum Settled {
+    /// Now paid and granted.
+    Paid,
+    AlreadyPaid,
+    /// Cancelled (or another status that can't be paid).
+    NotPayable,
+    NotFound,
+}
+
+/// Marks a payable order paid, grants its items and notifies the buyer, inside `conn`'s
+/// transaction (the order row is locked, so concurrent confirmations settle it once).
+pub(crate) async fn settle(
+    conn: &mut PgConnection,
+    order_id: Uuid,
+    via: PaidVia,
+    payment_ref: Option<&str>,
+) -> sqlx::Result<Settled> {
+    let status: Option<String> = sqlx::query_scalar("SELECT status FROM orders WHERE id = $1 FOR UPDATE")
+        .bind(order_id)
+        .fetch_optional(&mut *conn)
+        .await?;
+    match status.as_deref() {
+        None => return Ok(Settled::NotFound),
+        Some("paid") => return Ok(Settled::AlreadyPaid),
+        Some(s) if is_payable(s) => {}
+        Some(_) => return Ok(Settled::NotPayable),
+    }
+    let (paid_via, reviewer) = match via {
+        PaidVia::Admin(admin) => ("admin", Some(admin)),
+        PaidVia::Provider(provider) => (provider, None),
+    };
+    sqlx::query(
+        "UPDATE orders SET status = 'paid', paid_at = now(), paid_via = $2, reviewed_by = $3, \
+         reviewed_at = CASE WHEN $3::uuid IS NULL THEN reviewed_at ELSE now() END, \
+         payment_ref = COALESCE($4, payment_ref), admin_note = NULL WHERE id = $1",
+    )
+    .bind(order_id)
+    .bind(paid_via)
+    .bind(reviewer)
+    .bind(payment_ref)
+    .execute(&mut *conn)
+    .await?;
+    grant_order(conn, order_id).await?;
+    super::notifications::notify_order(&mut *conn, order_id, "order_paid").await?;
+    Ok(Settled::Paid)
 }
 
 /// Loads an order with items and payment method. `user_id = None` skips the owner check (admin).
@@ -70,6 +125,7 @@ pub(crate) async fn load_order(
     .ok_or(AppError::NotFound)?;
     proofs::attach_proof_url(st, &mut order);
     let method_sql = format!("SELECT {METHOD_COLUMNS} FROM payment_methods WHERE code = $1");
+    let automatic = order.payment_method_code.as_deref().is_some_and(|c| st.payments.automatic(c));
     let (items, payment_method) = tokio::try_join!(
         sqlx::query_as::<_, OrderItem>(
             "SELECT kind, course_id, ebook_id, bundle_id, title, price_cents FROM order_items \
@@ -83,7 +139,7 @@ pub(crate) async fn load_order(
     )?;
     Ok(OrderDetail {
         order,
-        payment_method,
+        payment_method: payment_method.map(|m| PaymentMethod { automatic, ..m }),
         items,
     })
 }
@@ -225,8 +281,8 @@ pub async fn checkout(
     };
 
     let order_id: Uuid = sqlx::query_scalar(
-        "INSERT INTO orders (user_id, status, payment_method, total_cents, paid_at, coupon_id, coupon_code, discount_cents) \
-         VALUES ($1, $2, $3, $4, CASE WHEN $4 = 0 THEN now() END, $5, $6, $7) RETURNING id",
+        "INSERT INTO orders (user_id, status, payment_method, total_cents, paid_at, paid_via, coupon_id, coupon_code, discount_cents) \
+         VALUES ($1, $2, $3, $4, CASE WHEN $4 = 0 THEN now() END, CASE WHEN $4 = 0 THEN 'free' END, $5, $6, $7) RETURNING id",
     )
     .bind(user_id)
     .bind(if total == 0 {
@@ -322,12 +378,15 @@ pub async fn submit(
     .await
 }
 
-/// Cancels an order the user hasn't paid for yet.
+/// Cancels an order the user hasn't paid for yet. Open automatic payments are checked first: if
+/// the buyer already paid, the payment wins (409 `invalid_status`, the order is paid).
 pub async fn cancel(
     State(st): State<AppState>,
     current: CurrentUser,
     Path(id): Path<Uuid>,
 ) -> AppResult<Json<OrderDetail>> {
+    load_order(&st, id, Some(current.user.id)).await?;
+    super::payments::check_order(&st, id).await?;
     transition(
         &st,
         id,

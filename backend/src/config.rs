@@ -1,6 +1,9 @@
 use anyhow::Context;
 
+use std::sync::Arc;
+
 use crate::{
+    payments::{self, Payments, bakong, khqr, payway},
     storage::ObjectStorage,
     telegram::{LocalDir, Telegram},
     video::BunnyStream,
@@ -21,6 +24,71 @@ pub struct Config {
     /// Unpaid (`pending_payment`) orders older than this many days are cancelled (`ORDER_ABANDON_DAYS`,
     /// default 7).
     pub order_abandon_days: i32,
+    /// Automatic payment confirmation; each provider is off unless its credentials are set.
+    pub payments: Payments,
+}
+
+/// `SITE_URL`: the public storefront origin providers send buyers and pushbacks back to.
+/// Must be `https://` (plain `http://` only for localhost while developing).
+fn site_url() -> anyhow::Result<String> {
+    let url = optional("SITE_URL").context("SITE_URL must be set with PAYWAY_MERCHANT_ID (e.g. https://reanit.com)")?;
+    let url = url.trim_end_matches('/').to_owned();
+    let local = url.starts_with("http://localhost") || url.starts_with("http://127.0.0.1");
+    if !(url.starts_with("https://") || local) || url.contains(char::is_whitespace) {
+        anyhow::bail!("SITE_URL must be an https:// origin");
+    }
+    Ok(url)
+}
+
+/// Bakong account and labels, checked against the KHQR field limits.
+fn bakong_merchant() -> anyhow::Result<khqr::Merchant> {
+    let account_id = optional("BAKONG_ACCOUNT_ID").context("BAKONG_ACCOUNT_ID must be set with BAKONG_TOKEN")?;
+    let name = optional("BAKONG_MERCHANT_NAME").context("BAKONG_MERCHANT_NAME must be set with BAKONG_TOKEN")?;
+    let city = optional("BAKONG_MERCHANT_CITY").unwrap_or_else(|| "Phnom Penh".into());
+    let ascii = |s: &str| s.is_ascii() && !s.chars().any(|c| c.is_control());
+    if account_id.len() > 32 || !account_id.contains('@') || !ascii(&account_id) {
+        anyhow::bail!("BAKONG_ACCOUNT_ID must look like name@bank (at most 32 characters)");
+    }
+    if name.is_empty() || name.len() > 25 || !ascii(&name) || city.len() > 15 || !ascii(&city) {
+        anyhow::bail!("BAKONG_MERCHANT_NAME (≤ 25) and BAKONG_MERCHANT_CITY (≤ 15) must be plain ASCII");
+    }
+    let merchant_id = optional("BAKONG_MERCHANT_ID");
+    let acquiring_bank = optional("BAKONG_ACQUIRING_BANK");
+    if merchant_id.is_some() != acquiring_bank.is_some() {
+        anyhow::bail!("BAKONG_MERCHANT_ID and BAKONG_ACQUIRING_BANK go together");
+    }
+    Ok(khqr::Merchant { account_id, name, city, merchant_id, acquiring_bank })
+}
+
+fn payments_from_env() -> anyhow::Result<Payments> {
+    let bakong = match optional("BAKONG_TOKEN") {
+        None => None,
+        Some(token) => Some(payments::Bakong {
+            merchant: bakong_merchant()?,
+            gateway: Arc::new(bakong::Client::new(
+                optional("BAKONG_API_URL").unwrap_or_else(|| "https://api-bakong.nbc.gov.kh".into()),
+                token,
+            )),
+        }),
+    };
+    let payway = match optional("PAYWAY_MERCHANT_ID") {
+        None => None,
+        Some(merchant_id) => {
+            let config = payway::Config {
+                merchant_id,
+                api_key: optional("PAYWAY_API_KEY").context("PAYWAY_API_KEY must be set with PAYWAY_MERCHANT_ID")?,
+                api_url: optional("PAYWAY_API_URL")
+                    .context("PAYWAY_API_URL must be set with PAYWAY_MERCHANT_ID (sandbox: https://checkout-sandbox.payway.com.kh)")?
+                    .trim_end_matches('/')
+                    .to_owned(),
+            };
+            if !config.api_url.starts_with("https://") {
+                anyhow::bail!("PAYWAY_API_URL must be https://");
+            }
+            Some(payments::Payway { gateway: Arc::new(payway::Client::new(config.clone())), config, site_url: site_url()? })
+        }
+    };
+    Ok(Payments { bakong, payway })
 }
 
 /// Unset or blank → `None`.
@@ -43,6 +111,7 @@ impl Config {
                 .context("ORDER_ABANDON_DAYS must be a number of days between 1 and 365")?,
         };
         Ok(Self {
+            payments: payments_from_env()?,
             order_abandon_days,
             media_key: media_key.map(String::into_bytes).unwrap_or_else(|| {
                 use argon2::password_hash::rand_core::{OsRng, RngCore};

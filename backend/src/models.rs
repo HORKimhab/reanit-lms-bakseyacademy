@@ -119,6 +119,9 @@ pub struct PaymentMethod {
     pub account_name: String,
     pub account_number: String,
     pub qr_image_url: Option<String>,
+    /// Payment is confirmed automatically (Bakong KHQR / ABA PayWay configured); set by the handlers.
+    #[sqlx(skip)]
+    pub automatic: bool,
 }
 
 #[derive(Serialize, FromRow)]
@@ -149,6 +152,8 @@ pub struct OrderSummary {
     pub created_at: DateTime<Utc>,
     pub submitted_at: Option<DateTime<Utc>>,
     pub paid_at: Option<DateTime<Utc>>,
+    /// `free`, `admin`, `bakong` or `payway` once paid.
+    pub paid_via: Option<String>,
     #[serde(skip)]
     pub payment_proof_media_id: Option<uuid::Uuid>,
     /// Signed `/media/…` link to the attached payment screenshot (1 h); set by the handlers.
@@ -856,4 +861,19 @@ mod tests {
         let p = ListParams { page: Some(0), per_page: Some(1000), ..Default::default() };
         assert_eq!((p.page(), p.per_page(), p.offset()), (1, 48, 0));
     }
+}
+
+/// A dynamic KHQR for one order (`POST /api/orders/{id}/khqr`).
+#[derive(Serialize)]
+pub struct KhqrPayment {
+    pub qr: String,
+    pub amount_cents: i32,
+    pub expires_at: DateTime<Utc>,
+}
+
+/// Fields for the browser to POST (multipart) to PayWay's hosted checkout.
+#[derive(Serialize)]
+pub struct PaywayCheckout {
+    pub action_url: String,
+    pub fields: Vec<(&'static str, String)>,
 }

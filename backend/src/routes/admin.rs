@@ -7,7 +7,7 @@ use uuid::Uuid;
 
 use super::{
     notifications,
-    orders::{ORDER_COLUMNS, grant_order, items_by_order, load_order},
+    orders::{ORDER_COLUMNS, PaidVia, Settled, items_by_order, load_order, settle},
     proofs,
 };
 use crate::{
@@ -105,27 +105,10 @@ pub async fn approve(
     Path(id): Path<Uuid>,
 ) -> AppResult<Json<OrderDetail>> {
     let mut tx = st.db.begin().await?;
-    let status: Option<String> =
-        sqlx::query_scalar("SELECT status FROM orders WHERE id = $1 FOR UPDATE")
-            .bind(id)
-            .fetch_optional(&mut *tx)
-            .await?;
-    match status.as_deref() {
-        None => return Err(AppError::NotFound),
-        Some("paid") => {}
-        Some("pending_payment" | "awaiting_approval" | "rejected") => {
-            sqlx::query(
-                "UPDATE orders SET status = 'paid', paid_at = now(), reviewed_by = $2, reviewed_at = now(), \
-                 admin_note = NULL WHERE id = $1",
-            )
-            .bind(id)
-            .bind(admin.id)
-            .execute(&mut *tx)
-            .await?;
-            grant_order(&mut tx, id).await?;
-            notifications::notify_order(&mut *tx, id, "order_paid").await?;
-        }
-        Some(_) => return Err(AppError::Conflict("invalid_status")),
+    match settle(&mut tx, id, PaidVia::Admin(admin.id), None).await? {
+        Settled::NotFound => return Err(AppError::NotFound),
+        Settled::NotPayable => return Err(AppError::Conflict("invalid_status")),
+        Settled::Paid | Settled::AlreadyPaid => {}
     }
     tx.commit().await?;
     Ok(Json(load_order(&st, id, None).await?))

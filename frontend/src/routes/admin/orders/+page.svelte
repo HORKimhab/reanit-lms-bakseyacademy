@@ -72,7 +72,7 @@
 					<div class="min-w-0 space-y-1">
 						<div class="flex flex-wrap items-center gap-2">
 							<span class="font-mono text-sm font-semibold">#{o.id.slice(0, 8).toUpperCase()}</span>
-							<OrderStatusBadge status={o.status} />
+							<OrderStatusBadge status={o.status} />{#if o.paid_via === 'bakong' || o.paid_via === 'payway'}<span class="ml-1 rounded bg-green-50 px-1.5 text-xs text-green-700">ស្វ័យប្រវត្តិ · {o.paid_via === 'bakong' ? 'Bakong' : 'PayWay'}</span>{/if}
 							<span class="text-xs text-slate-400">{formatDateTime(o.submitted_at ?? o.created_at)}</span>
 						</div>
 						<p class="text-sm">

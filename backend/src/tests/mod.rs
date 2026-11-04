@@ -7,6 +7,7 @@ mod bundles;
 mod certificates;
 mod coupons;
 mod orders;
+mod payment_flow;
 mod questions;
 mod wishlist;
 
@@ -20,7 +21,20 @@ use sqlx::PgPool;
 use tower::ServiceExt;
 use uuid::Uuid;
 
-use crate::{AppState, auth, routes, telegram::Telegram, video::BunnyStream};
+use std::{
+    collections::HashMap,
+    sync::{Arc, LazyLock, Mutex},
+};
+
+use futures_util::future::BoxFuture;
+
+use crate::{
+    AppState, auth,
+    payments::{self, Gateway, Lookup, Payments, khqr, payway},
+    routes,
+    telegram::Telegram,
+    video::BunnyStream,
+};
 
 /// The secrets these tests check never leak (see the access-control invariants in `CLAUDE.md`).
 pub const PREVIEW_VIDEO: &str = "vid-preview-0001";
@@ -29,6 +43,52 @@ pub const FILE_KEY: &str = "private/ebook-secret-key.pdf";
 pub const TG_FILE_ID: &str = "tg-file-id-secret-0003";
 pub const TG_UNIQUE_ID: &str = "tg-unique-secret-0004";
 pub const BOT_TOKEN: &str = "123456:bot-token-secret";
+
+/// Stands in for Bakong / PayWay. Payment refs (KHQR md5, PayWay tran_id) are unique, so one
+/// shared fake serves every test; unknown refs are `Pending`.
+#[derive(Default)]
+pub struct FakeGateway(Mutex<HashMap<String, Lookup>>);
+
+impl Gateway for FakeGateway {
+    fn lookup<'a>(&'a self, provider_ref: &'a str) -> BoxFuture<'a, anyhow::Result<Lookup>> {
+        let found = self.0.lock().unwrap().get(provider_ref).cloned().unwrap_or(Lookup::Pending);
+        Box::pin(async move { Ok(found) })
+    }
+}
+
+pub static GATEWAY: LazyLock<Arc<FakeGateway>> = LazyLock::new(Default::default);
+
+/// What the fake provider reports for `provider_ref` from now on.
+pub fn provider_reports(provider_ref: &str, lookup: Lookup) {
+    GATEWAY.0.lock().unwrap().insert(provider_ref.to_owned(), lookup);
+}
+
+pub const BAKONG_ACCOUNT: &str = "reanit@aclb";
+pub const SITE_URL: &str = "https://shop.example";
+
+pub fn test_payments() -> Payments {
+    Payments {
+        bakong: Some(payments::Bakong {
+            merchant: khqr::Merchant {
+                account_id: BAKONG_ACCOUNT.into(),
+                name: "Reanit Academy".into(),
+                city: "Phnom Penh".into(),
+                merchant_id: None,
+                acquiring_bank: None,
+            },
+            gateway: GATEWAY.clone(),
+        }),
+        payway: Some(payments::Payway {
+            config: payway::Config {
+                merchant_id: "ec000262".into(),
+                api_key: "test-api-key".into(),
+                api_url: "https://checkout-sandbox.payway.com.kh".into(),
+            },
+            gateway: GATEWAY.clone(),
+            site_url: SITE_URL.into(),
+        }),
+    }
+}
 
 pub fn state(db: PgPool) -> AppState {
     AppState {
@@ -39,6 +99,7 @@ pub fn state(db: PgPool) -> AppState {
         telegram: Some(Telegram::new("http://127.0.0.1:9", BOT_TOKEN.into(), "-100".into(), None)),
         media_key: (*b"test-media-signing-key-32-bytes!").into(),
         login_throttle: Default::default(),
+        payments: test_payments(),
     }
 }
 
@@ -65,6 +126,11 @@ impl Resp {
 }
 
 pub async fn call(db: &PgPool, method: Method, path: &str, token: Option<&str>, body: Option<Value>) -> Resp {
+    call_app(app(db), method, path, token, body).await
+}
+
+/// Like [`call`], against a router built from a custom state.
+pub async fn call_app(app: Router, method: Method, path: &str, token: Option<&str>, body: Option<Value>) -> Resp {
     let mut req = Request::builder().method(method).uri(path);
     if let Some(t) = token {
         req = req.header("authorization", format!("Bearer {t}"));
@@ -74,7 +140,7 @@ pub async fn call(db: &PgPool, method: Method, path: &str, token: Option<&str>, 
         None => req.body(Body::empty()),
     }
     .unwrap();
-    let res = app(db).oneshot(req).await.unwrap();
+    let res = app.oneshot(req).await.unwrap();
     let status = res.status();
     let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
     Resp { status, text: String::from_utf8_lossy(&bytes).into_owned() }
@@ -165,7 +231,8 @@ pub async fn catalog(db: &PgPool) -> Catalog {
     .await
     .unwrap();
     sqlx::query(
-        "INSERT INTO payment_methods (code, name_km, name_en, active) VALUES ('khqr', 'KHQR', 'KHQR', true)",
+        "INSERT INTO payment_methods (code, name_km, name_en, active) VALUES ('khqr', 'KHQR', 'KHQR', true), \
+         ('bakong_khqr', 'Bakong', 'Bakong', true), ('aba_payway', 'PayWay', 'PayWay', true)",
     )
     .execute(db)
     .await
@@ -175,11 +242,16 @@ pub async fn catalog(db: &PgPool) -> Catalog {
 
 /// Puts both catalog items in the user's cart and checks out; returns the order id.
 pub async fn order_both(db: &PgPool, token: &str, c: &Catalog) -> Uuid {
+    order_with(db, token, c, "khqr").await
+}
+
+/// [`order_both`] paying with `method`.
+pub async fn order_with(db: &PgPool, token: &str, c: &Catalog, method: &str) -> Uuid {
     let r = post(db, "/api/cart", Some(token), serde_json::json!({ "course_id": c.course_id })).await;
     assert_eq!(r.status, StatusCode::OK, "{}", r.text);
     let r = post(db, "/api/cart", Some(token), serde_json::json!({ "ebook_id": c.ebook_id })).await;
     assert_eq!(r.status, StatusCode::OK, "{}", r.text);
-    let r = post(db, "/api/orders", Some(token), serde_json::json!({ "payment_method": "khqr" })).await;
+    let r = post(db, "/api/orders", Some(token), serde_json::json!({ "payment_method": method })).await;
     assert_eq!(r.status, StatusCode::CREATED, "{}", r.text);
     r.json()["id"].as_str().unwrap().parse().unwrap()
 }

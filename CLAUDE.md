@@ -27,11 +27,12 @@ Paid content stays server-side until enrollment exists (roadmap step 3–4):
 - Ebook file keys are never serialized; owners get a short-lived presigned URL from `GET /api/ebooks/{slug}/file` (`src/storage.rs`).
 Admin endpoints (`/api/admin/*`, `AdminUser`) may return lesson `video_id`, but ebook `file_key` stays write-only there too (`has_file`). Telegram file ids, file paths and the bot token never leave the API: Telegram-stored media is reachable only through short-lived signed `/media/{token}` links (`src/media_token.rs`). Those links are bearer grants (not tied to a user): anyone holding one can stream until it expires (4 h video, 1 h files), the same trade-off as Bunny / S3 signed URLs; keep TTLs short.
 Preserve these when touching course/ebook responses.
+Payments: an order becomes `paid` only through `orders::settle` (admin approval, free checkout, or a provider confirmation that matched amount, currency and recipient in `routes/payments.rs`). Never mark an order paid from anything the browser or a pushback body says.
 
 ## Frontend conventions
 
 - All API calls go through `api()` in `src/lib/server/api.ts`, from `+page.server.ts` / `+layout.server.ts` loads only. The browser never talks to the Rust API directly; `API_URL` is a private env var.
-- Exception for streamed bodies: `+server.ts` proxy routes use `apiStream()` and pipe bytes without parsing: `/media/[token]` (Telegram media, `Range` passthrough), `/admin/media/upload` (admin uploads → Telegram) and `/telegram/webhook`. Don't route large uploads through form actions: `request.formData()` buffers the whole file. Small files are fine there (payment screenshots ≤ 10 MB via `apiResult(..., { form })`); `hooks.server.ts` rejects bodies > 12 MB on every route except `/admin/media/upload`.
+- Exception for streamed bodies: `+server.ts` proxy routes use `apiStream()` and pipe bytes without parsing: `/media/[token]` (Telegram media, `Range` passthrough), `/admin/media/upload` (admin uploads → Telegram), `/telegram/webhook` and `/payments/payway/pushback`. Don't route large uploads through form actions: `request.formData()` buffers the whole file. Small files are fine there (payment screenshots ≤ 10 MB via `apiResult(..., { form })`); `hooks.server.ts` rejects bodies > 12 MB on every route except `/admin/media/upload`.
 - `src/lib/types.ts` mirrors the Rust response structs by hand; update both sides together.
 - Detail pages set their `<title>`, description and Open Graph tags through `Seo.svelte` (link previews on Facebook / Telegram); `/sitemap.xml` and `/robots.txt` are `+server.ts` routes built from `GET /api/sitemap`.
 - Components use Svelte 5 runes (`$props()`, `$state`, `$derived`).

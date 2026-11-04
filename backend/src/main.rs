@@ -5,6 +5,7 @@ mod error;
 mod http_range;
 mod media_token;
 mod models;
+mod payments;
 mod routes;
 mod storage;
 mod throttle;
@@ -33,6 +34,7 @@ pub struct AppState {
     pub telegram: Option<telegram::Telegram>,
     pub media_key: std::sync::Arc<[u8]>,
     pub login_throttle: std::sync::Arc<throttle::LoginThrottle>,
+    pub payments: payments::Payments,
 }
 
 #[tokio::main]
@@ -55,6 +57,12 @@ async fn main() -> anyhow::Result<()> {
     if config.storage.is_none() {
         tracing::warn!("STORAGE_BUCKET not set: ebook downloads return 503");
     }
+    if config.payments.bakong.is_none() {
+        tracing::warn!("BAKONG_TOKEN not set: Bakong KHQR payments need admin approval");
+    }
+    if config.payments.payway.is_none() {
+        tracing::warn!("PAYWAY_MERCHANT_ID not set: ABA PayWay payments need admin approval");
+    }
     if config.telegram.is_none() {
         tracing::warn!("TELEGRAM_BOT_TOKEN not set: Telegram channel storage is off");
     } else if config.telegram.as_ref().is_some_and(|tg| tg.proofs_go_to_storage_channel()) {
@@ -68,14 +76,17 @@ async fn main() -> anyhow::Result<()> {
     sqlx::migrate!("./migrations").run(&db).await?;
     cleanup::spawn(db.clone(), config.order_abandon_days);
 
-    let app = routes::router(AppState {
+    let state = AppState {
         db,
         video: config.video,
         storage: config.storage,
         telegram: config.telegram,
         media_key: config.media_key.into(),
         login_throttle: Default::default(),
-    })
+        payments: config.payments,
+    };
+    routes::spawn_payment_poller(state.clone());
+    let app = routes::router(state)
         // Ranged media bodies (Accept-Ranges) must keep their exact bytes and Content-Length.
         .layer(CompressionLayer::new().compress_when(DefaultPredicate::new().and(
             |_: axum::http::StatusCode, _: axum::http::Version, h: &axum::http::HeaderMap, _: &axum::http::Extensions| {

@@ -61,6 +61,15 @@ Lesson videos and ebook files can live as posts in a private Telegram channel in
 
 Admins upload from the lesson / ebook editors ("ផ្ទុកឡើង Telegram") or pick from the library; uploaded media wins over a Bunny video id / S3 file key. Telegram is not a CDN (rate limits, slower first byte), so keep Bunny / R2 for heavy traffic and check Telegram's terms for this use before launch.
 
+## Automatic payments (Bakong KHQR, ABA PayWay)
+
+Without credentials, both methods work as before: the buyer scans the static QR from `payment_methods`, sends a reference or screenshot, and an admin approves. Setting a provider's env vars makes its method (`bakong_khqr` / `aba_payway`) confirm itself:
+
+- **Bakong KHQR** — `BAKONG_TOKEN` (Bakong Open API token; it expires every 90 days, renew it), `BAKONG_ACCOUNT_ID` (`name@bank`), `BAKONG_MERCHANT_NAME` (≤ 25 ASCII chars), optional `BAKONG_MERCHANT_CITY` (default `Phnom Penh`), `BAKONG_MERCHANT_ID` + `BAKONG_ACQUIRING_BANK` (merchant QR instead of individual), `BAKONG_API_URL` (default `https://api-bakong.nbc.gov.kh`). The order page shows a dynamic KHQR for the exact total (valid 15 min) and reloads every 5 s; the API looks the payment up by the QR's MD5.
+- **ABA PayWay** — `PAYWAY_MERCHANT_ID`, `PAYWAY_API_KEY`, `PAYWAY_API_URL` (`https://checkout-sandbox.payway.com.kh` while testing), `SITE_URL` (public `https://` storefront origin). The order page posts a signed (HMAC-SHA512) checkout to PayWay; PayWay's pushback arrives at `/payments/payway/pushback` (relayed to the API) and buyers return to `/orders/{id}`.
+
+Security model: the API never trusts the browser or a pushback. An order is paid only when the provider's own lookup (Bakong `check_transaction_by_md5`, PayWay `check-transaction-2`) reports the attempt paid **and** the amount, currency and (Bakong) receiving account match; a mismatch is logged and the attempt closed. Confirmation goes through the same transaction as admin approval (order row locked, items granted once, buyer notified), so concurrent checks, repeated pushbacks and an admin approving at the same time settle the order once. Lookups happen when the buyer's page reloads, on pushback, before a cancel (a payment made just before cancelling wins), and every 20 s in the background for 2 days. A payment that arrives for an order that was already cancelled is logged as an error for a manual refund. Verify both integrations in the providers' sandboxes before going live: the response shapes follow their docs, and Bakong's API may only answer requests from Cambodian IPs.
+
 ## i18n
 
 Khmer by default; the header button switches to English (cookie `PARAGLIDE_LOCALE`). Copy lives in `frontend/messages/km.json` / `en.json`; Paraglide compiles it into `src/lib/paraglide/` on `bun run dev` / `build` (it fetches its inlang plugins from jsDelivr on first compile). The admin area is Khmer-only.
@@ -119,11 +128,15 @@ Authenticated routes take `Authorization: Bearer <token>` (the token from regist
 | GET | `/api/cart?coupon=` | Bearer → `{items, subtotal_cents, discount_cents, total_cents, coupon}` (published items; prices use the sale price); `coupon` previews a discount code (422 `invalid_coupon` / `coupon_expired` / `coupon_used_up`) |
 | POST | `/api/cart` | Bearer, `{course_id}`, `{ebook_id}` or `{bundle_id}` → cart (a bundle is one line; paying for it grants everything inside; owning all of it counts as `already_owned`); 404, 409 `already_owned` / `already_ordered` (in an unpaid order), 422 `invalid_item` |
 | DELETE | `/api/cart/{id}` | Bearer → cart |
-| GET | `/api/payment-methods` | active methods with QR image and account |
+| GET | `/api/payment-methods` | active methods with QR image and account; `automatic` when the method's provider is configured |
 | POST | `/api/orders` | Bearer, `{payment_method, coupon_code?}` → 201 order (cart → `pending_payment`; free → `paid` + granted); 409 `already_ordered`, 422 `cart_empty` / `invalid_payment_method` / `invalid_coupon` / `coupon_expired` / `coupon_used_up`; orders carry `discount_cents` and `coupon_code` (total is after the discount; a coupon that covers everything makes the order free) |
 | GET | `/api/orders/{id}` | Bearer, own orders only → order with items + payment method |
 | POST | `/api/orders/{id}/submit` | Bearer, `{payment_ref}` → `awaiting_approval` (from `pending_payment` or `rejected`); 409 `invalid_status`, 422 `invalid_payment_ref` |
 | POST | `/api/orders/{id}/proof` | Bearer, own order in `pending_payment` / `awaiting_approval` / `rejected`; multipart `size` then `file` (PNG/JPEG/WebP ≤ 10 MB) → `awaiting_approval` order with `payment_proof_url` (a screenshot counts as submitting, like a reference); the screenshot is posted with the order details to `TELEGRAM_ADMIN_CHAT_ID`; 409 `invalid_status`, 422 `invalid_image` / `invalid_size` / `file_too_large` / `invalid_form`, 503 `telegram_unavailable` / `telegram_failed` |
+| POST | `/api/orders/{id}/khqr` | Bearer, own payable order paying with `bakong_khqr` → `{qr, amount_cents, expires_at}`: the current dynamic KHQR (reused while valid > 1 min, else a new one, 15 min); 409 `invalid_status`, 422 `invalid_payment_method`, 503 `payment_unavailable` (Bakong not configured) |
+| POST | `/api/orders/{id}/payway` | Bearer, own payable order paying with `aba_payway` → `{action_url, fields}` for the browser to POST (multipart) to PayWay; a new `tran_id` per attempt; errors as `khqr` |
+| POST | `/api/orders/{id}/check-payment` | Bearer, own order → order, after asking the provider about its open attempts (paid → `paid`, `paid_via` `bakong` / `payway`, `payment_ref` = provider transaction) |
+| POST | `/api/payments/payway/pushback` | PayWay only (via the storefront relay), JSON or form body with `tran_id` → re-checks that attempt with PayWay; 404 for unknown attempts |
 | POST | `/api/orders/{id}/cancel` | Bearer → `cancelled` (from `pending_payment` only) |
 | GET | `/api/admin/stats?days=` | admin → dashboard: `awaiting_approval`, `pending_payment`, `revenue_cents_all_time`, `users`, `new_users`, and for the last `days` (7–365, default 30; Phnom Penh days) `revenue_cents`, `paid_orders`, zero-filled `daily` `{day, revenue_cents, orders}`, `top_courses` / `top_ebooks` (5 each: `{id, slug, title, sales, revenue_cents}`); 422 `invalid_days` |
 | GET | `/api/admin/questions?unanswered=&page=&per_page=` | admin → paged questions across courses with course / lesson titles and `answer_count`; `unanswered` (default true) lists unanswered ones oldest first |

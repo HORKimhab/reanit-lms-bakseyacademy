@@ -330,5 +330,13 @@
 	],
 	"bundle_value": "{price} if bought separately",
 	"bundle_includes": "What's included",
-	"bundle_owned": "You already have everything in this bundle — see My library"
+	"bundle_owned": "You already have everything in this bundle — see My library",
+	"order_khqr_title": "Scan the KHQR to pay",
+	"order_khqr_expires": "This QR works until {time}",
+	"order_payway_title": "Pay with ABA PayWay",
+	"order_payway_button": "Continue to ABA PayWay",
+	"order_payway_continue": "Not redirected? Click here",
+	"order_auto_waiting": "Once you pay, this page confirms it automatically — no reference needed.",
+	"order_auto_fallback": "Paid but not confirmed? Send the reference here and an admin will check it.",
+	"error_payment_unavailable": "Automatic payment isn't available right now, please try again"
 }
