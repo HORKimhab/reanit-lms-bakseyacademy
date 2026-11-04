@@ -338,5 +338,17 @@
 	"order_payway_continue": "Not redirected? Click here",
 	"order_auto_waiting": "Once you pay, this page confirms it automatically — no reference needed.",
 	"order_auto_fallback": "Paid but not confirmed? Send the reference here and an admin will check it.",
-	"error_payment_unavailable": "Automatic payment isn't available right now, please try again"
+	"error_payment_unavailable": "Automatic payment isn't available right now, please try again",
+	"reset_title": "Reset your password by SMS",
+	"reset_request_hint": "Enter your account's phone number and we'll text you a 6-digit code.",
+	"reset_send_code": "Send code",
+	"reset_code_sent": "If this number has an account, we've texted it a code (valid for 10 minutes).",
+	"reset_code_label": "6-digit code",
+	"reset_new_password": "New password",
+	"reset_new_password_confirm": "Confirm new password",
+	"reset_submit": "Change password and log in",
+	"reset_resend": "Send a new code",
+	"reset_need_help": "Need help?",
+	"error_invalid_code": "That code is wrong or has expired — request a new one",
+	"error_sms_unavailable": "SMS isn't available right now, please contact support"
 }

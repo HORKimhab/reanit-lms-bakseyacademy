@@ -3,6 +3,7 @@ use anyhow::Context;
 use std::sync::Arc;
 
 use crate::{
+    sms::{DevLog, SmsSender, Twilio, TwilioSender},
     payments::{self, Payments, bakong, khqr, payway},
     storage::ObjectStorage,
     telegram::{LocalDir, Telegram},
@@ -26,6 +27,25 @@ pub struct Config {
     pub order_abandon_days: i32,
     /// Automatic payment confirmation; each provider is off unless its credentials are set.
     pub payments: Payments,
+    /// Password-reset texts: Twilio, or `SMS_DEV_LOG=true` to log them (development only).
+    pub sms: Option<Arc<dyn SmsSender>>,
+}
+
+fn sms_from_env() -> anyhow::Result<Option<Arc<dyn SmsSender>>> {
+    if let Some(account_sid) = optional("TWILIO_ACCOUNT_SID") {
+        let auth_token = optional("TWILIO_AUTH_TOKEN").context("TWILIO_AUTH_TOKEN must be set with TWILIO_ACCOUNT_SID")?;
+        let sender = match (optional("TWILIO_MESSAGING_SERVICE_SID"), optional("TWILIO_FROM")) {
+            (Some(sid), _) => TwilioSender::MessagingService(sid),
+            (None, Some(from)) => TwilioSender::From(from),
+            (None, None) => anyhow::bail!("set TWILIO_FROM or TWILIO_MESSAGING_SERVICE_SID with TWILIO_ACCOUNT_SID"),
+        };
+        return Ok(Some(Arc::new(Twilio::new(account_sid, auth_token, sender))));
+    }
+    if optional("SMS_DEV_LOG").is_some_and(|v| v == "true") {
+        tracing::warn!("SMS_DEV_LOG=true: password reset codes are written to the log, never use this in production");
+        return Ok(Some(Arc::new(DevLog)));
+    }
+    Ok(None)
 }
 
 /// `SITE_URL`: the public storefront origin providers send buyers and pushbacks back to.
@@ -112,6 +132,7 @@ impl Config {
         };
         Ok(Self {
             payments: payments_from_env()?,
+            sms: sms_from_env()?,
             order_abandon_days,
             media_key: media_key.map(String::into_bytes).unwrap_or_else(|| {
                 use argon2::password_hash::rand_core::{OsRng, RngCore};

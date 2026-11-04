@@ -10,18 +10,39 @@ use std::{
 pub const MAX_FAILURES: u32 = 10;
 pub const WINDOW: Duration = Duration::from_secs(15 * 60);
 
-#[derive(Default)]
 pub struct LoginThrottle {
     /// key → (failures in the current window, window start)
     failures: Mutex<HashMap<String, (u32, Instant)>>,
+    max: u32,
+    window: Duration,
+}
+
+impl Default for LoginThrottle {
+    fn default() -> Self {
+        Self::with_limit(MAX_FAILURES, WINDOW)
+    }
+}
+
+/// Password-reset texts: at most 3 per phone number per hour (whether or not it has an account).
+pub struct ResetThrottle(pub LoginThrottle);
+
+impl Default for ResetThrottle {
+    fn default() -> Self {
+        Self(LoginThrottle::with_limit(3, Duration::from_secs(60 * 60)))
+    }
 }
 
 impl LoginThrottle {
+    /// At most `max` recorded events per key per `window`.
+    pub fn with_limit(max: u32, window: Duration) -> Self {
+        Self { failures: Mutex::default(), max, window }
+    }
+
     /// Whether `key` may try to log in at `now`.
     pub fn allowed(&self, key: &str, now: Instant) -> bool {
         let map = self.failures.lock().expect("throttle lock");
         match map.get(key) {
-            Some(&(count, start)) => count < MAX_FAILURES || now.duration_since(start) >= WINDOW,
+            Some(&(count, start)) => count < self.max || now.duration_since(start) >= self.window,
             None => true,
         }
     }
@@ -30,10 +51,10 @@ impl LoginThrottle {
         let mut map = self.failures.lock().expect("throttle lock");
         // Keep memory bounded: drop finished windows once the map gets large.
         if map.len() > 10_000 {
-            map.retain(|_, (_, start)| now.duration_since(*start) < WINDOW);
+            map.retain(|_, (_, start)| now.duration_since(*start) < self.window);
         }
         let entry = map.entry(key.to_owned()).or_insert((0, now));
-        if now.duration_since(entry.1) >= WINDOW {
+        if now.duration_since(entry.1) >= self.window {
             *entry = (0, now);
         }
         entry.0 += 1;

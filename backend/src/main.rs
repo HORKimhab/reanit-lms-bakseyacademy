@@ -7,6 +7,7 @@ mod media_token;
 mod models;
 mod payments;
 mod routes;
+mod sms;
 mod storage;
 mod throttle;
 mod telegram;
@@ -35,6 +36,9 @@ pub struct AppState {
     pub media_key: std::sync::Arc<[u8]>,
     pub login_throttle: std::sync::Arc<throttle::LoginThrottle>,
     pub payments: payments::Payments,
+    /// Password-reset texts; `None` without an SMS provider (reset then answers 503).
+    pub sms: Option<std::sync::Arc<dyn sms::SmsSender>>,
+    pub reset_throttle: std::sync::Arc<throttle::ResetThrottle>,
 }
 
 #[tokio::main]
@@ -63,6 +67,9 @@ async fn main() -> anyhow::Result<()> {
     if config.payments.payway.is_none() {
         tracing::warn!("PAYWAY_MERCHANT_ID not set: ABA PayWay payments need admin approval");
     }
+    if config.sms.is_none() {
+        tracing::warn!("TWILIO_ACCOUNT_SID not set: password reset by SMS is off");
+    }
     if config.telegram.is_none() {
         tracing::warn!("TELEGRAM_BOT_TOKEN not set: Telegram channel storage is off");
     } else if config.telegram.as_ref().is_some_and(|tg| tg.proofs_go_to_storage_channel()) {
@@ -84,6 +91,8 @@ async fn main() -> anyhow::Result<()> {
         media_key: config.media_key.into(),
         login_throttle: Default::default(),
         payments: config.payments,
+        sms: config.sms,
+        reset_throttle: Default::default(),
     };
     routes::spawn_payment_poller(state.clone());
     let app = routes::router(state)

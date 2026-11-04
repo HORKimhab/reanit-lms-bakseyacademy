@@ -70,6 +70,10 @@ Without credentials, both methods work as before: the buyer scans the static QR 
 
 Security model: the API never trusts the browser or a pushback. An order is paid only when the provider's own lookup (Bakong `check_transaction_by_md5`, PayWay `check-transaction-2`) reports the attempt paid **and** the amount, currency and (Bakong) receiving account match; a mismatch is logged and the attempt closed. Confirmation goes through the same transaction as admin approval (order row locked, items granted once, buyer notified), so concurrent checks, repeated pushbacks and an admin approving at the same time settle the order once. Lookups happen when the buyer's page reloads, on pushback, before a cancel (a payment made just before cancelling wins), and every 20 s in the background for 2 days. A payment that arrives for an order that was already cancelled is logged as an error for a manual refund. Verify both integrations in the providers' sandboxes before going live: the response shapes follow their docs, and Bakong's API may only answer requests from Cambodian IPs.
 
+## Password reset by SMS
+
+`/auth/forgot` texts a 6-digit code to the account's phone. Configure Twilio: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, and `TWILIO_FROM` (number or approved sender id) or `TWILIO_MESSAGING_SERVICE_SID`. For local development `SMS_DEV_LOG=true` writes the texts to the API log instead (never in production). Codes are stored as an HMAC keyed with `MEDIA_SIGNING_KEY` (a random key when unset, so pending codes die on restart). Only Cambodian (+855) numbers are accepted, which also bounds SMS cost.
+
 ## i18n
 
 Khmer by default; the header button switches to English (cookie `PARAGLIDE_LOCALE`). Copy lives in `frontend/messages/km.json` / `en.json`; Paraglide compiles it into `src/lib/paraglide/` on `bun run dev` / `build` (it fetches its inlang plugins from jsDelivr on first compile). The admin area is Khmer-only.
@@ -113,6 +117,8 @@ Authenticated routes take `Authorization: Bearer <token>` (the token from regist
 | GET | `/api/ebooks/{slug}/file?disposition=inline\|attachment` | Bearer, owners only → `{url, expires_at}`: `/media/{token}` for uploaded Telegram media, else a presigned (1 h) S3/R2 link; 403 not bought, 404 no file, 503 `storage_unavailable` |
 | POST | `/api/auth/register` | `{full_name, phone, password}` → 201 `{token, max_age, user}`; 409 `phone_taken`, 422 `invalid_phone` / `invalid_name` / `weak_password` |
 | POST | `/api/auth/login` | `{phone, password}` → `{token, max_age, user}`; 401 `invalid_credentials`; 429 `too_many_attempts` after 10 wrong passwords for a number within 15 min |
+| POST | `/api/auth/password-reset` | `{phone}` → 202, and a 6-digit code is texted if the number has an account (same answer either way); 3 per number per hour → 429 `too_many_attempts`; 422 `invalid_phone`, 503 `sms_unavailable` |
+| POST | `/api/auth/password-reset/confirm` | `{phone, code, new_password}` → `{token, max_age, user}` (signed in; every other session signed out); 422 `invalid_code` (wrong, expired after 10 min, already used, or burned after 5 wrong guesses — all alike) / `weak_password` |
 | POST | `/api/auth/logout` | Bearer → 204, deletes the session |
 | GET | `/api/me` | Bearer → user; 401 `unauthorized` |
 | PATCH | `/api/me` | Bearer, `{full_name, email}` (empty email clears it) → user; 409 `email_taken`, 422 `invalid_email` / `invalid_name` |

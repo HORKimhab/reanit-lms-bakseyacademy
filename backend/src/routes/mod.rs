@@ -18,6 +18,7 @@ mod library;
 mod media;
 mod notifications;
 mod orders;
+mod password_reset;
 pub(crate) mod payments;
 mod proofs;
 mod questions;
@@ -48,6 +49,8 @@ pub fn router(state: AppState) -> Router {
         .route("/api/auth/register", post(auth::register))
         .route("/api/auth/login", post(auth::login))
         .route("/api/auth/logout", post(auth::logout))
+        .route("/api/auth/password-reset", post(password_reset::request))
+        .route("/api/auth/password-reset/confirm", post(password_reset::confirm))
         .route("/api/me", get(auth::me).patch(auth::update_me))
         .route("/api/me/password", post(auth::change_password))
         .route("/api/me/orders", get(orders::my_orders))

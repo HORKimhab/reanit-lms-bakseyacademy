@@ -7,6 +7,7 @@ mod bundles;
 mod certificates;
 mod coupons;
 mod orders;
+mod password_reset;
 mod payment_flow;
 mod questions;
 mod wishlist;
@@ -63,6 +64,22 @@ pub fn provider_reports(provider_ref: &str, lookup: Lookup) {
     GATEWAY.0.lock().unwrap().insert(provider_ref.to_owned(), lookup);
 }
 
+/// Records texts instead of sending them: phone → messages (phones are unique per test).
+#[derive(Default)]
+pub struct FakeSms(pub Mutex<HashMap<String, Vec<String>>>);
+
+impl crate::sms::SmsSender for FakeSms {
+    fn send<'a>(&'a self, to: &'a str, text: &'a str) -> BoxFuture<'a, anyhow::Result<()>> {
+        self.0.lock().unwrap().entry(to.to_owned()).or_default().push(text.to_owned());
+        Box::pin(async { Ok(()) })
+    }
+}
+
+pub static SMS: LazyLock<Arc<FakeSms>> = LazyLock::new(Default::default);
+
+/// Production keeps one throttle per process; requests here each build a state, so share one.
+static RESET_THROTTLE: LazyLock<Arc<crate::throttle::ResetThrottle>> = LazyLock::new(Default::default);
+
 pub const BAKONG_ACCOUNT: &str = "reanit@aclb";
 pub const SITE_URL: &str = "https://shop.example";
 
@@ -100,6 +117,8 @@ pub fn state(db: PgPool) -> AppState {
         media_key: (*b"test-media-signing-key-32-bytes!").into(),
         login_throttle: Default::default(),
         payments: test_payments(),
+        sms: Some(SMS.clone()),
+        reset_throttle: RESET_THROTTLE.clone(),
     }
 }
 

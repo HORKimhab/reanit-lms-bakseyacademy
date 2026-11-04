@@ -2,7 +2,6 @@
 	import { m } from '$lib/paraglide/messages.js';
 	import { enhance } from '$app/forms';
 	import { errorMessage } from '$lib/errors';
-	import { site } from '$lib/site';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -49,11 +48,9 @@
 					<span class="mb-1 block text-sm font-medium">{m.field_password()}</span>
 					<input name="password" type="password" required autocomplete="current-password" class={input} />
 				</label>
-				{#if site.supportUrl}
-					<p class="-mt-2 text-right text-sm">
-						<a href={site.supportUrl} target="_blank" rel="noopener" class="text-brand-600 hover:underline">{m.auth_forgot_password()}</a>
-					</p>
-				{/if}
+				<p class="-mt-2 text-right text-sm">
+					<a href="/auth/forgot" class="text-brand-600 hover:underline">{m.auth_forgot_password()}</a>
+				</p>
 				<button disabled={pending} class="w-full rounded-lg bg-brand-600 py-2.5 font-semibold text-white hover:bg-brand-700 disabled:opacity-60">
 					{m.auth_login_submit()}
 				</button>
