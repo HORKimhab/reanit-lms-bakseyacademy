@@ -2,10 +2,10 @@ import { fail, redirect, type RequestEvent } from '@sveltejs/kit';
 import { apiResult } from './api';
 
 /**
- * Shared `?/addToCart` action for course and ebook detail pages.
+ * Shared `?/addToCart` action for course, ebook and bundle detail pages.
  * Signed-out users go to login and come back. A `next=cart` field ("buy now") continues to /cart.
  */
-export async function addToCartAction(event: RequestEvent, item: { course_id: string } | { ebook_id: string }) {
+export async function addToCartAction(event: RequestEvent, item: { course_id: string } | { ebook_id: string } | { bundle_id: string }) {
 	const { locals, fetch, url, request } = event;
 	if (!locals.token) redirect(303, `/auth?redirectTo=${encodeURIComponent(url.pathname)}`);
 	const data = await request.formData();

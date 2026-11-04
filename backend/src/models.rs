@@ -31,19 +31,29 @@ pub struct AuthResponse {
 #[derive(Serialize, FromRow)]
 pub struct CartItem {
     pub id: Uuid,
-    /// `course` or `ebook`
+    /// `course`, `ebook` or `bundle`
     pub kind: String,
     pub item_id: Uuid,
     pub slug: String,
     pub title: String,
     pub cover_url: Option<String>,
-    /// Instructor (course) or author (ebook)
+    /// Instructor (course), author (ebook) or the titles inside (bundle)
     pub byline: String,
     pub price_cents: i32,
     pub sale_price_cents: Option<i32>,
 }
 
 impl CartItem {
+    /// `(course_id, ebook_id, bundle_id)`: exactly one is set, by `kind`.
+    pub fn ids(&self) -> (Option<Uuid>, Option<Uuid>, Option<Uuid>) {
+        let id = Some(self.item_id);
+        match self.kind.as_str() {
+            "course" => (id, None, None),
+            "ebook" => (None, id, None),
+            _ => (None, None, id),
+        }
+    }
+
     /// What the buyer pays: the sale price when there is one.
     pub fn effective_price_cents(&self) -> i32 {
         self.sale_price_cents.unwrap_or(self.price_cents)
@@ -119,6 +129,7 @@ pub struct OrderItem {
     pub kind: String,
     pub course_id: Option<Uuid>,
     pub ebook_id: Option<Uuid>,
+    pub bundle_id: Option<Uuid>,
     pub title: String,
     pub price_cents: i32,
 }
@@ -293,6 +304,77 @@ pub struct AdminQuestion {
     pub lesson_id: Uuid,
     pub lesson_title: String,
     pub answer_count: i64,
+}
+
+// ---- Bundles -------------------------------------------------------------------------------
+
+#[derive(Serialize, FromRow)]
+pub struct BundleCard {
+    pub id: Uuid,
+    pub slug: String,
+    pub title: String,
+    pub summary: Option<String>,
+    pub cover_url: Option<String>,
+    pub price_cents: i32,
+    pub sale_price_cents: Option<i32>,
+    pub item_count: i64,
+    /// What the items cost bought one by one.
+    pub value_cents: i64,
+}
+
+#[derive(Serialize, FromRow)]
+pub struct BundleExtra {
+    pub description: String,
+}
+
+#[derive(Serialize)]
+pub struct BundleDetail {
+    #[serde(flatten)]
+    pub card: BundleCard,
+    #[serde(flatten)]
+    pub extra: BundleExtra,
+    /// The signed-in user already has everything in it.
+    pub owned: bool,
+    pub courses: Vec<CourseCard>,
+    pub ebooks: Vec<EbookCard>,
+}
+
+#[derive(Serialize, FromRow)]
+pub struct AdminBundleRow {
+    pub id: Uuid,
+    pub slug: String,
+    pub title: String,
+    pub published: bool,
+    pub price_cents: i32,
+    pub sale_price_cents: Option<i32>,
+    pub updated_at: DateTime<Utc>,
+    pub item_count: i64,
+    pub sales: i64,
+}
+
+#[derive(Serialize, FromRow)]
+pub struct AdminBundleFields {
+    pub id: Uuid,
+    pub slug: String,
+    pub title: String,
+    pub summary: Option<String>,
+    pub description: String,
+    pub cover_url: Option<String>,
+    pub price_cents: i32,
+    pub sale_price_cents: Option<i32>,
+    pub published: bool,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Serialize)]
+pub struct AdminBundle {
+    #[serde(flatten)]
+    pub fields: AdminBundleFields,
+    pub courses: Vec<CourseCard>,
+    pub ebooks: Vec<EbookCard>,
+    /// Items not in the bundle yet (for the add pickers).
+    pub other_courses: Vec<ItemOption>,
+    pub other_ebooks: Vec<ItemOption>,
 }
 
 // ---- Admin users ---------------------------------------------------------------------------
@@ -704,6 +786,7 @@ pub struct SitemapEntry {
 pub struct Sitemap {
     pub courses: Vec<SitemapEntry>,
     pub ebooks: Vec<SitemapEntry>,
+    pub bundles: Vec<SitemapEntry>,
 }
 
 #[derive(Serialize)]

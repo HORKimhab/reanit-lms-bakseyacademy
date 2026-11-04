@@ -5,6 +5,7 @@
 	import Price from '$lib/components/Price.svelte';
 	import { errorMessage } from '$lib/errors';
 	import { formatPrice, formatNumber } from '$lib/format';
+	import { kindLabel, kindPath } from '$lib/i18n';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -37,19 +38,19 @@
 			{#each cart.items as item (item.id)}
 				<li class="flex items-center gap-4 p-4">
 					<a
-						href="/{item.kind === 'course' ? 'courses' : 'ebooks'}/{item.slug}"
-						class="shrink-0 overflow-hidden rounded-lg bg-gradient-to-br from-brand-500 to-sky-400 {item.kind === 'course'
+						href="/{kindPath(item.kind)}/{item.slug}"
+						class="shrink-0 overflow-hidden rounded-lg bg-gradient-to-br from-brand-500 to-sky-400 {item.kind !== 'ebook'
 							? 'aspect-video w-28'
 							: 'aspect-[3/4] w-16'}"
 					>
 						{#if item.cover_url}<img src={item.cover_url} alt="" class="h-full w-full object-cover" />{/if}
 					</a>
 					<div class="min-w-0 flex-1">
-						<span class="text-xs text-slate-400">{item.kind === 'course' ? m.kind_course() : m.kind_ebook()}</span>
-						<a href="/{item.kind === 'course' ? 'courses' : 'ebooks'}/{item.slug}" class="line-clamp-2 font-semibold hover:text-brand-600">
+						<span class="text-xs text-slate-400">{kindLabel(item.kind)}</span>
+						<a href="/{kindPath(item.kind)}/{item.slug}" class="line-clamp-2 font-semibold hover:text-brand-600">
 							{item.title}
 						</a>
-						<p class="text-sm text-slate-500">{item.byline}</p>
+						<p class="line-clamp-2 text-sm text-slate-500">{item.byline}</p>
 					</div>
 					<div class="text-right">
 						<Price price={item.price_cents} sale={item.sale_price_cents} />

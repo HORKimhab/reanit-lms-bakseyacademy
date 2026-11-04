@@ -71,7 +71,7 @@ Constraints that shape the design:
 
 ## J. Polish
 - [x] J1 Resume a course at the last lesson watched ("Continue learning" goes to it)
-- [ ] J2 Bundles: several courses / ebooks sold at one price
+- [x] J2 Bundles: several courses / ebooks sold at one price
 - [ ] J3 Cleanup job: delete expired sessions and cancel long-abandoned `pending_payment` orders
 
 ## Later

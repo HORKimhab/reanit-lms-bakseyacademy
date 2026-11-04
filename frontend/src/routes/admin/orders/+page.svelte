@@ -81,7 +81,7 @@
 						</p>
 						<ul class="text-sm text-slate-600">
 							{#each o.items as item (item.course_id ?? item.ebook_id ?? item.title)}
-								<li>{item.kind === 'course' ? 'វគ្គ' : 'សៀវភៅ'} · {item.title} — {formatPrice(item.price_cents)}</li>
+								<li>{item.kind === 'course' ? 'វគ្គ' : item.kind === 'ebook' ? 'សៀវភៅ' : 'កញ្ចប់'} · {item.title} — {formatPrice(item.price_cents)}</li>
 							{/each}
 						</ul>
 						{#if o.admin_note}<p class="text-sm text-red-700">កំណត់ចំណាំ៖ {o.admin_note}</p>{/if}

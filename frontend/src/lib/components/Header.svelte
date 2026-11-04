@@ -8,6 +8,7 @@
 		{ href: '/', label: m.nav_home() },
 		{ href: '/courses', label: m.nav_courses() },
 		{ href: '/ebooks', label: m.nav_ebooks() },
+		{ href: '/bundles', label: m.nav_bundles() },
 		{ href: '/for-you', label: m.nav_for_you() }
 	];
 

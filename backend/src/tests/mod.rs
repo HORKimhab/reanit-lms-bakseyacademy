@@ -3,6 +3,7 @@
 
 mod access;
 mod admin_users;
+mod bundles;
 mod certificates;
 mod coupons;
 mod orders;

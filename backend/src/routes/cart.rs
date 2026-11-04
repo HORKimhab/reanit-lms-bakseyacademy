@@ -8,7 +8,7 @@ use uuid::Uuid;
 
 use super::{
     coupons,
-    orders::{IN_OPEN_ORDER, PAYABLE_STATUSES},
+    orders::{self, IN_OPEN_ORDER, PAYABLE_STATUSES},
 };
 use crate::{
     AppState,
@@ -31,6 +31,15 @@ SELECT ci.id, 'ebook' AS kind, e.id AS item_id, e.slug, e.title, e.cover_url,
 FROM cart_items ci
 JOIN ebooks e ON e.id = ci.ebook_id
 WHERE ci.user_id = $1 AND e.published
+UNION ALL
+SELECT ci.id, 'bundle' AS kind, b.id AS item_id, b.slug, b.title, b.cover_url,
+       COALESCE((SELECT string_agg(COALESCE(c.title, e.title), ' · ' ORDER BY bi.position, c.title, e.title)
+                 FROM bundle_items bi LEFT JOIN courses c ON c.id = bi.course_id LEFT JOIN ebooks e ON e.id = bi.ebook_id
+                 WHERE bi.bundle_id = b.id), '') AS byline,
+       b.price_cents, b.sale_price_cents, ci.created_at
+FROM cart_items ci
+JOIN bundles b ON b.id = ci.bundle_id
+WHERE ci.user_id = $1 AND b.published
 ORDER BY created_at
 "#;
 
@@ -68,25 +77,34 @@ pub async fn get(
 pub struct AddBody {
     course_id: Option<Uuid>,
     ebook_id: Option<Uuid>,
+    bundle_id: Option<Uuid>,
 }
 
-/// Adds a published course or ebook. Adding an item already in the cart is a no-op;
-/// adding one the user already owns is 409 `already_owned`, one in an unpaid order 409 `already_ordered`.
+/// Adds a published course, ebook or (non-empty) bundle. Adding an item already in the cart is a
+/// no-op; adding one the user already owns (a bundle: everything in it) is 409 `already_owned`, one
+/// in an unpaid order 409 `already_ordered`.
 pub async fn add(
     State(st): State<AppState>,
     current: CurrentUser,
     Json(body): Json<AddBody>,
 ) -> AppResult<Json<Cart>> {
     let user_id = current.user.id;
-    let (exists_sql, owned_sql, id) = match (body.course_id, body.ebook_id) {
-        (Some(id), None) => (
+    let bundle_owned_sql = format!("SELECT NOT EXISTS ({})", orders::bundle_item_not_owned("$1", "$2"));
+    let (exists_sql, owned_sql, id) = match (body.course_id, body.ebook_id, body.bundle_id) {
+        (Some(id), None, None) => (
             "SELECT EXISTS (SELECT 1 FROM courses WHERE id = $1 AND published)",
             "SELECT EXISTS (SELECT 1 FROM enrollments WHERE course_id = $1 AND user_id = $2)",
             id,
         ),
-        (None, Some(id)) => (
+        (None, Some(id), None) => (
             "SELECT EXISTS (SELECT 1 FROM ebooks WHERE id = $1 AND published)",
             "SELECT EXISTS (SELECT 1 FROM ebook_purchases WHERE ebook_id = $1 AND user_id = $2)",
+            id,
+        ),
+        (None, None, Some(id)) => (
+            "SELECT EXISTS (SELECT 1 FROM bundles b WHERE b.id = $1 AND b.published \
+             AND EXISTS (SELECT 1 FROM bundle_items bi WHERE bi.bundle_id = b.id))",
+            bundle_owned_sql.as_str(),
             id,
         ),
         _ => return Err(AppError::Validation("invalid_item")),
@@ -105,6 +123,7 @@ pub async fn add(
             .bind(&PAYABLE_STATUSES[..])
             .bind(body.course_id)
             .bind(body.ebook_id)
+            .bind(body.bundle_id)
             .fetch_one(&st.db),
     )?;
     if !exists {
@@ -118,11 +137,12 @@ pub async fn add(
     }
 
     sqlx::query(
-        "INSERT INTO cart_items (user_id, course_id, ebook_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING",
+        "INSERT INTO cart_items (user_id, course_id, ebook_id, bundle_id) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING",
     )
     .bind(user_id)
     .bind(body.course_id)
     .bind(body.ebook_id)
+    .bind(body.bundle_id)
     .execute(&st.db)
     .await?;
     Ok(Json(load_cart(&st.db, user_id).await?))

@@ -8,6 +8,7 @@
 		{ href: '/admin/questions', label: 'សំណួរ' },
 		{ href: '/admin/courses', label: 'វគ្គសិក្សា' },
 		{ href: '/admin/ebooks', label: 'សៀវភៅ' },
+		{ href: '/admin/bundles', label: 'កញ្ចប់' },
 		{ href: '/admin/users', label: 'អ្នកប្រើ' },
 		{ href: '/admin/media', label: 'ឯកសារ' },
 		{ href: '/admin/coupons', label: 'កូដបញ្ចុះតម្លៃ' },

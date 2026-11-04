@@ -130,9 +130,11 @@ export interface AuthResponse {
 	user: User;
 }
 
+export type ItemKind = 'course' | 'ebook' | 'bundle';
+
 export interface CartItem {
 	id: string;
-	kind: 'course' | 'ebook';
+	kind: ItemKind;
 	item_id: string;
 	slug: string;
 	title: string;
@@ -184,9 +186,10 @@ export interface PaymentMethod {
 export type OrderStatus = 'pending_payment' | 'awaiting_approval' | 'paid' | 'rejected' | 'cancelled';
 
 export interface OrderItem {
-	kind: 'course' | 'ebook';
+	kind: ItemKind;
 	course_id: string | null;
 	ebook_id: string | null;
+	bundle_id: string | null;
 	title: string;
 	price_cents: number;
 }
@@ -401,6 +404,7 @@ export interface SitemapEntry {
 export interface Sitemap {
 	courses: SitemapEntry[];
 	ebooks: SitemapEntry[];
+	bundles: SitemapEntry[];
 }
 
 /** `GET /api/admin/stats?days=`: dashboard numbers. */
@@ -504,4 +508,55 @@ export interface AdminUserDetail extends AdminUserRow {
 	ebooks: AdminOwnedItem[];
 	grantable_courses: ItemOption[];
 	grantable_ebooks: ItemOption[];
+}
+
+/** `GET /api/bundles`: several courses / ebooks at one price. */
+export interface BundleCard {
+	id: string;
+	slug: string;
+	title: string;
+	summary: string | null;
+	cover_url: string | null;
+	price_cents: number;
+	sale_price_cents: number | null;
+	item_count: number;
+	/** What the items cost bought one by one. */
+	value_cents: number;
+}
+
+export interface BundleDetail extends BundleCard {
+	description: string;
+	/** The signed-in user already has everything in it. */
+	owned: boolean;
+	courses: CourseCard[];
+	ebooks: EbookCard[];
+}
+
+export interface AdminBundleRow {
+	id: string;
+	slug: string;
+	title: string;
+	published: boolean;
+	price_cents: number;
+	sale_price_cents: number | null;
+	updated_at: string;
+	item_count: number;
+	sales: number;
+}
+
+export interface AdminBundle {
+	id: string;
+	slug: string;
+	title: string;
+	summary: string | null;
+	description: string;
+	cover_url: string | null;
+	price_cents: number;
+	sale_price_cents: number | null;
+	published: boolean;
+	updated_at: string;
+	courses: CourseCard[];
+	ebooks: EbookCard[];
+	other_courses: ItemOption[];
+	other_ebooks: ItemOption[];
 }

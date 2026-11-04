@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { kindLabel } from '$lib/i18n';
 	import { m } from '$lib/paraglide/messages.js';
 	import { localized } from '$lib/i18n';
 	import { enhance } from '$app/forms';
@@ -115,7 +116,7 @@
 				<ul class="mt-3 divide-y divide-slate-100 text-sm">
 					{#each order.items as item (item.course_id ?? item.ebook_id ?? item.title)}
 						<li class="flex justify-between gap-4 py-2">
-							<span><span class="text-slate-400">{item.kind === 'course' ? m.kind_course() : m.kind_ebook()} ·</span> {item.title}</span>
+							<span><span class="text-slate-400">{kindLabel(item.kind)} ·</span> {item.title}</span>
 							<span class="whitespace-nowrap">{formatPrice(item.price_cents)}</span>
 						</li>
 					{/each}

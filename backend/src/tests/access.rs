@@ -152,7 +152,7 @@ async fn owners_keep_access_after_unpublish(db: PgPool) {
     let r = get(&db, "/api/courses?q=demo", None).await;
     assert_eq!(r.json()["total"], 0);
     let r = get(&db, "/api/sitemap", None).await;
-    assert_eq!(r.json(), serde_json::json!({ "courses": [], "ebooks": [] }));
+    assert_eq!(r.json(), serde_json::json!({ "courses": [], "ebooks": [], "bundles": [] }));
 
     assert_eq!(get(&db, "/api/courses/demo-course", Some(&owner)).await.status, StatusCode::OK);
     assert_eq!(get(&db, &paid, Some(&owner)).await.status, StatusCode::OK);

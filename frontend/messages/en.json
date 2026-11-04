@@ -308,5 +308,27 @@
 	"qa_delete_confirm": "Delete this?",
 	"error_invalid_body": "Please write some text (at most 2000 characters)",
 	"error_invalid_role": "Invalid role",
-	"error_own_role": "You can't change your own role"
+	"error_own_role": "You can't change your own role",
+	"nav_bundles": "Bundles",
+	"kind_bundle": "Bundle",
+	"bundles_title": "Course & ebook bundles",
+	"bundles_empty": "No bundles yet.",
+	"bundle_items_count": [
+		{
+			"declarations": [
+				"input count",
+				"local countPlural = count: plural"
+			],
+			"selectors": [
+				"countPlural"
+			],
+			"match": {
+				"countPlural=one": "{n} item",
+				"countPlural=*": "{n} items"
+			}
+		}
+	],
+	"bundle_value": "{price} if bought separately",
+	"bundle_includes": "What's included",
+	"bundle_owned": "You already have everything in this bundle — see My library"
 }

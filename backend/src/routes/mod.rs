@@ -5,6 +5,7 @@ mod admin_ebooks;
 mod admin_stats;
 mod admin_users;
 mod auth;
+mod bundles;
 mod cart;
 mod categories;
 mod certificates;
@@ -129,6 +130,17 @@ pub fn router(state: AppState) -> Router {
         .route("/api/questions/{id}/answers", post(questions::answer))
         .route("/api/answers/{id}", delete(questions::delete_answer))
         .route("/api/admin/questions", get(questions::admin_list))
+        .route("/api/bundles", get(bundles::list))
+        .route("/api/bundles/{slug}", get(bundles::detail))
+        .route("/api/admin/bundles", get(bundles::admin_list).post(bundles::create))
+        .route(
+            "/api/admin/bundles/{id}",
+            get(bundles::admin_detail).put(bundles::update).delete(bundles::delete),
+        )
+        .route(
+            "/api/admin/bundles/{id}/{kind}/{item}",
+            put(bundles::add_item).delete(bundles::remove_item),
+        )
         .route("/api/ebooks", get(ebooks::list))
         .route("/api/ebooks/{slug}", get(ebooks::detail))
         .route("/api/ebooks/{slug}/file", get(ebooks::file))

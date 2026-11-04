@@ -25,10 +25,20 @@ pub(crate) fn is_payable(status: &str) -> bool {
     PAYABLE_STATUSES.contains(&status)
 }
 
-/// The item (`$3` course / `$4` ebook) already sits in one of the user's (`$1`) payable orders
-/// (`$2` = `PAYABLE_STATUSES`).
+/// The item (`$3` course / `$4` ebook / `$5` bundle) already sits in one of the user's (`$1`)
+/// payable orders (`$2` = `PAYABLE_STATUSES`).
 pub(crate) const IN_OPEN_ORDER: &str = "SELECT EXISTS (SELECT 1 FROM order_items oi JOIN orders o ON o.id = oi.order_id \
-     WHERE o.user_id = $1 AND o.status = ANY($2) AND (oi.course_id = $3 OR oi.ebook_id = $4))";
+     WHERE o.user_id = $1 AND o.status = ANY($2) AND (oi.course_id = $3 OR oi.ebook_id = $4 OR oi.bundle_id = $5))";
+
+/// Subquery: an item of bundle `bundle` that user `user` doesn't own yet. `NOT EXISTS (…)` means
+/// the user already has everything in the bundle.
+pub(crate) fn bundle_item_not_owned(bundle: &str, user: &str) -> String {
+    format!(
+        "SELECT 1 FROM bundle_items bi WHERE bi.bundle_id = {bundle} AND NOT ( \
+           EXISTS (SELECT 1 FROM enrollments en WHERE en.user_id = {user} AND en.course_id = bi.course_id) OR \
+           EXISTS (SELECT 1 FROM ebook_purchases ep WHERE ep.user_id = {user} AND ep.ebook_id = bi.ebook_id))"
+    )
+}
 
 pub(crate) const ORDER_COLUMNS: &str = "o.id, o.status, o.total_cents, o.discount_cents, o.coupon_code, o.payment_method AS payment_method_code, \
      o.payment_ref, o.admin_note, o.created_at, o.submitted_at, o.paid_at, o.payment_proof_media_id";
@@ -62,7 +72,7 @@ pub(crate) async fn load_order(
     let method_sql = format!("SELECT {METHOD_COLUMNS} FROM payment_methods WHERE code = $1");
     let (items, payment_method) = tokio::try_join!(
         sqlx::query_as::<_, OrderItem>(
-            "SELECT kind, course_id, ebook_id, title, price_cents FROM order_items \
+            "SELECT kind, course_id, ebook_id, bundle_id, title, price_cents FROM order_items \
              WHERE order_id = $1 ORDER BY kind, title"
         )
         .bind(id)
@@ -85,7 +95,7 @@ pub(crate) async fn items_by_order(
 ) -> sqlx::Result<HashMap<Uuid, Vec<OrderItem>>> {
     let mut map: HashMap<Uuid, Vec<OrderItem>> = HashMap::new();
     for item in sqlx::query_as::<_, OrderItem>(
-        "SELECT order_id, kind, course_id, ebook_id, title, price_cents FROM order_items \
+        "SELECT order_id, kind, course_id, ebook_id, bundle_id, title, price_cents FROM order_items \
          WHERE order_id = ANY($1) ORDER BY kind, title",
     )
     .bind(ids)
@@ -121,20 +131,25 @@ pub async fn my_orders(
     ))
 }
 
-/// Grants every course/ebook in a paid order. Idempotent.
+/// Grants every course/ebook in a paid order, including those inside bundles (as the bundle holds
+/// them at grant time). Idempotent.
 pub(crate) async fn grant_order(conn: &mut PgConnection, order_id: Uuid) -> sqlx::Result<()> {
     sqlx::query(
         "INSERT INTO enrollments (user_id, course_id, order_id) \
-         SELECT o.user_id, oi.course_id, o.id FROM orders o JOIN order_items oi ON oi.order_id = o.id \
-         WHERE o.id = $1 AND oi.course_id IS NOT NULL ON CONFLICT DO NOTHING",
+         SELECT DISTINCT o.user_id, COALESCE(oi.course_id, bi.course_id), o.id \
+         FROM orders o JOIN order_items oi ON oi.order_id = o.id \
+         LEFT JOIN bundle_items bi ON bi.bundle_id = oi.bundle_id \
+         WHERE o.id = $1 AND COALESCE(oi.course_id, bi.course_id) IS NOT NULL ON CONFLICT DO NOTHING",
     )
     .bind(order_id)
     .execute(&mut *conn)
     .await?;
     sqlx::query(
         "INSERT INTO ebook_purchases (user_id, ebook_id, order_id) \
-         SELECT o.user_id, oi.ebook_id, o.id FROM orders o JOIN order_items oi ON oi.order_id = o.id \
-         WHERE o.id = $1 AND oi.ebook_id IS NOT NULL ON CONFLICT DO NOTHING",
+         SELECT DISTINCT o.user_id, COALESCE(oi.ebook_id, bi.ebook_id), o.id \
+         FROM orders o JOIN order_items oi ON oi.order_id = o.id \
+         LEFT JOIN bundle_items bi ON bi.bundle_id = oi.bundle_id \
+         WHERE o.id = $1 AND COALESCE(oi.ebook_id, bi.ebook_id) IS NOT NULL ON CONFLICT DO NOTHING",
     )
     .bind(order_id)
     .execute(&mut *conn)
@@ -167,12 +182,13 @@ pub async fn checkout(
     // Don't let the same item be ordered (and paid for) twice while an earlier order is open.
     let cart = load_cart(&mut *tx, user_id).await?;
     for item in &cart.items {
-        let is_course = item.kind == "course";
+        let (course_id, ebook_id, bundle_id) = item.ids();
         let ordered: bool = sqlx::query_scalar(IN_OPEN_ORDER)
             .bind(user_id)
             .bind(&PAYABLE_STATUSES[..])
-            .bind(is_course.then_some(item.item_id))
-            .bind((!is_course).then_some(item.item_id))
+            .bind(course_id)
+            .bind(ebook_id)
+            .bind(bundle_id)
             .fetch_one(&mut *tx)
             .await?;
         if ordered {
@@ -226,14 +242,15 @@ pub async fn checkout(
     .fetch_one(&mut *tx)
     .await?;
     for item in &cart.items {
-        let is_course = item.kind == "course";
+        let (course_id, ebook_id, bundle_id) = item.ids();
         sqlx::query(
-            "INSERT INTO order_items (order_id, course_id, ebook_id, kind, title, price_cents) \
-             VALUES ($1, $2, $3, $4, $5, $6)",
+            "INSERT INTO order_items (order_id, course_id, ebook_id, bundle_id, kind, title, price_cents) \
+             VALUES ($1, $2, $3, $4, $5, $6, $7)",
         )
         .bind(order_id)
-        .bind(is_course.then_some(item.item_id))
-        .bind((!is_course).then_some(item.item_id))
+        .bind(course_id)
+        .bind(ebook_id)
+        .bind(bundle_id)
         .bind(&item.kind)
         .bind(&item.title)
         .bind(item.effective_price_cents())
@@ -256,11 +273,13 @@ pub async fn checkout(
 }
 
 async fn drop_owned_items(db: impl PgExecutor<'_>, user_id: Uuid) -> sqlx::Result<()> {
-    sqlx::query(
+    sqlx::query(&format!(
         "DELETE FROM cart_items ci WHERE ci.user_id = $1 AND ( \
            EXISTS (SELECT 1 FROM enrollments en WHERE en.user_id = $1 AND en.course_id = ci.course_id) OR \
-           EXISTS (SELECT 1 FROM ebook_purchases ep WHERE ep.user_id = $1 AND ep.ebook_id = ci.ebook_id))",
-    )
+           EXISTS (SELECT 1 FROM ebook_purchases ep WHERE ep.user_id = $1 AND ep.ebook_id = ci.ebook_id) OR \
+           (ci.bundle_id IS NOT NULL AND NOT EXISTS ({BUNDLE_ITEM_NOT_OWNED})))",
+        BUNDLE_ITEM_NOT_OWNED = bundle_item_not_owned("ci.bundle_id", "$1")
+    ))
     .bind(user_id)
     .execute(db)
     .await?;

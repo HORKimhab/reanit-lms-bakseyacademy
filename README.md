@@ -63,7 +63,7 @@ Khmer by default; the header button switches to English (cookie `PARAGLIDE_LOCAL
 
 ## Admin
 
-Make an account an admin (it then sees **ផ្ទាំងគ្រប់គ្រង** in the account menu → `/admin`: dashboard (approval queue, revenue, best sellers), orders, lesson questions, users (roles, manual grants / revocations), coupons, courses + curriculum, ebooks, banners, categories, instructors):
+Make an account an admin (it then sees **ផ្ទាំងគ្រប់គ្រង** in the account menu → `/admin`: dashboard (approval queue, revenue, best sellers), orders, lesson questions, bundles, users (roles, manual grants / revocations), coupons, courses + curriculum, ebooks, banners, categories, instructors):
 
 ```sh
 psql postgres://localhost/reanit_lms -c "UPDATE users SET role = 'admin' WHERE phone = '+85512345678'"
@@ -83,7 +83,7 @@ Authenticated routes take `Authorization: Bearer <token>` (the token from regist
 | GET | `/api/home` | published banners + 8 newest courses + ebooks |
 | GET | `/api/categories` | |
 | GET | `/api/certificates/{id}` | public → `{id, full_name, course_title, instructor_name, issued_at, course_slug}` (verification link; names are snapshots at issue time). Issued automatically when an enrolled learner completes every lesson (`PUT …/complete`); listed as `certificate_id` in `/api/me/library` |
-| GET | `/api/sitemap` | `{courses, ebooks}`: `{slug, updated_at}` of every published item (feeds the storefront's `/sitemap.xml`) |
+| GET | `/api/sitemap` | `{courses, ebooks, bundles}`: `{slug, updated_at}` of every published item (feeds the storefront's `/sitemap.xml`) |
 | GET | `/api/courses?q=&category=&page=&per_page=` | paged; `q` matches title/instructor by substring or typo-tolerant trigram similarity (`pg_trgm`), best match first |
 | GET | `/api/courses/{slug}` | detail + curriculum (video id only for preview lessons); `reviews` (latest 10); optional Bearer → `owned`, `last_lesson_id` (opened last; recorded by the lesson endpoint for enrolled users), `my_review`, `completed_lesson_ids` (enrolled users also see unpublished courses) |
 | PUT / DELETE | `/api/courses/{slug}/review` | Bearer, owners only; PUT `{rating: 1–5, comment?}` → review (upsert), DELETE → 204; 403 not enrolled, 422 `invalid_rating` / `invalid_comment` |
@@ -92,6 +92,8 @@ Authenticated routes take `Authorization: Bearer <token>` (the token from regist
 | GET / POST | `/api/courses/{slug}/lessons/{id}/questions` | Q&A on a lesson → `{questions, can_answer}` (latest 100, newest first, each with `answers` oldest first; `mine` flags the viewer's own). GET: same access as the lesson (staff always); POST `{body}` (≤ 2000 chars): enrolled learners or staff → 201; 403 otherwise, 422 `invalid_body`. Staff = admins and the user linked to the course's instructor (`instructors.user_id`) |
 | POST | `/api/questions/{id}/answers` | Bearer, staff of the course, `{body}` (≤ 4000) → 201 lesson Q&A; 403 otherwise |
 | DELETE | `/api/questions/{id}`, `/api/answers/{id}` | Bearer, author or staff → 204; 403 otherwise |
+| GET | `/api/bundles?page=&per_page=` | paged published, non-empty bundles, newest first: `{id, slug, title, summary, cover_url, price_cents, sale_price_cents, item_count, value_cents}` (`value_cents` = items bought one by one) |
+| GET | `/api/bundles/{slug}` | bundle + `description`, `courses` / `ebooks` (card shape); optional Bearer → `owned` (has everything in it; owners also see it after unpublishing) |
 | GET | `/api/ebooks?q=&category=&page=&per_page=` | paged; `q` matches title/author like courses |
 | GET | `/api/ebooks/{slug}` | detail (file key never exposed), `reviews`; optional Bearer → `owned`, `my_review` (owners also see unpublished ebooks) |
 | PUT / DELETE | `/api/ebooks/{slug}/review` | same as course reviews, for buyers |
@@ -111,7 +113,7 @@ Authenticated routes take `Authorization: Bearer <token>` (the token from regist
 | PUT / DELETE | `/api/me/wishlist/{courses\|ebooks}/{id}` | Bearer → 204; save (published items only, else 404; idempotent) / unsave |
 | GET | `/api/recommendations` | optional Bearer → `{courses, ebooks, personalized}`: 8 unowned published items each, ranked by co-purchase, then shared category, then popularity (signed out: popularity) |
 | GET | `/api/cart?coupon=` | Bearer → `{items, subtotal_cents, discount_cents, total_cents, coupon}` (published items; prices use the sale price); `coupon` previews a discount code (422 `invalid_coupon` / `coupon_expired` / `coupon_used_up`) |
-| POST | `/api/cart` | Bearer, `{course_id}` or `{ebook_id}` → cart; 404, 409 `already_owned` / `already_ordered` (in an unpaid order), 422 `invalid_item` |
+| POST | `/api/cart` | Bearer, `{course_id}`, `{ebook_id}` or `{bundle_id}` → cart (a bundle is one line; paying for it grants everything inside; owning all of it counts as `already_owned`); 404, 409 `already_owned` / `already_ordered` (in an unpaid order), 422 `invalid_item` |
 | DELETE | `/api/cart/{id}` | Bearer → cart |
 | GET | `/api/payment-methods` | active methods with QR image and account |
 | POST | `/api/orders` | Bearer, `{payment_method, coupon_code?}` → 201 order (cart → `pending_payment`; free → `paid` + granted); 409 `already_ordered`, 422 `cart_empty` / `invalid_payment_method` / `invalid_coupon` / `coupon_expired` / `coupon_used_up`; orders carry `discount_cents` and `coupon_code` (total is after the discount; a coupon that covers everything makes the order free) |
@@ -143,6 +145,9 @@ Authenticated routes take `Authorization: Bearer <token>` (the token from regist
 | GET | `/api/admin/media?q=&kind=video\|document&page=&per_page=` | admin → paged media library of course content (newest first, ≤ 200 per page; payment screenshots never listed) |
 | POST | `/api/telegram/webhook` | Telegram only (`X-Telegram-Bot-Api-Secret-Token` = `TELEGRAM_WEBHOOK_SECRET`, else 401; always 401 while no secret is set; 404 without Telegram): videos/documents posted in the storage channel are imported as media (idempotent) |
 | POST | `/api/admin/media` | admin, multipart `size` then `file` → 201 media; the file is streamed to the Telegram storage channel (≤ 20 MB public Bot API, ≤ 2000 MB with a `--local` server); 422 `invalid_size` / `file_too_large` / `missing_file`, 503 `telegram_unavailable` / `telegram_failed`. Lessons / ebooks take `media_id`, which wins over `video_id` / `file_key` |
+| GET / POST | `/api/admin/bundles?q=&page=` | admin → paged bundles incl. drafts (`item_count`, paid `sales`) / create `{slug, title, summary?, description, cover_url?, price_cents, sale_price_cents?, published}` → 201; 409 `slug_taken` |
+| GET / PUT / DELETE | `/api/admin/bundles/{id}` | admin → bundle + `courses` / `ebooks` + `other_courses` / `other_ebooks` (for the add pickers); DELETE 409 `has_buyers` once ordered |
+| PUT / DELETE | `/api/admin/bundles/{id}/{courses\|ebooks}/{item}` | admin → bundle; add (appended, idempotent) / remove an item. New buyers get the current contents; past buyers keep their grants |
 | GET / POST, PUT / DELETE `/{id}` | `/api/admin/coupons` | admin, `{code, percent_off? \| amount_off_cents?, expires_at?, max_uses?, active}` (code upper-cased, 3–32 of `A–Z 0–9 _ -`; exactly one discount) → coupon with `uses` (non-cancelled orders) and `discount_given_cents`; 409 `code_taken`, 422 `invalid_coupon` / `invalid_discount` / `invalid_max_uses`. Deleting keeps orders' discount snapshot |
 | GET / POST, PUT / DELETE `/{id}` | `/api/admin/categories` | admin, `{slug, name_km, name_en, position}`; 409 `slug_taken` |
 | GET / POST, PUT / DELETE `/{id}` | `/api/admin/instructors` | admin, `{name, bio?, avatar_url?}`; DELETE 409 `in_use` while courses reference it |
