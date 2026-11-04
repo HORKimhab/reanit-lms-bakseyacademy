@@ -35,7 +35,9 @@ export async function apiResult<T>(fetchFn: typeof fetch, path: string, opts: Ap
 		return { ok: false, status: 503, code: 'unavailable' };
 	}
 	if (res.ok) {
-		const data = (res.status === 204 ? undefined : await res.json()) as T;
+		// 204 / 202 may have no body.
+		const text = await res.text();
+		const data = (text ? JSON.parse(text) : undefined) as T;
 		return { ok: true, status: res.status, data };
 	}
 	const body = (await res.json().catch(() => null)) as { error?: string } | null;
