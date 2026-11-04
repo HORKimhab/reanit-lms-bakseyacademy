@@ -236,5 +236,7 @@
 	"qa_staff": "គ្រូ",
 	"qa_delete": "លុប",
 	"qa_delete_confirm": "លុបមែនទេ?",
-	"error_invalid_body": "សូមសរសេរអត្ថបទ (មិនលើស ២០០០ តួអក្សរ)"
+	"error_invalid_body": "សូមសរសេរអត្ថបទ (មិនលើស ២០០០ តួអក្សរ)",
+	"error_invalid_role": "តួនាទីមិនត្រឹមត្រូវ",
+	"error_own_role": "អ្នកមិនអាចប្តូរតួនាទីខ្លួនឯងបានទេ"
 }

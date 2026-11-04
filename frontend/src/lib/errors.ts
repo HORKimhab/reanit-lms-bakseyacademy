@@ -52,6 +52,8 @@ const messages: Record<string, () => string> = {
 	invalid_max_uses: m.error_invalid_max_uses,
 	code_taken: m.error_code_taken,
 	invalid_body: m.error_invalid_body,
+	invalid_role: m.error_invalid_role,
+	own_role: m.error_own_role,
 	forbidden: m.error_forbidden,
 	not_found: m.error_not_found,
 	unauthorized: m.error_unauthorized,

@@ -295,6 +295,48 @@ pub struct AdminQuestion {
     pub answer_count: i64,
 }
 
+// ---- Admin users ---------------------------------------------------------------------------
+
+#[derive(Serialize, FromRow)]
+pub struct AdminUserRow {
+    pub id: Uuid,
+    pub full_name: String,
+    pub phone: Option<String>,
+    pub email: Option<String>,
+    pub role: String,
+    pub created_at: DateTime<Utc>,
+    pub course_count: i64,
+    pub ebook_count: i64,
+}
+
+/// A course / ebook a user has access to; `order_id` is `None` for manual grants.
+#[derive(Serialize, FromRow)]
+pub struct AdminOwnedItem {
+    pub id: Uuid,
+    pub slug: String,
+    pub title: String,
+    pub granted_at: DateTime<Utc>,
+    pub order_id: Option<Uuid>,
+}
+
+#[derive(Serialize, FromRow)]
+pub struct ItemOption {
+    pub id: Uuid,
+    pub title: String,
+    pub published: bool,
+}
+
+#[derive(Serialize)]
+pub struct AdminUserDetail {
+    #[serde(flatten)]
+    pub user: AdminUserRow,
+    pub courses: Vec<AdminOwnedItem>,
+    pub ebooks: Vec<AdminOwnedItem>,
+    /// Items the user doesn't have yet (for the grant pickers).
+    pub grantable_courses: Vec<ItemOption>,
+    pub grantable_ebooks: Vec<ItemOption>,
+}
+
 // ---- Admin dashboard -----------------------------------------------------------------------
 
 #[derive(Serialize, FromRow)]

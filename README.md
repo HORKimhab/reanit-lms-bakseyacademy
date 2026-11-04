@@ -63,7 +63,7 @@ Khmer by default; the header button switches to English (cookie `PARAGLIDE_LOCAL
 
 ## Admin
 
-Make an account an admin (it then sees **ផ្ទាំងគ្រប់គ្រង** in the account menu → `/admin`: dashboard (approval queue, revenue, best sellers), orders, courses + curriculum, ebooks, banners, categories, instructors):
+Make an account an admin (it then sees **ផ្ទាំងគ្រប់គ្រង** in the account menu → `/admin`: dashboard (approval queue, revenue, best sellers), orders, lesson questions, users (roles, manual grants / revocations), coupons, courses + curriculum, ebooks, banners, categories, instructors):
 
 ```sh
 psql postgres://localhost/reanit_lms -c "UPDATE users SET role = 'admin' WHERE phone = '+85512345678'"
@@ -121,6 +121,10 @@ Authenticated routes take `Authorization: Bearer <token>` (the token from regist
 | POST | `/api/orders/{id}/cancel` | Bearer → `cancelled` (from `pending_payment` only) |
 | GET | `/api/admin/stats?days=` | admin → dashboard: `awaiting_approval`, `pending_payment`, `revenue_cents_all_time`, `users`, `new_users`, and for the last `days` (7–365, default 30; Phnom Penh days) `revenue_cents`, `paid_orders`, zero-filled `daily` `{day, revenue_cents, orders}`, `top_courses` / `top_ebooks` (5 each: `{id, slug, title, sales, revenue_cents}`); 422 `invalid_days` |
 | GET | `/api/admin/questions?unanswered=&page=&per_page=` | admin → paged questions across courses with course / lesson titles and `answer_count`; `unanswered` (default true) lists unanswered ones oldest first |
+| GET | `/api/admin/users?q=&role=&page=&per_page=` | admin → paged users, newest first (`q`: name / phone / email / id; `role`: `student` \| `instructor` \| `admin`) with `course_count`, `ebook_count` |
+| GET | `/api/admin/users/{id}` | admin → user + owned `courses` / `ebooks` (`{id, slug, title, granted_at, order_id}`; `order_id` null = manual grant) + `grantable_courses` / `grantable_ebooks` |
+| PUT | `/api/admin/users/{id}/role` | admin, `{role}` → 204; 409 `own_role` (admins can't change their own), 422 `invalid_role` |
+| PUT / DELETE | `/api/admin/users/{id}/{courses\|ebooks}/{item}` | admin → 204; grant without an order (idempotent, also unpublished items; removes it from the cart) / revoke (orders, progress and reviews are kept) |
 | GET | `/api/admin/orders?status=&q=&page=&per_page=` | admin → paged orders with buyer + items; `awaiting_approval` oldest first; 403 `forbidden` |
 | POST | `/api/admin/orders/{id}/approve` | admin → `paid` + grants enrollments / ebooks and notifies the buyer (idempotent; also from `pending_payment` / `rejected`) |
 | POST | `/api/admin/orders/{id}/reject` | admin, `{note}` → `rejected` (from `awaiting_approval`); the buyer is notified, sees the note and can resubmit; 409 `invalid_status`, 422 `invalid_note` |

@@ -306,5 +306,7 @@
 	"qa_staff": "Instructor",
 	"qa_delete": "Delete",
 	"qa_delete_confirm": "Delete this?",
-	"error_invalid_body": "Please write some text (at most 2000 characters)"
+	"error_invalid_body": "Please write some text (at most 2000 characters)",
+	"error_invalid_role": "Invalid role",
+	"error_own_role": "You can't change your own role"
 }

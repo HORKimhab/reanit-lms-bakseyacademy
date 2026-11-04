@@ -468,3 +468,38 @@ export interface AdminQuestion {
 	lesson_title: string;
 	answer_count: number;
 }
+
+/** `GET /api/admin/users`. */
+export interface AdminUserRow {
+	id: string;
+	full_name: string;
+	phone: string | null;
+	email: string | null;
+	role: 'student' | 'instructor' | 'admin';
+	created_at: string;
+	course_count: number;
+	ebook_count: number;
+}
+
+/** A course / ebook a user has; `order_id` is null for manual grants. */
+export interface AdminOwnedItem {
+	id: string;
+	slug: string;
+	title: string;
+	granted_at: string;
+	order_id: string | null;
+}
+
+export interface ItemOption {
+	id: string;
+	title: string;
+	published: boolean;
+}
+
+/** `GET /api/admin/users/{id}`. */
+export interface AdminUserDetail extends AdminUserRow {
+	courses: AdminOwnedItem[];
+	ebooks: AdminOwnedItem[];
+	grantable_courses: ItemOption[];
+	grantable_ebooks: ItemOption[];
+}

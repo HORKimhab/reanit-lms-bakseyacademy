@@ -67,7 +67,7 @@ Constraints that shape the design:
 - [x] I2 Completion certificates: printable page (km / en; browser “Save as PDF”, which shapes Khmer correctly) issued when course progress reaches 100%, listed in `/account/library`
 - [x] I3 Wishlist for logged-in users (heart on cards and detail pages, `/account/wishlist`)
 - [x] I4 Lesson Q&A / comments: enrolled users ask, instructors / admins answer
-- [ ] I5 Admin user management: search users, grant / revoke enrollments and ebook purchases manually (refunds, support), promote to admin
+- [x] I5 Admin user management: search users, grant / revoke enrollments and ebook purchases manually (refunds, support), promote to admin
 
 ## J. Polish
 - [ ] J1 Resume a course at the last lesson watched ("Continue learning" goes to it)

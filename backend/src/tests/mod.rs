@@ -2,6 +2,7 @@
 //! creates it on the server in `DATABASE_URL` and applies `migrations/`).
 
 mod access;
+mod admin_users;
 mod certificates;
 mod coupons;
 mod orders;
