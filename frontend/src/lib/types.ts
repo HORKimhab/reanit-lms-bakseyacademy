@@ -247,6 +247,18 @@ export interface Recommendations {
 export interface LibraryCourse extends CourseCard {
 	lesson_count: number;
 	completed_lessons: number;
+	/** Issued once every lesson is complete. */
+	certificate_id: string | null;
+}
+
+/** `GET /api/certificates/{id}` (public). Names are snapshots at issue time. */
+export interface Certificate {
+	id: string;
+	full_name: string;
+	course_title: string;
+	instructor_name: string;
+	issued_at: string;
+	course_slug: string;
 }
 
 export interface Library {

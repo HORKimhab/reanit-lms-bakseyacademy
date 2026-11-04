@@ -9,6 +9,7 @@ export const GET: RequestHandler = ({ url }) =>
 			'Disallow: /account',
 			'Disallow: /auth',
 			'Disallow: /cart',
+			'Disallow: /certificates',
 			'Disallow: /orders',
 			'Disallow: /media',
 			'Disallow: /search',

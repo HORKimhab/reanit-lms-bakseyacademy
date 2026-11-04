@@ -283,5 +283,14 @@
 	"error_coupon_used_up": "This discount code has been used up",
 	"error_invalid_discount": "Enter either a percentage (1–100) or an amount",
 	"error_invalid_max_uses": "Maximum uses must be above 0",
-	"error_code_taken": "This code already exists"
+	"error_code_taken": "This code already exists",
+	"certificate_view": "Certificate",
+	"certificate_page_title": "Certificate: {name} — {course}",
+	"certificate_heading": "Certificate of Completion",
+	"certificate_presented_to": "This certificate is presented to",
+	"certificate_for_completing": "for successfully completing",
+	"certificate_issued_on": "Date issued",
+	"certificate_id_label": "Certificate ID:",
+	"certificate_print": "Download PDF / Print",
+	"certificate_print_hint": "Choose “Save as PDF” in the print dialog to keep a PDF. Share this link so anyone can verify it."
 }

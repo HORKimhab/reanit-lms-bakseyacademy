@@ -21,16 +21,21 @@
 	<h2 class="mt-8 text-xl font-bold">{m.library_my_courses()}</h2>
 	<div class="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
 		{#each courses as c (c.id)}
-			<a href="/courses/{c.slug}/learn" class="group overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm hover:shadow-md">
-				<div class="aspect-video bg-gradient-to-br from-brand-500 to-sky-400">
-					{#if c.cover_url}<img src={c.cover_url} alt="" class="h-full w-full object-cover" />{/if}
-				</div>
-				<div class="p-4">
-					<h3 class="line-clamp-2 font-semibold group-hover:text-brand-600">{c.title}</h3>
-					<p class="text-sm text-slate-500">{c.instructor_name}</p>
-					<div class="mt-2"><ProgressBar done={c.completed_lessons} total={c.lesson_count} /></div>
-				</div>
-			</a>
+			<div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm hover:shadow-md">
+				<a href="/courses/{c.slug}/learn" class="group block">
+					<div class="aspect-video bg-gradient-to-br from-brand-500 to-sky-400">
+						{#if c.cover_url}<img src={c.cover_url} alt="" class="h-full w-full object-cover" />{/if}
+					</div>
+					<div class="p-4 pb-2">
+						<h3 class="line-clamp-2 font-semibold group-hover:text-brand-600">{c.title}</h3>
+						<p class="text-sm text-slate-500">{c.instructor_name}</p>
+						<div class="mt-2"><ProgressBar done={c.completed_lessons} total={c.lesson_count} /></div>
+					</div>
+				</a>
+				{#if c.certificate_id}
+					<a href="/certificates/{c.certificate_id}" class="mx-4 mb-4 block text-sm font-semibold text-brand-600 hover:underline">🎓 {m.certificate_view()}</a>
+				{/if}
+			</div>
 		{/each}
 	</div>
 {/if}

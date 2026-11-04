@@ -213,5 +213,14 @@
 	"error_coupon_used_up": "លេខកូដបញ្ចុះតម្លៃនេះត្រូវបានប្រើអស់ហើយ",
 	"error_invalid_discount": "សូមដាក់ភាគរយ (១–១០០) ឬចំនួនទឹកប្រាក់ មួយណាមួយ",
 	"error_invalid_max_uses": "ចំនួនប្រើអតិបរមាត្រូវតែធំជាង ០",
-	"error_code_taken": "លេខកូដនេះមានរួចហើយ"
+	"error_code_taken": "លេខកូដនេះមានរួចហើយ",
+	"certificate_view": "វិញ្ញាបនបត្រ",
+	"certificate_page_title": "វិញ្ញាបនបត្រ៖ {name} — {course}",
+	"certificate_heading": "វិញ្ញាបនបត្របញ្ចប់វគ្គសិក្សា",
+	"certificate_presented_to": "វិញ្ញាបនបត្រនេះប្រគល់ជូន",
+	"certificate_for_completing": "សម្រាប់ការបញ្ចប់វគ្គសិក្សា",
+	"certificate_issued_on": "កាលបរិច្ឆេទចេញ",
+	"certificate_id_label": "លេខសម្គាល់៖",
+	"certificate_print": "ទាញយក PDF / បោះពុម្ព",
+	"certificate_print_hint": "ជ្រើស «Save as PDF» ក្នុងផ្ទាំងបោះពុម្ព ដើម្បីរក្សាទុកជា PDF។ តំណនេះអាចចែករំលែកដើម្បីផ្ទៀងផ្ទាត់។"
 }

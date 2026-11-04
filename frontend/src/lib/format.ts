@@ -58,3 +58,13 @@ export function formatDateTime(iso: string): string {
 	const month = KHMER_MONTHS[Number(get('month')) - 1];
 	return formatNumber(`${Number(get('day'))} ${month} ${get('year')} ${get('hour')}:${get('minute')}`);
 }
+
+/** Calendar date in Phnom Penh time: "២ វិច្ឆិកា ២០២៦" / "2 November 2026". */
+export function formatDate(iso: string): string {
+	const d = new Date(iso);
+	const options: Intl.DateTimeFormatOptions = { timeZone: 'Asia/Phnom_Penh', day: 'numeric', month: 'long', year: 'numeric' };
+	if (getLocale() === 'en') return new Intl.DateTimeFormat('en-GB', options).format(d);
+	const parts = new Intl.DateTimeFormat('en-GB', { ...options, month: 'numeric' }).formatToParts(d);
+	const get = (t: string) => parts.find((p) => p.type === t)?.value ?? '';
+	return formatNumber(`${Number(get('day'))} ${KHMER_MONTHS[Number(get('month')) - 1]} ${get('year')}`);
+}

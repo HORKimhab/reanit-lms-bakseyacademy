@@ -6,7 +6,7 @@ use axum::{
 use chrono::{Duration, Utc};
 use uuid::Uuid;
 
-use super::media;
+use super::{certificates, media};
 use crate::{
     AppState,
     auth::CurrentUser,
@@ -90,7 +90,7 @@ async fn load_lesson(
     current: Option<&CurrentUser>,
 ) -> AppResult<LessonAccessRow> {
     sqlx::query_as::<_, LessonAccessRow>(
-        "SELECT l.id, l.section_id, l.title, l.duration_seconds, l.is_preview, l.video_id, l.media_id, c.published,
+        "SELECT l.id, l.section_id, l.title, l.duration_seconds, l.is_preview, l.video_id, l.media_id, c.published, c.id AS course_id,
                 EXISTS (SELECT 1 FROM enrollments e WHERE e.course_id = c.id AND e.user_id = $3) AS enrolled,
                 EXISTS (SELECT 1 FROM lesson_progress p WHERE p.lesson_id = l.id AND p.user_id = $3) AS completed
          FROM lessons l
@@ -121,6 +121,7 @@ pub async fn complete(
         .bind(id)
         .execute(&st.db)
         .await?;
+    certificates::issue_if_complete(&st.db, current.user.id, row.course_id).await?;
     Ok(StatusCode::NO_CONTENT)
 }
 

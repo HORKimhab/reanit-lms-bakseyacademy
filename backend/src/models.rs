@@ -193,6 +193,19 @@ pub struct LibraryCourse {
     pub card: CourseCard,
     pub lesson_count: i64,
     pub completed_lessons: i64,
+    /// Issued once every lesson is complete.
+    pub certificate_id: Option<Uuid>,
+}
+
+/// A completion certificate (public, by id). Names are snapshots at issue time.
+#[derive(Serialize, FromRow)]
+pub struct Certificate {
+    pub id: Uuid,
+    pub full_name: String,
+    pub course_title: String,
+    pub instructor_name: String,
+    pub issued_at: DateTime<Utc>,
+    pub course_slug: String,
 }
 
 #[derive(Serialize)]
@@ -483,6 +496,7 @@ pub struct LessonAccessRow {
     pub enrolled: bool,
     pub completed: bool,
     pub media_id: Option<Uuid>,
+    pub course_id: Uuid,
 }
 
 /// A lesson the caller may watch. `video_url` is a signed embed URL (`None` when the lesson has

@@ -6,6 +6,7 @@ mod admin_stats;
 mod auth;
 mod cart;
 mod categories;
+mod certificates;
 mod coupons;
 mod courses;
 mod ebooks;
@@ -101,6 +102,7 @@ pub fn router(state: AppState) -> Router {
         )
         .route("/api/admin/ebooks/{id}/publish", post(admin_ebooks::publish))
         .route("/api/categories", get(categories::list))
+        .route("/api/certificates/{id}", get(certificates::detail))
         .route("/api/courses", get(courses::list))
         .route("/api/courses/{slug}", get(courses::detail))
         .route("/api/courses/{slug}/review", put(reviews::put_course).delete(reviews::delete_course))

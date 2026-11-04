@@ -82,6 +82,7 @@ Authenticated routes take `Authorization: Bearer <token>` (the token from regist
 | GET | `/api/health` | DB ping |
 | GET | `/api/home` | published banners + 8 newest courses + ebooks |
 | GET | `/api/categories` | |
+| GET | `/api/certificates/{id}` | public → `{id, full_name, course_title, instructor_name, issued_at, course_slug}` (verification link; names are snapshots at issue time). Issued automatically when an enrolled learner completes every lesson (`PUT …/complete`); listed as `certificate_id` in `/api/me/library` |
 | GET | `/api/sitemap` | `{courses, ebooks}`: `{slug, updated_at}` of every published item (feeds the storefront's `/sitemap.xml`) |
 | GET | `/api/courses?q=&category=&page=&per_page=` | paged; `q` matches title/instructor by substring or typo-tolerant trigram similarity (`pg_trgm`), best match first |
 | GET | `/api/courses/{slug}` | detail + curriculum (video id only for preview lessons); `reviews` (latest 10); optional Bearer → `owned`, `my_review`, `completed_lesson_ids` (enrolled users also see unpublished courses) |
@@ -99,7 +100,7 @@ Authenticated routes take `Authorization: Bearer <token>` (the token from regist
 | PATCH | `/api/me` | Bearer, `{full_name, email}` (empty email clears it) → user; 409 `email_taken`, 422 `invalid_email` / `invalid_name` |
 | POST | `/api/me/password` | Bearer, `{current_password, new_password}` → 204, signs out other sessions; 422 `wrong_password` / `weak_password` |
 | GET | `/api/me/orders` | Bearer → own orders with items, newest first |
-| GET | `/api/me/library` | Bearer → `{courses, ebooks}` the user owns (card shape; courses add `lesson_count`, `completed_lessons`) |
+| GET | `/api/me/library` | Bearer → `{courses, ebooks}` the user owns (card shape; courses add `lesson_count`, `completed_lessons`, `certificate_id`) |
 | GET | `/api/me/notifications` | Bearer → `{items, unread_count}`: latest 20 notices, newest first (`kind`: `order_paid`, or `order_rejected` with the admin's `note`; `order_id`, `read_at`) |
 | POST | `/api/me/notifications/read` | Bearer → 204, marks all read |
 | GET | `/api/recommendations` | optional Bearer → `{courses, ebooks, personalized}`: 8 unowned published items each, ranked by co-purchase, then shared category, then popularity (signed out: popularity) |

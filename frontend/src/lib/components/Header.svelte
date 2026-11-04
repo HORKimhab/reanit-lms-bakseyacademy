@@ -36,7 +36,7 @@
 
 <svelte:window onkeydown={onKeydown} />
 
-<header class="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur">
+<header class="sticky top-0 z-30 print:hidden border-b border-slate-200 bg-white/90 backdrop-blur">
 	<div class="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4">
 		<a href="/" class="text-lg font-bold text-brand-600">Reanit Academy</a>
 

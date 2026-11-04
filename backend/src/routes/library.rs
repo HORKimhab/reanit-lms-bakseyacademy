@@ -22,7 +22,7 @@ pub async fn library(State(st): State<AppState>, current: CurrentUser) -> AppRes
         "{} JOIN ebook_purchases ep ON ep.ebook_id = e.id AND ep.user_id = $1 ORDER BY ep.created_at DESC",
         ebooks::CARD_SELECT
     );
-    let (cards, progress, ebooks) = tokio::try_join!(
+    let (cards, progress, ebooks, certificates) = tokio::try_join!(
         sqlx::query_as::<_, CourseCard>(&course_sql)
             .bind(current.user.id)
             .fetch_all(&st.db),
@@ -40,14 +40,19 @@ pub async fn library(State(st): State<AppState>, current: CurrentUser) -> AppRes
         sqlx::query_as::<_, EbookCard>(&ebook_sql)
             .bind(current.user.id)
             .fetch_all(&st.db),
+        sqlx::query_as::<_, (Uuid, Uuid)>("SELECT course_id, id FROM certificates WHERE user_id = $1")
+            .bind(current.user.id)
+            .fetch_all(&st.db),
     )?;
+    let certificates: HashMap<Uuid, Uuid> = certificates.into_iter().collect();
     let progress: HashMap<Uuid, (i64, i64)> =
         progress.into_iter().map(|(id, total, done)| (id, (total, done))).collect();
     let courses = cards
         .into_iter()
         .map(|card| {
             let (lesson_count, completed_lessons) = progress.get(&card.id).copied().unwrap_or((0, 0));
-            LibraryCourse { card, lesson_count, completed_lessons }
+            let certificate_id = certificates.get(&card.id).copied();
+            LibraryCourse { card, lesson_count, completed_lessons, certificate_id }
         })
         .collect();
     Ok(Json(Library { courses, ebooks }))

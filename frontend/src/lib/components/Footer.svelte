@@ -12,7 +12,7 @@
 	].filter((s) => s.href);
 </script>
 
-<footer class="mt-16 border-t border-slate-200 bg-white">
+<footer class="mt-16 border-t print:hidden border-slate-200 bg-white">
 	<div class="mx-auto grid max-w-7xl gap-8 px-4 py-10 text-sm sm:grid-cols-2 lg:grid-cols-4">
 		<div>
 			<p class="text-lg font-bold text-brand-600">{site.name}</p>
