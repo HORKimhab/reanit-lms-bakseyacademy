@@ -5,6 +5,7 @@
 	const links = [
 		{ href: '/admin', label: 'សង្ខេប' },
 		{ href: '/admin/orders', label: 'ការបញ្ជាទិញ' },
+		{ href: '/admin/questions', label: 'សំណួរ' },
 		{ href: '/admin/courses', label: 'វគ្គសិក្សា' },
 		{ href: '/admin/ebooks', label: 'សៀវភៅ' },
 		{ href: '/admin/media', label: 'ឯកសារ' },

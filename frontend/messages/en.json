@@ -296,5 +296,15 @@
 	"nav_wishlist": "Wishlist",
 	"wishlist_add": "Save to wishlist",
 	"wishlist_remove": "Remove from wishlist",
-	"wishlist_empty": "Your wishlist is empty."
+	"wishlist_empty": "Your wishlist is empty.",
+	"qa_title": "Questions & answers",
+	"qa_ask": "Ask",
+	"qa_ask_placeholder": "Ask the instructor about this lesson…",
+	"qa_empty": "No questions yet.",
+	"qa_answer": "Answer",
+	"qa_answer_placeholder": "Write an answer…",
+	"qa_staff": "Instructor",
+	"qa_delete": "Delete",
+	"qa_delete_confirm": "Delete this?",
+	"error_invalid_body": "Please write some text (at most 2000 characters)"
 }

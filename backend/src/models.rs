@@ -244,6 +244,57 @@ pub struct AdminOrder {
     pub items: Vec<OrderItem>,
 }
 
+// ---- Lesson Q&A ----------------------------------------------------------------------------
+
+#[derive(Serialize, FromRow)]
+pub struct QuestionRow {
+    pub id: Uuid,
+    pub user_name: String,
+    pub body: String,
+    pub created_at: DateTime<Utc>,
+    /// Asked by the viewer.
+    pub mine: bool,
+}
+
+#[derive(Serialize, FromRow)]
+pub struct Answer {
+    pub id: Uuid,
+    #[serde(skip)]
+    pub question_id: Uuid,
+    pub user_name: String,
+    pub body: String,
+    pub created_at: DateTime<Utc>,
+    pub mine: bool,
+}
+
+#[derive(Serialize)]
+pub struct Question {
+    #[serde(flatten)]
+    pub row: QuestionRow,
+    pub answers: Vec<Answer>,
+}
+
+#[derive(Serialize)]
+pub struct LessonQuestions {
+    pub questions: Vec<Question>,
+    /// The viewer is staff for this course (admin or its instructor): may answer and delete any.
+    pub can_answer: bool,
+}
+
+/// A question in the admin answer queue.
+#[derive(Serialize, FromRow)]
+pub struct AdminQuestion {
+    pub id: Uuid,
+    pub body: String,
+    pub created_at: DateTime<Utc>,
+    pub user_name: String,
+    pub course_slug: String,
+    pub course_title: String,
+    pub lesson_id: Uuid,
+    pub lesson_title: String,
+    pub answer_count: i64,
+}
+
 // ---- Admin dashboard -----------------------------------------------------------------------
 
 #[derive(Serialize, FromRow)]

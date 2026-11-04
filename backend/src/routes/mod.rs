@@ -17,6 +17,7 @@ mod media;
 mod notifications;
 mod orders;
 mod proofs;
+mod questions;
 mod recommendations;
 mod reviews;
 mod sitemap;
@@ -115,6 +116,14 @@ pub fn router(state: AppState) -> Router {
             "/api/courses/{slug}/lessons/{id}/complete",
             put(lessons::complete).delete(lessons::uncomplete),
         )
+        .route(
+            "/api/courses/{slug}/lessons/{id}/questions",
+            get(questions::list).post(questions::ask),
+        )
+        .route("/api/questions/{id}", delete(questions::delete_question))
+        .route("/api/questions/{id}/answers", post(questions::answer))
+        .route("/api/answers/{id}", delete(questions::delete_answer))
+        .route("/api/admin/questions", get(questions::admin_list))
         .route("/api/ebooks", get(ebooks::list))
         .route("/api/ebooks/{slug}", get(ebooks::detail))
         .route("/api/ebooks/{slug}/file", get(ebooks::file))

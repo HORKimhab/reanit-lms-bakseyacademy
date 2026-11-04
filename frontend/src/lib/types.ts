@@ -436,3 +436,35 @@ export interface WishlistIds {
 	course_ids: string[];
 	ebook_ids: string[];
 }
+
+/** Lesson Q&A (`GET /api/courses/{slug}/lessons/{id}/questions`). */
+export interface Answer {
+	id: string;
+	user_name: string;
+	body: string;
+	created_at: string;
+	mine: boolean;
+}
+
+export interface Question extends Answer {
+	answers: Answer[];
+}
+
+export interface LessonQuestions {
+	questions: Question[];
+	/** Admin or the course's instructor: may answer and delete any. */
+	can_answer: boolean;
+}
+
+/** `GET /api/admin/questions`: the answer queue. */
+export interface AdminQuestion {
+	id: string;
+	body: string;
+	created_at: string;
+	user_name: string;
+	course_slug: string;
+	course_title: string;
+	lesson_id: string;
+	lesson_title: string;
+	answer_count: number;
+}

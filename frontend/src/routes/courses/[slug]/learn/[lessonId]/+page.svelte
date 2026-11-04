@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { m } from '$lib/paraglide/messages.js';
 	import { enhance } from '$app/forms';
+	import LessonQA from '$lib/components/LessonQA.svelte';
 	import ProgressBar from '$lib/components/ProgressBar.svelte';
 	import { errorMessage } from '$lib/errors';
 	import { formatClock, formatNumber } from '$lib/format';
@@ -74,7 +75,7 @@
 			</div>
 		</div>
 
-		{#if form?.code}
+		{#if form?.code && !('qaForm' in form)}
 			<p class="mt-3 text-sm text-red-700" role="alert">{errorMessage(form.code)}</p>
 		{/if}
 
@@ -82,6 +83,10 @@
 			<p class="mt-6 rounded-lg bg-brand-50 px-4 py-3 text-sm text-brand-700">
 				{m.lesson_preview_notice()} <a href="/courses/{course.slug}" class="font-semibold underline">{m.lesson_buy_course()}</a> {m.lesson_buy_course_suffix()}
 			</p>
+		{/if}
+
+		{#if data.qa}
+			<LessonQA qa={data.qa} canAsk={course.owned || data.qa.can_answer} form={form && 'qaForm' in form ? form : null} />
 		{/if}
 	</div>
 

@@ -20,14 +20,14 @@ const VIDEO_URL_TTL: Duration = Duration::hours(4);
 /// Who may watch a lesson: enrolled users (even after the course is unpublished), and anyone
 /// for preview lessons of a published course.
 /// The facts the lesson access rule depends on.
-struct LessonGate {
-    published: bool,
-    is_preview: bool,
-    signed_in: bool,
-    enrolled: bool,
+pub(crate) struct LessonGate {
+    pub published: bool,
+    pub is_preview: bool,
+    pub signed_in: bool,
+    pub enrolled: bool,
 }
 
-fn check_access(gate: LessonGate) -> AppResult<()> {
+pub(crate) fn check_access(gate: LessonGate) -> AppResult<()> {
     let LessonGate { published, is_preview, signed_in, enrolled } = gate;
     if enrolled || (published && is_preview) {
         Ok(())
@@ -83,7 +83,7 @@ pub async fn lesson(
 }
 
 /// A lesson of the course `slug`, with the caller's enrollment and completion.
-async fn load_lesson(
+pub(crate) async fn load_lesson(
     st: &AppState,
     slug: &str,
     id: Uuid,

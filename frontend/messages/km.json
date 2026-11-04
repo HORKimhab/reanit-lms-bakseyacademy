@@ -226,5 +226,15 @@
 	"nav_wishlist": "បញ្ជីចង់បាន",
 	"wishlist_add": "រក្សាទុកក្នុងបញ្ជីចង់បាន",
 	"wishlist_remove": "ដកចេញពីបញ្ជីចង់បាន",
-	"wishlist_empty": "បញ្ជីចង់បានរបស់អ្នកនៅទទេ។"
+	"wishlist_empty": "បញ្ជីចង់បានរបស់អ្នកនៅទទេ។",
+	"qa_title": "សំណួរ និងចម្លើយ",
+	"qa_ask": "សួរសំណួរ",
+	"qa_ask_placeholder": "សួរគ្រូអំពីមេរៀននេះ…",
+	"qa_empty": "មិនទាន់មានសំណួរនៅឡើយ។",
+	"qa_answer": "ឆ្លើយ",
+	"qa_answer_placeholder": "សរសេរចម្លើយ…",
+	"qa_staff": "គ្រូ",
+	"qa_delete": "លុប",
+	"qa_delete_confirm": "លុបមែនទេ?",
+	"error_invalid_body": "សូមសរសេរអត្ថបទ (មិនលើស ២០០០ តួអក្សរ)"
 }

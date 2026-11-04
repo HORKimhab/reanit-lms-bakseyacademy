@@ -5,6 +5,7 @@ mod access;
 mod certificates;
 mod coupons;
 mod orders;
+mod questions;
 mod wishlist;
 
 use axum::{

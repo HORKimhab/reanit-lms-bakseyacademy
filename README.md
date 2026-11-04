@@ -89,6 +89,9 @@ Authenticated routes take `Authorization: Bearer <token>` (the token from regist
 | PUT / DELETE | `/api/courses/{slug}/review` | Bearer, owners only; PUT `{rating: 1–5, comment?}` → review (upsert), DELETE → 204; 403 not enrolled, 422 `invalid_rating` / `invalid_comment` |
 | GET | `/api/courses/{slug}/lessons/{id}` | optional Bearer → lesson + signed `video_url` (`expires_at`) + `video_type`: `embed` (Bunny iframe) or `file` (`/media/{token}` for uploaded Telegram media, which wins), `completed`; enrolled users (even if unpublished) or preview lessons; 401 signed out, 403 not enrolled |
 | PUT / DELETE | `/api/courses/{slug}/lessons/{id}/complete` | Bearer → 204; mark / unmark complete (PUT needs enrollment, 403 otherwise) |
+| GET / POST | `/api/courses/{slug}/lessons/{id}/questions` | Q&A on a lesson → `{questions, can_answer}` (latest 100, newest first, each with `answers` oldest first; `mine` flags the viewer's own). GET: same access as the lesson (staff always); POST `{body}` (≤ 2000 chars): enrolled learners or staff → 201; 403 otherwise, 422 `invalid_body`. Staff = admins and the user linked to the course's instructor (`instructors.user_id`) |
+| POST | `/api/questions/{id}/answers` | Bearer, staff of the course, `{body}` (≤ 4000) → 201 lesson Q&A; 403 otherwise |
+| DELETE | `/api/questions/{id}`, `/api/answers/{id}` | Bearer, author or staff → 204; 403 otherwise |
 | GET | `/api/ebooks?q=&category=&page=&per_page=` | paged; `q` matches title/author like courses |
 | GET | `/api/ebooks/{slug}` | detail (file key never exposed), `reviews`; optional Bearer → `owned`, `my_review` (owners also see unpublished ebooks) |
 | PUT / DELETE | `/api/ebooks/{slug}/review` | same as course reviews, for buyers |
@@ -117,6 +120,7 @@ Authenticated routes take `Authorization: Bearer <token>` (the token from regist
 | POST | `/api/orders/{id}/proof` | Bearer, own order in `pending_payment` / `awaiting_approval` / `rejected`; multipart `size` then `file` (PNG/JPEG/WebP ≤ 10 MB) → `awaiting_approval` order with `payment_proof_url` (a screenshot counts as submitting, like a reference); the screenshot is posted with the order details to `TELEGRAM_ADMIN_CHAT_ID`; 409 `invalid_status`, 422 `invalid_image` / `invalid_size` / `file_too_large` / `invalid_form`, 503 `telegram_unavailable` / `telegram_failed` |
 | POST | `/api/orders/{id}/cancel` | Bearer → `cancelled` (from `pending_payment` only) |
 | GET | `/api/admin/stats?days=` | admin → dashboard: `awaiting_approval`, `pending_payment`, `revenue_cents_all_time`, `users`, `new_users`, and for the last `days` (7–365, default 30; Phnom Penh days) `revenue_cents`, `paid_orders`, zero-filled `daily` `{day, revenue_cents, orders}`, `top_courses` / `top_ebooks` (5 each: `{id, slug, title, sales, revenue_cents}`); 422 `invalid_days` |
+| GET | `/api/admin/questions?unanswered=&page=&per_page=` | admin → paged questions across courses with course / lesson titles and `answer_count`; `unanswered` (default true) lists unanswered ones oldest first |
 | GET | `/api/admin/orders?status=&q=&page=&per_page=` | admin → paged orders with buyer + items; `awaiting_approval` oldest first; 403 `forbidden` |
 | POST | `/api/admin/orders/{id}/approve` | admin → `paid` + grants enrollments / ebooks and notifies the buyer (idempotent; also from `pending_payment` / `rejected`) |
 | POST | `/api/admin/orders/{id}/reject` | admin, `{note}` → `rejected` (from `awaiting_approval`); the buyer is notified, sees the note and can resubmit; 409 `invalid_status`, 422 `invalid_note` |
