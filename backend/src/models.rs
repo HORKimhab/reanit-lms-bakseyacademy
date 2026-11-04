@@ -178,6 +178,47 @@ pub struct AdminOrder {
     pub items: Vec<OrderItem>,
 }
 
+// ---- Admin dashboard -----------------------------------------------------------------------
+
+#[derive(Serialize, FromRow)]
+pub struct OrderCounts {
+    pub awaiting_approval: i64,
+    pub pending_payment: i64,
+    pub revenue_cents_all_time: i64,
+    pub users: i64,
+    pub new_users: i64,
+}
+
+/// Paid (non-free) orders on one Phnom Penh calendar day.
+#[derive(Serialize, FromRow)]
+pub struct DailyRevenue {
+    pub day: chrono::NaiveDate,
+    pub revenue_cents: i64,
+    pub orders: i64,
+}
+
+#[derive(Serialize, FromRow)]
+pub struct TopItem {
+    pub id: Uuid,
+    pub slug: String,
+    pub title: String,
+    pub sales: i64,
+    pub revenue_cents: i64,
+}
+
+#[derive(Serialize)]
+pub struct AdminStats {
+    pub days: i32,
+    /// Paid revenue / paid orders in the period.
+    pub revenue_cents: i64,
+    pub paid_orders: i64,
+    #[serde(flatten)]
+    pub counts: OrderCounts,
+    pub daily: Vec<DailyRevenue>,
+    pub top_courses: Vec<TopItem>,
+    pub top_ebooks: Vec<TopItem>,
+}
+
 // ---- Admin catalog -------------------------------------------------------------------------
 
 #[derive(Serialize, FromRow)]

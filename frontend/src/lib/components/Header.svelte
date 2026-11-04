@@ -116,7 +116,7 @@
 						<a href="/account/notifications" class="block rounded-lg px-3 py-2 hover:bg-slate-100">{m.notifications_title()}</a>
 						<a href="/account" class="block rounded-lg px-3 py-2 hover:bg-slate-100">{m.nav_account()}</a>
 						{#if user.role === 'admin'}
-							<a href="/admin/orders" class="block rounded-lg px-3 py-2 hover:bg-slate-100">{m.nav_admin()}</a>
+							<a href="/admin" class="block rounded-lg px-3 py-2 hover:bg-slate-100">{m.nav_admin()}</a>
 						{/if}
 						<form method="POST" action="/auth?/logout">
 							<button class="w-full rounded-lg px-3 py-2 text-left text-red-600 hover:bg-red-50">{m.nav_logout()}</button>

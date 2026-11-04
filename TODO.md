@@ -60,7 +60,7 @@ Constraints that shape the design:
 - [x] H2 Access-control integration tests (`sqlx::test` on a throwaway DB): lesson `video_id`, ebook `file_key` and Telegram ids never reach non-owners; owners keep access after unpublish; approving an order grants enrollment / purchase exactly once
 - [x] H3 Buyer notification on order approve / reject (Telegram bot message and/or header notice), so buyers don't have to poll `/orders/{id}`
 - [x] H4 SEO: `og:title` / `og:description` / `og:image` on course and ebook detail pages (for Facebook / Telegram link previews), `sitemap.xml` of published items, `robots.txt`
-- [ ] H5 Admin dashboard at `/admin`: count of orders awaiting approval, revenue over time, top-selling courses / ebooks
+- [x] H5 Admin dashboard at `/admin`: count of orders awaiting approval, revenue over time, top-selling courses / ebooks
 
 ## I. Growth
 - [ ] I1 Coupons / discount codes: `coupons` table (percent or fixed cents, expiry, usage limit), applied at checkout, discount snapshot on the order

@@ -144,3 +144,31 @@ async fn buyers_are_notified_of_decisions(db: PgPool) {
     assert_eq!((n["unread_count"].as_i64(), n["items"].as_array().map(Vec::len)), (Some(0), Some(2)));
     assert_eq!(get(&db, "/api/me/notifications", None).await.status, StatusCode::UNAUTHORIZED);
 }
+
+#[sqlx::test(migrations = "./migrations")]
+async fn dashboard_counts_paid_orders(db: PgPool) {
+    let c = catalog(&db).await;
+    let (_, buyer) = user(&db, "+85510000001", "student").await;
+    let (_, other) = user(&db, "+85510000002", "student").await;
+    let (_, admin) = user(&db, "+85510000009", "admin").await;
+    let paid = order_both(&db, &buyer, &c).await;
+    let open = order_both(&db, &other, &c).await;
+    post(&db, &format!("/api/orders/{open}/submit"), Some(&other), json!({ "payment_ref": "TX-2" })).await;
+    post(&db, &format!("/api/admin/orders/{paid}/approve"), Some(&admin), json!({})).await;
+
+    assert_eq!(get(&db, "/api/admin/stats", Some(&buyer)).await.status, StatusCode::FORBIDDEN);
+    assert_eq!(get(&db, "/api/admin/stats?days=3", Some(&admin)).await.status, StatusCode::UNPROCESSABLE_ENTITY);
+    let s = get(&db, "/api/admin/stats?days=7", Some(&admin)).await.json();
+    assert_eq!(s["awaiting_approval"], 1);
+    assert_eq!(s["pending_payment"], 0);
+    assert_eq!(s["revenue_cents"], 1500);
+    assert_eq!(s["revenue_cents_all_time"], 1500);
+    assert_eq!(s["paid_orders"], 1);
+    assert_eq!(s["users"], 3);
+    let daily = s["daily"].as_array().unwrap();
+    assert_eq!(daily.len(), 7);
+    assert_eq!(daily[6]["revenue_cents"], 1500);
+    assert_eq!(s["top_courses"][0]["slug"], "demo-course");
+    assert_eq!(s["top_courses"][0]["sales"], 1);
+    assert_eq!(s["top_ebooks"][0]["revenue_cents"], 500);
+}

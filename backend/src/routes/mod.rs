@@ -2,6 +2,7 @@ mod admin;
 mod admin_catalog;
 mod admin_courses;
 mod admin_ebooks;
+mod admin_stats;
 mod auth;
 mod cart;
 mod categories;
@@ -53,6 +54,7 @@ pub fn router(state: AppState) -> Router {
             "/api/orders/{id}/proof",
             post(proofs::upload).layer(DefaultBodyLimit::max(11 * 1024 * 1024)),
         )
+        .route("/api/admin/stats", get(admin_stats::stats))
         .route("/api/admin/orders", get(admin::list_orders))
         .route("/api/admin/orders/{id}/approve", post(admin::approve))
         .route("/api/admin/orders/{id}/reject", post(admin::reject))

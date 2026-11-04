@@ -360,3 +360,27 @@ export interface Sitemap {
 	courses: SitemapEntry[];
 	ebooks: SitemapEntry[];
 }
+
+/** `GET /api/admin/stats?days=`: dashboard numbers. */
+export interface AdminTopItem {
+	id: string;
+	slug: string;
+	title: string;
+	sales: number;
+	revenue_cents: number;
+}
+
+export interface AdminStats {
+	days: number;
+	revenue_cents: number;
+	paid_orders: number;
+	awaiting_approval: number;
+	pending_payment: number;
+	revenue_cents_all_time: number;
+	users: number;
+	new_users: number;
+	/** One row per Phnom Penh day (`YYYY-MM-DD`), oldest first, zero-filled. */
+	daily: { day: string; revenue_cents: number; orders: number }[];
+	top_courses: AdminTopItem[];
+	top_ebooks: AdminTopItem[];
+}
