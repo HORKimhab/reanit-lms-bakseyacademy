@@ -74,6 +74,8 @@ export interface CourseDetail extends CourseCard, Reviewed {
 	lesson_count: number;
 	total_duration_seconds: number;
 	owned: boolean;
+	/** The lesson the enrolled user opened last. */
+	last_lesson_id: string | null;
 	/** In curriculum order; empty when signed out. */
 	completed_lesson_ids: string[];
 }

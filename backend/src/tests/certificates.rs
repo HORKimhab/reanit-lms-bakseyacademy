@@ -33,3 +33,19 @@ async fn completing_every_lesson_issues_a_certificate(db: PgPool) {
     assert_eq!((r.json()["course_title"].as_str(), r.json()["full_name"].as_str()), (Some("Demo course"), Some("Test")));
     assert_eq!(get(&db, &format!("/api/certificates/{}", uuid::Uuid::max()), None).await.status, StatusCode::NOT_FOUND);
 }
+
+#[sqlx::test(migrations = "./migrations")]
+async fn course_detail_remembers_the_last_lesson(db: PgPool) {
+    let c = catalog(&db).await;
+    let (owner_id, owner) = user(&db, "+85510000002", "student").await;
+    let (_, stranger) = user(&db, "+85510000001", "student").await;
+    assert_eq!(get(&db, "/api/courses/demo-course", Some(&owner)).await.json()["last_lesson_id"], serde_json::Value::Null);
+    grant_both(&db, owner_id, &c).await;
+    assert_eq!(get(&db, "/api/courses/demo-course", Some(&owner)).await.json()["last_lesson_id"], serde_json::Value::Null);
+    get(&db, &format!("/api/courses/demo-course/lessons/{}", c.paid_lesson), Some(&owner)).await;
+    // Other people's views don't count.
+    get(&db, &format!("/api/courses/demo-course/lessons/{}", c.preview_lesson), Some(&stranger)).await;
+    let d = get(&db, "/api/courses/demo-course", Some(&owner)).await.json();
+    assert_eq!(d["last_lesson_id"], c.paid_lesson.to_string());
+    assert_eq!(get(&db, "/api/courses/demo-course", Some(&stranger)).await.json()["last_lesson_id"], serde_json::Value::Null);
+}

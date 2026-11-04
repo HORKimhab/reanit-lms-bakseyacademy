@@ -53,6 +53,18 @@ pub async fn lesson(
         enrolled: row.enrolled,
     })?;
 
+    if row.enrolled {
+        // Remember where the learner is, for "Continue learning".
+        sqlx::query(
+            "UPDATE enrollments SET last_lesson_id = $3, last_viewed_at = now() WHERE user_id = $1 AND course_id = $2",
+        )
+        .bind(current.as_ref().map(|c| c.user.id))
+        .bind(row.course_id)
+        .bind(row.id)
+        .execute(&st.db)
+        .await?;
+    }
+
     // Uploaded (Telegram) media wins over a Bunny video id.
     let (video_url, video_type, expires_at) = match (row.media_id, &st.telegram) {
         (Some(media_id), Some(_)) => {

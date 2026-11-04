@@ -100,7 +100,7 @@ pub async fn detail(
     .await?
     .ok_or(AppError::NotFound)?;
 
-    let (extra, section_rows, lesson_rows, owned, completed, (reviews, my_review)) = tokio::try_join!(
+    let (extra, section_rows, lesson_rows, enrollment, completed, (reviews, my_review)) = tokio::try_join!(
         sqlx::query_as::<_, CourseExtra>(
             "SELECT c.description, i.bio AS instructor_bio, i.avatar_url AS instructor_avatar_url
              FROM courses c JOIN instructors i ON i.id = c.instructor_id
@@ -121,7 +121,7 @@ pub async fn detail(
         )
         .bind(card.id)
         .fetch_all(&st.db),
-        owns(&st.db, current.as_ref(), card.id),
+        enrollment(&st.db, user_id, card.id),
         sqlx::query_scalar::<_, Uuid>(
             "SELECT p.lesson_id FROM lesson_progress p
              JOIN lessons l ON l.id = p.lesson_id JOIN course_sections s ON s.id = l.section_id
@@ -144,7 +144,8 @@ pub async fn detail(
         sections,
         lesson_count,
         total_duration_seconds,
-        owned,
+        owned: enrollment.is_some(),
+        last_lesson_id: enrollment.flatten(),
         completed_lesson_ids: completed,
         reviews,
         my_review,
@@ -171,12 +172,13 @@ fn group_lessons(sections: Vec<SectionRow>, lessons: Vec<LessonRow>) -> Vec<Sect
     out
 }
 
-/// Whether the signed-in user (if any) owns this course.
-async fn owns(db: &PgPool, current: Option<&CurrentUser>, id: Uuid) -> sqlx::Result<bool> {
-    let Some(current) = current else { return Ok(false) };
-    sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM enrollments WHERE user_id = $1 AND course_id = $2)")
-        .bind(current.user.id)
+/// The signed-in user's enrollment (`None` when not enrolled or signed out), with the lesson they
+/// last opened.
+async fn enrollment(db: &PgPool, user_id: Option<Uuid>, id: Uuid) -> sqlx::Result<Option<Option<Uuid>>> {
+    let Some(user_id) = user_id else { return Ok(None) };
+    sqlx::query_scalar("SELECT last_lesson_id FROM enrollments WHERE user_id = $1 AND course_id = $2")
+        .bind(user_id)
         .bind(id)
-        .fetch_one(db)
+        .fetch_optional(db)
         .await
 }

@@ -639,6 +639,8 @@ pub struct CourseDetail {
     pub total_duration_seconds: i64,
     /// The signed-in user is enrolled (false when signed out).
     pub owned: bool,
+    /// The lesson the enrolled user opened last ("Continue learning" resumes there).
+    pub last_lesson_id: Option<Uuid>,
     /// Lessons the signed-in user completed, in curriculum order (empty when signed out).
     pub completed_lesson_ids: Vec<Uuid>,
     /// Latest reviews, commented ones first (at most 10).

@@ -70,7 +70,7 @@ Constraints that shape the design:
 - [x] I5 Admin user management: search users, grant / revoke enrollments and ebook purchases manually (refunds, support), promote to admin
 
 ## J. Polish
-- [ ] J1 Resume a course at the last lesson watched ("Continue learning" goes to it)
+- [x] J1 Resume a course at the last lesson watched ("Continue learning" goes to it)
 - [ ] J2 Bundles: several courses / ebooks sold at one price
 - [ ] J3 Cleanup job: delete expired sessions and cancel long-abandoned `pending_payment` orders
 

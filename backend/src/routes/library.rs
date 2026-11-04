@@ -11,11 +11,13 @@ use crate::{
     models::{CourseCard, EbookCard, Library, LibraryCourse},
 };
 
-/// Everything the user owns, most recently acquired first, with course progress.
+/// Everything the user owns with course progress: courses most recently opened or acquired first,
+/// ebooks most recently acquired first.
 /// Includes items unpublished since purchase.
 pub async fn library(State(st): State<AppState>, current: CurrentUser) -> AppResult<Json<Library>> {
     let course_sql = format!(
-        "{} JOIN enrollments en ON en.course_id = c.id AND en.user_id = $1 ORDER BY en.created_at DESC",
+        "{} JOIN enrollments en ON en.course_id = c.id AND en.user_id = $1 \
+         ORDER BY GREATEST(en.last_viewed_at, en.created_at) DESC",
         courses::CARD_SELECT
     );
     let ebook_sql = format!(
