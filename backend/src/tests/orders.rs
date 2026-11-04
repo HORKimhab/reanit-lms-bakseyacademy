@@ -106,3 +106,41 @@ async fn users_only_see_their_own_orders(db: PgPool) {
     let r = post(&db, &format!("/api/orders/{order}/cancel"), Some(&other), json!({})).await;
     assert_eq!(r.status, StatusCode::NOT_FOUND);
 }
+
+#[sqlx::test(migrations = "./migrations")]
+async fn buyers_are_notified_of_decisions(db: PgPool) {
+    let c = catalog(&db).await;
+    let (_, buyer) = user(&db, "+85510000001", "student").await;
+    let (_, other) = user(&db, "+85510000002", "student").await;
+    let (_, admin) = user(&db, "+85510000009", "admin").await;
+    let order = order_both(&db, &buyer, &c).await;
+    assert_eq!(get(&db, "/api/me/notifications", Some(&buyer)).await.json()["unread_count"], 0);
+
+    post(&db, &format!("/api/orders/{order}/submit"), Some(&buyer), json!({ "payment_ref": "TX-1" })).await;
+    post(&db, &format!("/api/admin/orders/{order}/reject"), Some(&admin), json!({ "note": "wrong amount" })).await;
+    // A failed reject (already rejected) adds nothing.
+    post(&db, &format!("/api/admin/orders/{order}/reject"), Some(&admin), json!({ "note": "again" })).await;
+    let n = get(&db, "/api/me/notifications", Some(&buyer)).await.json();
+    assert_eq!(n["unread_count"], 1);
+    assert_eq!(n["items"][0]["kind"], "order_rejected");
+    assert_eq!(n["items"][0]["note"], "wrong amount");
+    assert_eq!(n["items"][0]["order_id"], order.to_string());
+
+    // Approving twice notifies once.
+    for _ in 0..2 {
+        post(&db, &format!("/api/admin/orders/{order}/approve"), Some(&admin), json!({})).await;
+    }
+    let n = get(&db, "/api/me/notifications", Some(&buyer)).await.json();
+    assert_eq!(n["unread_count"], 2);
+    assert_eq!(n["items"][0]["kind"], "order_paid");
+    assert_eq!(n["items"][0]["note"], serde_json::Value::Null);
+
+    assert_eq!(get(&db, "/api/me/notifications", Some(&other)).await.json()["unread_count"], 0);
+    let r = post(&db, "/api/me/notifications/read", Some(&other), json!({})).await;
+    assert_eq!(r.status, StatusCode::NO_CONTENT);
+    assert_eq!(get(&db, "/api/me/notifications", Some(&buyer)).await.json()["unread_count"], 2);
+    post(&db, "/api/me/notifications/read", Some(&buyer), json!({})).await;
+    let n = get(&db, "/api/me/notifications", Some(&buyer)).await.json();
+    assert_eq!((n["unread_count"].as_i64(), n["items"].as_array().map(Vec::len)), (Some(0), Some(2)));
+    assert_eq!(get(&db, "/api/me/notifications", None).await.status, StatusCode::UNAUTHORIZED);
+}

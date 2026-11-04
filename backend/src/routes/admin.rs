@@ -6,6 +6,7 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use super::{
+    notifications,
     orders::{ORDER_COLUMNS, grant_order, items_by_order, load_order},
     proofs,
 };
@@ -122,6 +123,7 @@ pub async fn approve(
             .execute(&mut *tx)
             .await?;
             grant_order(&mut tx, id).await?;
+            notifications::notify_order(&mut *tx, id, "order_paid").await?;
         }
         Some(_) => return Err(AppError::Conflict("invalid_status")),
     }
@@ -145,6 +147,7 @@ pub async fn reject(
     if note.is_empty() || note.chars().count() > 500 {
         return Err(AppError::Validation("invalid_note"));
     }
+    let mut tx = st.db.begin().await?;
     let updated = sqlx::query(
         "UPDATE orders SET status = 'rejected', admin_note = $3, reviewed_by = $2, reviewed_at = now() \
          WHERE id = $1 AND status = 'awaiting_approval'",
@@ -152,9 +155,13 @@ pub async fn reject(
     .bind(id)
     .bind(admin.id)
     .bind(note)
-    .execute(&st.db)
+    .execute(&mut *tx)
     .await?
     .rows_affected();
+    if updated == 1 {
+        notifications::notify_order(&mut *tx, id, "order_rejected").await?;
+    }
+    tx.commit().await?;
     let order = load_order(&st, id, None).await?;
     if updated == 0 {
         return Err(AppError::Conflict("invalid_status"));

@@ -265,5 +265,11 @@
 	"order_proof_replace": "Replace",
 	"error_invalid_image": "Please choose a PNG, JPEG or WebP image",
 	"error_too_many_attempts": "Too many wrong attempts. Please wait 15 minutes and try again.",
-	"error_already_ordered": "You already have an unpaid order with this item — finish it under “My orders”"
+	"error_already_ordered": "You already have an unpaid order with this item — finish it under “My orders”",
+	"notifications_title": "Notifications",
+	"notifications_empty": "No notifications yet",
+	"notifications_mark_read": "Mark all as read",
+	"notifications_see_all": "See all",
+	"notification_order_paid": "Order {order} was approved — you can start learning or reading now",
+	"notification_order_rejected": "Order {order} was rejected: {note}"
 }

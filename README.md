@@ -99,6 +99,8 @@ Authenticated routes take `Authorization: Bearer <token>` (the token from regist
 | POST | `/api/me/password` | Bearer, `{current_password, new_password}` → 204, signs out other sessions; 422 `wrong_password` / `weak_password` |
 | GET | `/api/me/orders` | Bearer → own orders with items, newest first |
 | GET | `/api/me/library` | Bearer → `{courses, ebooks}` the user owns (card shape; courses add `lesson_count`, `completed_lessons`) |
+| GET | `/api/me/notifications` | Bearer → `{items, unread_count}`: latest 20 notices, newest first (`kind`: `order_paid`, or `order_rejected` with the admin's `note`; `order_id`, `read_at`) |
+| POST | `/api/me/notifications/read` | Bearer → 204, marks all read |
 | GET | `/api/recommendations` | optional Bearer → `{courses, ebooks, personalized}`: 8 unowned published items each, ranked by co-purchase, then shared category, then popularity (signed out: popularity) |
 | GET | `/api/cart` | Bearer → `{items, total_cents}` (published items; total uses sale price) |
 | POST | `/api/cart` | Bearer, `{course_id}` or `{ebook_id}` → cart; 404, 409 `already_owned` / `already_ordered` (in an unpaid order), 422 `invalid_item` |
@@ -110,8 +112,8 @@ Authenticated routes take `Authorization: Bearer <token>` (the token from regist
 | POST | `/api/orders/{id}/proof` | Bearer, own order in `pending_payment` / `awaiting_approval` / `rejected`; multipart `size` then `file` (PNG/JPEG/WebP ≤ 10 MB) → `awaiting_approval` order with `payment_proof_url` (a screenshot counts as submitting, like a reference); the screenshot is posted with the order details to `TELEGRAM_ADMIN_CHAT_ID`; 409 `invalid_status`, 422 `invalid_image` / `invalid_size` / `file_too_large` / `invalid_form`, 503 `telegram_unavailable` / `telegram_failed` |
 | POST | `/api/orders/{id}/cancel` | Bearer → `cancelled` (from `pending_payment` only) |
 | GET | `/api/admin/orders?status=&q=&page=&per_page=` | admin → paged orders with buyer + items; `awaiting_approval` oldest first; 403 `forbidden` |
-| POST | `/api/admin/orders/{id}/approve` | admin → `paid` + grants enrollments / ebooks (idempotent; also from `pending_payment` / `rejected`) |
-| POST | `/api/admin/orders/{id}/reject` | admin, `{note}` → `rejected` (from `awaiting_approval`); user sees the note and can resubmit; 409 `invalid_status`, 422 `invalid_note` |
+| POST | `/api/admin/orders/{id}/approve` | admin → `paid` + grants enrollments / ebooks and notifies the buyer (idempotent; also from `pending_payment` / `rejected`) |
+| POST | `/api/admin/orders/{id}/reject` | admin, `{note}` → `rejected` (from `awaiting_approval`); the buyer is notified, sees the note and can resubmit; 409 `invalid_status`, 422 `invalid_note` |
 | GET / POST | `/api/admin/courses?q=&page=` | admin → paged courses incl. drafts / create `{slug, title, summary?, description, cover_url?, instructor_id, category_id?, price_cents, sale_price_cents?, published}` → 201; 409 `slug_taken`, 422 `invalid_slug` / `invalid_price` / `invalid_url` / `invalid_reference` |
 | GET / PUT / DELETE | `/api/admin/courses/{id}` | admin → course + curriculum (lessons include `video_id`); DELETE 409 `has_buyers` once enrolled/ordered |
 | POST | `/api/admin/courses/{id}/publish` | admin, `{published}` → 204 |

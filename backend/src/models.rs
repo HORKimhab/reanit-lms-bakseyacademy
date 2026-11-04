@@ -128,6 +128,23 @@ pub struct OrderWithItems {
     pub items: Vec<OrderItem>,
 }
 
+/// An in-app notice (`kind`: `order_paid` / `order_rejected` with the admin's `note`).
+#[derive(Serialize, FromRow)]
+pub struct Notification {
+    pub id: Uuid,
+    pub kind: String,
+    pub order_id: Option<Uuid>,
+    pub note: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub read_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Serialize)]
+pub struct Notifications {
+    pub items: Vec<Notification>,
+    pub unread_count: i64,
+}
+
 /// An enrolled course with the learner's progress.
 #[derive(Serialize)]
 pub struct LibraryCourse {

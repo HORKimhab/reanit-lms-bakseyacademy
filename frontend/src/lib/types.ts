@@ -189,6 +189,22 @@ export interface AdminOrder extends OrderSummary {
 	items: OrderItem[];
 }
 
+/** `GET /api/me/notifications`: in-app notice about one of the user's orders. */
+export interface Notification {
+	id: string;
+	kind: 'order_paid' | 'order_rejected';
+	order_id: string | null;
+	/** The admin's rejection note. */
+	note: string | null;
+	created_at: string;
+	read_at: string | null;
+}
+
+export interface Notifications {
+	items: Notification[];
+	unread_count: number;
+}
+
 export interface OrderWithItems extends OrderSummary {
 	items: OrderItem[];
 }
