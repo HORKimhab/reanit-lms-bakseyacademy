@@ -11,6 +11,9 @@ mod telegram;
 mod validate;
 mod video;
 
+#[cfg(test)]
+mod tests;
+
 use sqlx::postgres::PgPoolOptions;
 use tower_http::{
     compression::{

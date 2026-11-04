@@ -4,7 +4,7 @@ Khmer-first online course + ebook store. `backend/` is a Rust API (Axum 0.8, SQL
 
 ## Verify
 
-- Backend: `cd backend && cargo check`, `cargo clippy --all-targets -- -D warnings`, `cargo test`.
+- Backend: `cd backend && cargo check`, `cargo clippy --all-targets -- -D warnings`, `cargo test`. Integration tests (`src/tests/`, `#[sqlx::test]`) drive the real router against a throwaway database per test, created on the server in `DATABASE_URL` (needs `CREATEDB`); add one when you change an access rule or an order transition.
 - CI (`.github/workflows/ci.yml`) runs the same checks plus `bun run build` on every push / PR.
 - Frontend: `cd frontend && bun run check` (svelte-check). Bun is the package manager.
 - `seeds/dev.sql` truncates every catalog and user table; run it only against a local dev database.
