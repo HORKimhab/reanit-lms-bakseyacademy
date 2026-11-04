@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      # Integration tests (`#[sqlx::test]`) create a throwaway database per test on this server.
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: reanit
+          POSTGRES_PASSWORD: reanit
+          POSTGRES_DB: reanit_lms
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U reanit"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://reanit:reanit@localhost:5432/reanit_lms
+      CARGO_TERM_COLOR: always
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: backend
+      - run: cargo check --all-targets
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo test
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      # The build compiles Paraglide messages into src/lib/paraglide (gitignored), which svelte-check needs.
+      - run: bun run build
+      - run: bun run check

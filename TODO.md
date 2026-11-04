@@ -56,7 +56,7 @@ Constraints that shape the design:
 - [x] G8 Ops: README section (create channel, add bot as admin, run `telegram-bot-api --local` via `docker-compose.yml`, env vars), on-disk cache limits for the local Bot API server, and a smoke test that uploads → plays with seeking → downloads a > 20 MB file
 
 ## H. Launch readiness
-- [ ] H1 CI: GitHub Actions workflow running `cargo check`, `cargo clippy -- -D warnings`, `cargo test` (backend) and `bun run check` (frontend) on every push / PR
+- [x] H1 CI: GitHub Actions workflow running `cargo check`, `cargo clippy -- -D warnings`, `cargo test` (backend) and `bun run check` (frontend) on every push / PR
 - [ ] H2 Access-control integration tests (`sqlx::test` on a throwaway DB): lesson `video_id`, ebook `file_key` and Telegram ids never reach non-owners; owners keep access after unpublish; approving an order grants enrollment / purchase exactly once
 - [ ] H3 Buyer notification on order approve / reject (Telegram bot message and/or header notice), so buyers don't have to poll `/orders/{id}`
 - [ ] H4 SEO: `og:title` / `og:description` / `og:image` on course and ebook detail pages (for Facebook / Telegram link previews), `sitemap.xml` of published items, `robots.txt`
