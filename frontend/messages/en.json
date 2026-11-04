@@ -292,5 +292,9 @@
 	"certificate_issued_on": "Date issued",
 	"certificate_id_label": "Certificate ID:",
 	"certificate_print": "Download PDF / Print",
-	"certificate_print_hint": "Choose “Save as PDF” in the print dialog to keep a PDF. Share this link so anyone can verify it."
+	"certificate_print_hint": "Choose “Save as PDF” in the print dialog to keep a PDF. Share this link so anyone can verify it.",
+	"nav_wishlist": "Wishlist",
+	"wishlist_add": "Save to wishlist",
+	"wishlist_remove": "Remove from wishlist",
+	"wishlist_empty": "Your wishlist is empty."
 }

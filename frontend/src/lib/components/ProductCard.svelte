@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Price from './Price.svelte';
 	import Rating from './Rating.svelte';
+	import WishlistButton from './WishlistButton.svelte';
 
 	let {
 		href,
@@ -12,7 +13,8 @@
 		sale,
 		ratingAvg,
 		ratingCount,
-		shape = 'video'
+		shape = 'video',
+		item = null
 	}: {
 		href: string;
 		title: string;
@@ -24,12 +26,15 @@
 		ratingAvg: number;
 		ratingCount: number;
 		shape?: 'video' | 'book';
+		/** Shows the wishlist heart. */
+		item?: { kind: 'course' | 'ebook'; id: string } | null;
 	} = $props();
 </script>
 
+<div class="relative flex flex-col">
 <a
 	{href}
-	class="group flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+	class="group flex flex-1 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
 >
 	<div
 		class="relative overflow-hidden bg-gradient-to-br from-brand-500 to-sky-400 {shape === 'book'
@@ -52,3 +57,7 @@
 		<div class="mt-auto pt-2"><Price {price} {sale} /></div>
 	</div>
 </a>
+{#if item}
+	<div class="absolute top-2 right-2"><WishlistButton kind={item.kind} id={item.id} overlay /></div>
+{/if}
+</div>

@@ -3,6 +3,7 @@
 	import { m } from '$lib/paraglide/messages.js';
 	import { categoryName } from '$lib/i18n';
 	import BuyButtons from '$lib/components/BuyButtons.svelte';
+	import WishlistButton from '$lib/components/WishlistButton.svelte';
 	import Price from '$lib/components/Price.svelte';
 	import Rating from '$lib/components/Rating.svelte';
 	import Reviews from '$lib/components/Reviews.svelte';
@@ -47,6 +48,7 @@
 				</div>
 			{:else}
 				<BuyButtons {form} />
+				<WishlistButton kind="ebook" id={ebook.id} />
 			{/if}
 		</div>
 		{#if ebook.summary}<p class="mt-8 text-lg text-slate-700">{ebook.summary}</p>{/if}

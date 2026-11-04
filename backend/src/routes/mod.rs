@@ -20,6 +20,7 @@ mod proofs;
 mod recommendations;
 mod reviews;
 mod sitemap;
+mod wishlist;
 
 use axum::{
     Json, Router,
@@ -43,6 +44,9 @@ pub fn router(state: AppState) -> Router {
         .route("/api/me/orders", get(orders::my_orders))
         .route("/api/me/library", get(library::library))
         .route("/api/me/notifications", get(notifications::list))
+        .route("/api/me/wishlist", get(wishlist::list))
+        .route("/api/me/wishlist/ids", get(wishlist::ids))
+        .route("/api/me/wishlist/{kind}/{id}", put(wishlist::add).delete(wishlist::remove))
         .route("/api/me/notifications/read", post(notifications::read_all))
         .route("/api/recommendations", get(recommendations::recommendations))
         .route("/api/cart", get(cart::get).post(cart::add))

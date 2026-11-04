@@ -217,6 +217,18 @@ pub struct Recommendations {
 }
 
 #[derive(Serialize)]
+pub struct Wishlist {
+    pub courses: Vec<CourseCard>,
+    pub ebooks: Vec<EbookCard>,
+}
+
+#[derive(Serialize)]
+pub struct WishlistIds {
+    pub course_ids: Vec<Uuid>,
+    pub ebook_ids: Vec<Uuid>,
+}
+
+#[derive(Serialize)]
 pub struct Library {
     pub courses: Vec<LibraryCourse>,
     pub ebooks: Vec<EbookCard>,

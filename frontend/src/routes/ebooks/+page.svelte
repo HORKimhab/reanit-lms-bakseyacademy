@@ -27,6 +27,7 @@
 		{#each data.ebooks.items as e (e.id)}
 			<ProductCard
 				href="/ebooks/{e.slug}"
+				item={{ kind: 'ebook', id: e.id }}
 				shape="book"
 				title={e.title}
 				byline={e.author_name}

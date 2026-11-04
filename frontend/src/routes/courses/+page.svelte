@@ -27,6 +27,7 @@
 		{#each data.courses.items as c (c.id)}
 			<ProductCard
 				href="/courses/{c.slug}"
+				item={{ kind: 'course', id: c.id }}
 				title={c.title}
 				byline={c.instructor_name}
 				coverUrl={c.cover_url}

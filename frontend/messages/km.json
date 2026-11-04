@@ -222,5 +222,9 @@
 	"certificate_issued_on": "កាលបរិច្ឆេទចេញ",
 	"certificate_id_label": "លេខសម្គាល់៖",
 	"certificate_print": "ទាញយក PDF / បោះពុម្ព",
-	"certificate_print_hint": "ជ្រើស «Save as PDF» ក្នុងផ្ទាំងបោះពុម្ព ដើម្បីរក្សាទុកជា PDF។ តំណនេះអាចចែករំលែកដើម្បីផ្ទៀងផ្ទាត់។"
+	"certificate_print_hint": "ជ្រើស «Save as PDF» ក្នុងផ្ទាំងបោះពុម្ព ដើម្បីរក្សាទុកជា PDF។ តំណនេះអាចចែករំលែកដើម្បីផ្ទៀងផ្ទាត់។",
+	"nav_wishlist": "បញ្ជីចង់បាន",
+	"wishlist_add": "រក្សាទុកក្នុងបញ្ជីចង់បាន",
+	"wishlist_remove": "ដកចេញពីបញ្ជីចង់បាន",
+	"wishlist_empty": "បញ្ជីចង់បានរបស់អ្នកនៅទទេ។"
 }

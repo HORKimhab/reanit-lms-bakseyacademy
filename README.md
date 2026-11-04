@@ -103,6 +103,9 @@ Authenticated routes take `Authorization: Bearer <token>` (the token from regist
 | GET | `/api/me/library` | Bearer → `{courses, ebooks}` the user owns (card shape; courses add `lesson_count`, `completed_lessons`, `certificate_id`) |
 | GET | `/api/me/notifications` | Bearer → `{items, unread_count}`: latest 20 notices, newest first (`kind`: `order_paid`, or `order_rejected` with the admin's `note`; `order_id`, `read_at`) |
 | POST | `/api/me/notifications/read` | Bearer → 204, marks all read |
+| GET | `/api/me/wishlist` | Bearer → `{courses, ebooks}` saved items that are still published (card shape), most recently saved first |
+| GET | `/api/me/wishlist/ids` | Bearer → `{course_ids, ebook_ids}` (fills in the hearts) |
+| PUT / DELETE | `/api/me/wishlist/{courses\|ebooks}/{id}` | Bearer → 204; save (published items only, else 404; idempotent) / unsave |
 | GET | `/api/recommendations` | optional Bearer → `{courses, ebooks, personalized}`: 8 unowned published items each, ranked by co-purchase, then shared category, then popularity (signed out: popularity) |
 | GET | `/api/cart?coupon=` | Bearer → `{items, subtotal_cents, discount_cents, total_cents, coupon}` (published items; prices use the sale price); `coupon` previews a discount code (422 `invalid_coupon` / `coupon_expired` / `coupon_used_up`) |
 | POST | `/api/cart` | Bearer, `{course_id}` or `{ebook_id}` → cart; 404, 409 `already_owned` / `already_ordered` (in an unpaid order), 422 `invalid_item` |

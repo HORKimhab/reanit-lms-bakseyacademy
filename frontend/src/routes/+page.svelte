@@ -24,6 +24,7 @@
 		{#each data.home.new_courses as c (c.id)}
 			<ProductCard
 				href="/courses/{c.slug}"
+				item={{ kind: 'course', id: c.id }}
 				title={c.title}
 				byline={c.instructor_name}
 				coverUrl={c.cover_url}
@@ -46,6 +47,7 @@
 		{#each data.home.new_ebooks as e (e.id)}
 			<ProductCard
 				href="/ebooks/{e.slug}"
+				item={{ kind: 'ebook', id: e.id }}
 				shape="book"
 				title={e.title}
 				byline={e.author_name}

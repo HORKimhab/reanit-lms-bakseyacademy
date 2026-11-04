@@ -424,3 +424,15 @@ export interface AdminStats {
 	top_courses: AdminTopItem[];
 	top_ebooks: AdminTopItem[];
 }
+
+/** `GET /api/me/wishlist`: saved items that are still published. */
+export interface Wishlist {
+	courses: CourseCard[];
+	ebooks: EbookCard[];
+}
+
+/** `GET /api/me/wishlist/ids`. */
+export interface WishlistIds {
+	course_ids: string[];
+	ebook_ids: string[];
+}

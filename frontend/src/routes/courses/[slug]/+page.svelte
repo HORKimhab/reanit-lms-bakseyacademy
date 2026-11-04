@@ -2,6 +2,7 @@
 	import { m } from '$lib/paraglide/messages.js';
 	import { categoryName } from '$lib/i18n';
 	import BuyButtons from '$lib/components/BuyButtons.svelte';
+	import WishlistButton from '$lib/components/WishlistButton.svelte';
 	import ProgressBar from '$lib/components/ProgressBar.svelte';
 	import Price from '$lib/components/Price.svelte';
 	import Rating from '$lib/components/Rating.svelte';
@@ -105,6 +106,7 @@
 					</a>
 				{:else}
 					<BuyButtons {form} full />
+					<WishlistButton kind="course" id={course.id} />
 				{/if}
 			</div>
 		</div>

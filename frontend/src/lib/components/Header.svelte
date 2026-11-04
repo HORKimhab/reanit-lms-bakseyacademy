@@ -112,6 +112,7 @@
 					</summary>
 					<div class="absolute right-0 mt-2 w-48 rounded-xl border border-slate-200 bg-white p-1 text-sm shadow-lg">
 						<a href="/account/library" class="block rounded-lg px-3 py-2 hover:bg-slate-100">{m.nav_library()}</a>
+						<a href="/account/wishlist" class="block rounded-lg px-3 py-2 hover:bg-slate-100">{m.nav_wishlist()}</a>
 						<a href="/account/orders" class="block rounded-lg px-3 py-2 hover:bg-slate-100">{m.nav_orders()}</a>
 						<a href="/account/notifications" class="block rounded-lg px-3 py-2 hover:bg-slate-100">{m.notifications_title()}</a>
 						<a href="/account" class="block rounded-lg px-3 py-2 hover:bg-slate-100">{m.nav_account()}</a>
@@ -147,6 +148,7 @@
 			{/each}
 			{#if user}
 				<a href="/account/library" class="block py-2" onclick={() => (menuOpen = false)}>{m.nav_library()}</a>
+				<a href="/account/wishlist" class="block py-2" onclick={() => (menuOpen = false)}>{m.nav_wishlist()}</a>
 				<a href="/account/orders" class="block py-2" onclick={() => (menuOpen = false)}>{m.nav_orders()}</a>
 				<a href="/account/notifications" class="block py-2" onclick={() => (menuOpen = false)}>{m.notifications_title()}</a>
 				<a href="/account" class="block py-2" onclick={() => (menuOpen = false)}>{m.nav_account()} ({user.full_name})</a>
