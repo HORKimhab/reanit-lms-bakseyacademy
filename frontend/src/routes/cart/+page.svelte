@@ -62,7 +62,36 @@
 			{/each}
 		</ul>
 
-		<form method="POST" action="?/checkout" class="space-y-4 self-start rounded-xl border border-slate-200 bg-white p-5 shadow-sm lg:sticky lg:top-24">
+		<div class="space-y-4 self-start rounded-xl border border-slate-200 bg-white p-5 shadow-sm lg:sticky lg:top-24">
+		<form method="GET" class="space-y-1">
+			<label for="coupon" class="text-sm font-medium">{m.coupon_label()}</label>
+			<div class="flex gap-2">
+				<input
+					id="coupon"
+					name="coupon"
+					value={cart.coupon?.code ?? data.coupon}
+					autocomplete="off"
+					class="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-1.5 font-mono text-sm uppercase outline-none focus:border-brand-500"
+				/>
+				<button class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium hover:bg-slate-100">{m.coupon_apply()}</button>
+			</div>
+			{#if data.couponError}
+				<p class="text-sm text-red-700" role="alert">{errorMessage(data.couponError)}</p>
+			{:else if cart.coupon}
+				<p class="text-sm text-green-700" role="status">
+					✓ {m.coupon_applied({ code: cart.coupon.code })} · <a href="/cart" class="underline">{m.coupon_remove()}</a>
+				</p>
+			{/if}
+		</form>
+
+		<form method="POST" action="?/checkout" class="space-y-4">
+			{#if cart.coupon}
+				<input type="hidden" name="coupon_code" value={cart.coupon.code} />
+				<div class="space-y-1 text-sm text-slate-600">
+					<p class="flex justify-between"><span>{m.subtotal()}</span><span>{formatPrice(cart.subtotal_cents)}</span></p>
+					<p class="flex justify-between text-green-700"><span>{m.discount()} ({cart.coupon.code})</span><span>−{formatPrice(cart.discount_cents)}</span></p>
+				</div>
+			{/if}
 			<div class="flex items-baseline justify-between">
 				<span class="text-slate-600">{m.total()} ({formatNumber(cart.items.length)})</span>
 				<span class="text-2xl font-bold text-brand-600">{formatPrice(cart.total_cents)}</span>
@@ -93,5 +122,6 @@
 				{cart.total_cents > 0 ? m.cart_checkout() : m.cart_claim_free()}
 			</button>
 		</form>
+		</div>
 	</div>
 {/if}

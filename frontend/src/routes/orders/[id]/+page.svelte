@@ -120,6 +120,11 @@
 						</li>
 					{/each}
 				</ul>
+				{#if order.discount_cents > 0}
+					<p class="mt-3 flex justify-between border-t border-slate-200 pt-3 text-sm text-green-700">
+						<span>{m.discount()}{order.coupon_code ? ` (${order.coupon_code})` : ''}</span><span>−{formatPrice(order.discount_cents)}</span>
+					</p>
+				{/if}
 				<p class="mt-3 flex justify-between border-t border-slate-200 pt-3 font-semibold">
 					<span>{m.total()}</span><span>{formatPrice(order.total_cents)}</span>
 				</p>

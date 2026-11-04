@@ -9,7 +9,7 @@ use serde::Deserialize;
 use sqlx::{PgConnection, PgExecutor};
 use uuid::Uuid;
 
-use super::{cart::load_cart, proofs};
+use super::{cart::load_cart, coupons, proofs};
 use crate::{
     AppState,
     auth::CurrentUser,
@@ -30,7 +30,7 @@ pub(crate) fn is_payable(status: &str) -> bool {
 pub(crate) const IN_OPEN_ORDER: &str = "SELECT EXISTS (SELECT 1 FROM order_items oi JOIN orders o ON o.id = oi.order_id \
      WHERE o.user_id = $1 AND o.status = ANY($2) AND (oi.course_id = $3 OR oi.ebook_id = $4))";
 
-pub(crate) const ORDER_COLUMNS: &str = "o.id, o.status, o.total_cents, o.payment_method AS payment_method_code, \
+pub(crate) const ORDER_COLUMNS: &str = "o.id, o.status, o.total_cents, o.discount_cents, o.coupon_code, o.payment_method AS payment_method_code, \
      o.payment_ref, o.admin_note, o.created_at, o.submitted_at, o.paid_at, o.payment_proof_media_id";
 const METHOD_COLUMNS: &str = "code, name_km, name_en, account_name, account_number, qr_image_url";
 
@@ -145,6 +145,8 @@ pub(crate) async fn grant_order(conn: &mut PgConnection, order_id: Uuid) -> sqlx
 #[derive(Deserialize)]
 pub struct CheckoutBody {
     payment_method: Option<String>,
+    /// Optional discount code (422 `invalid_coupon` / `coupon_expired` / `coupon_used_up`).
+    coupon_code: Option<String>,
 }
 
 /// Turns the cart into an order (prices snapshotted) and empties the cart.
@@ -180,8 +182,13 @@ pub async fn checkout(
     if cart.items.is_empty() {
         return Err(AppError::Validation("cart_empty"));
     }
-    let total =
-        i32::try_from(cart.total_cents).map_err(|_| AppError::Validation("cart_too_large"))?;
+    let coupon = match body.coupon_code.as_deref().map(str::trim).filter(|c| !c.is_empty()) {
+        Some(code) => Some(coupons::redeemable(&mut tx, code, cart.subtotal_cents, true).await?),
+        None => None,
+    };
+    let discount = coupon.as_ref().map_or(0, |c| c.applied.discount_cents);
+    let total = i32::try_from(cart.subtotal_cents - discount)
+        .map_err(|_| AppError::Validation("cart_too_large"))?;
 
     let method = if total == 0 {
         None
@@ -202,8 +209,8 @@ pub async fn checkout(
     };
 
     let order_id: Uuid = sqlx::query_scalar(
-        "INSERT INTO orders (user_id, status, payment_method, total_cents, paid_at) \
-         VALUES ($1, $2, $3, $4, CASE WHEN $4 = 0 THEN now() END) RETURNING id",
+        "INSERT INTO orders (user_id, status, payment_method, total_cents, paid_at, coupon_id, coupon_code, discount_cents) \
+         VALUES ($1, $2, $3, $4, CASE WHEN $4 = 0 THEN now() END, $5, $6, $7) RETURNING id",
     )
     .bind(user_id)
     .bind(if total == 0 {
@@ -213,6 +220,9 @@ pub async fn checkout(
     })
     .bind(method)
     .bind(total)
+    .bind(coupon.as_ref().map(|c| c.id))
+    .bind(coupon.as_ref().map(|c| c.applied.code.as_str()))
+    .bind(discount as i32)
     .fetch_one(&mut *tx)
     .await?;
     for item in &cart.items {

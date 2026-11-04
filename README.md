@@ -103,11 +103,11 @@ Authenticated routes take `Authorization: Bearer <token>` (the token from regist
 | GET | `/api/me/notifications` | Bearer → `{items, unread_count}`: latest 20 notices, newest first (`kind`: `order_paid`, or `order_rejected` with the admin's `note`; `order_id`, `read_at`) |
 | POST | `/api/me/notifications/read` | Bearer → 204, marks all read |
 | GET | `/api/recommendations` | optional Bearer → `{courses, ebooks, personalized}`: 8 unowned published items each, ranked by co-purchase, then shared category, then popularity (signed out: popularity) |
-| GET | `/api/cart` | Bearer → `{items, total_cents}` (published items; total uses sale price) |
+| GET | `/api/cart?coupon=` | Bearer → `{items, subtotal_cents, discount_cents, total_cents, coupon}` (published items; prices use the sale price); `coupon` previews a discount code (422 `invalid_coupon` / `coupon_expired` / `coupon_used_up`) |
 | POST | `/api/cart` | Bearer, `{course_id}` or `{ebook_id}` → cart; 404, 409 `already_owned` / `already_ordered` (in an unpaid order), 422 `invalid_item` |
 | DELETE | `/api/cart/{id}` | Bearer → cart |
 | GET | `/api/payment-methods` | active methods with QR image and account |
-| POST | `/api/orders` | Bearer, `{payment_method}` → 201 order (cart → `pending_payment`; free → `paid` + granted); 409 `already_ordered`, 422 `cart_empty` / `invalid_payment_method` |
+| POST | `/api/orders` | Bearer, `{payment_method, coupon_code?}` → 201 order (cart → `pending_payment`; free → `paid` + granted); 409 `already_ordered`, 422 `cart_empty` / `invalid_payment_method` / `invalid_coupon` / `coupon_expired` / `coupon_used_up`; orders carry `discount_cents` and `coupon_code` (total is after the discount; a coupon that covers everything makes the order free) |
 | GET | `/api/orders/{id}` | Bearer, own orders only → order with items + payment method |
 | POST | `/api/orders/{id}/submit` | Bearer, `{payment_ref}` → `awaiting_approval` (from `pending_payment` or `rejected`); 409 `invalid_status`, 422 `invalid_payment_ref` |
 | POST | `/api/orders/{id}/proof` | Bearer, own order in `pending_payment` / `awaiting_approval` / `rejected`; multipart `size` then `file` (PNG/JPEG/WebP ≤ 10 MB) → `awaiting_approval` order with `payment_proof_url` (a screenshot counts as submitting, like a reference); the screenshot is posted with the order details to `TELEGRAM_ADMIN_CHAT_ID`; 409 `invalid_status`, 422 `invalid_image` / `invalid_size` / `file_too_large` / `invalid_form`, 503 `telegram_unavailable` / `telegram_failed` |
@@ -131,6 +131,7 @@ Authenticated routes take `Authorization: Bearer <token>` (the token from regist
 | GET | `/api/admin/media?q=&kind=video\|document&page=&per_page=` | admin → paged media library of course content (newest first, ≤ 200 per page; payment screenshots never listed) |
 | POST | `/api/telegram/webhook` | Telegram only (`X-Telegram-Bot-Api-Secret-Token` = `TELEGRAM_WEBHOOK_SECRET`, else 401; always 401 while no secret is set; 404 without Telegram): videos/documents posted in the storage channel are imported as media (idempotent) |
 | POST | `/api/admin/media` | admin, multipart `size` then `file` → 201 media; the file is streamed to the Telegram storage channel (≤ 20 MB public Bot API, ≤ 2000 MB with a `--local` server); 422 `invalid_size` / `file_too_large` / `missing_file`, 503 `telegram_unavailable` / `telegram_failed`. Lessons / ebooks take `media_id`, which wins over `video_id` / `file_key` |
+| GET / POST, PUT / DELETE `/{id}` | `/api/admin/coupons` | admin, `{code, percent_off? \| amount_off_cents?, expires_at?, max_uses?, active}` (code upper-cased, 3–32 of `A–Z 0–9 _ -`; exactly one discount) → coupon with `uses` (non-cancelled orders) and `discount_given_cents`; 409 `code_taken`, 422 `invalid_coupon` / `invalid_discount` / `invalid_max_uses`. Deleting keeps orders' discount snapshot |
 | GET / POST, PUT / DELETE `/{id}` | `/api/admin/categories` | admin, `{slug, name_km, name_en, position}`; 409 `slug_taken` |
 | GET / POST, PUT / DELETE `/{id}` | `/api/admin/instructors` | admin, `{name, bio?, avatar_url?}`; DELETE 409 `in_use` while courses reference it |
 | GET / POST, PUT / DELETE `/{id}` | `/api/admin/banners` | admin, `{title, subtitle?, image_url?, link_url?, position, published}`; URLs must be `/path` or `http(s)://` |

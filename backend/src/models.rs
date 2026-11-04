@@ -50,17 +50,55 @@ impl CartItem {
     }
 }
 
+/// A discount code applied to a cart.
+#[derive(Serialize)]
+pub struct AppliedCoupon {
+    pub code: String,
+    pub percent_off: Option<i32>,
+    pub amount_off_cents: Option<i32>,
+    pub discount_cents: i64,
+}
+
 #[derive(Serialize)]
 pub struct Cart {
     pub items: Vec<CartItem>,
+    /// Sum of the items' effective prices.
+    pub subtotal_cents: i64,
+    pub discount_cents: i64,
+    /// What checkout charges: subtotal minus the coupon's discount.
     pub total_cents: i64,
+    pub coupon: Option<AppliedCoupon>,
 }
 
 impl Cart {
     pub fn new(items: Vec<CartItem>) -> Self {
-        let total_cents = items.iter().map(|i| i64::from(i.effective_price_cents())).sum();
-        Self { items, total_cents }
+        let subtotal_cents = items.iter().map(|i| i64::from(i.effective_price_cents())).sum();
+        Self { items, subtotal_cents, discount_cents: 0, total_cents: subtotal_cents, coupon: None }
     }
+
+    pub fn with_coupon(mut self, coupon: AppliedCoupon) -> Self {
+        self.discount_cents = coupon.discount_cents;
+        self.total_cents = self.subtotal_cents - coupon.discount_cents;
+        self.coupon = Some(coupon);
+        self
+    }
+}
+
+/// A discount code as admins manage it, with how often it was used.
+#[derive(Serialize, FromRow)]
+pub struct AdminCoupon {
+    pub id: Uuid,
+    pub code: String,
+    pub percent_off: Option<i32>,
+    pub amount_off_cents: Option<i32>,
+    pub expires_at: Option<DateTime<Utc>>,
+    pub max_uses: Option<i32>,
+    pub active: bool,
+    pub created_at: DateTime<Utc>,
+    /// Non-cancelled orders that used it.
+    pub uses: i64,
+    /// Total discount on paid orders.
+    pub discount_given_cents: i64,
 }
 
 #[derive(Serialize, FromRow)]
@@ -91,6 +129,9 @@ pub struct OrderSummary {
     pub id: Uuid,
     pub status: String,
     pub total_cents: i32,
+    /// Coupon discount already taken off `total_cents`.
+    pub discount_cents: i32,
+    pub coupon_code: Option<String>,
     pub payment_method_code: Option<String>,
     pub payment_ref: Option<String>,
     pub admin_note: Option<String>,

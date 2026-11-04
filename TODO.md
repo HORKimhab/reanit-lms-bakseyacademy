@@ -63,7 +63,7 @@ Constraints that shape the design:
 - [x] H5 Admin dashboard at `/admin`: count of orders awaiting approval, revenue over time, top-selling courses / ebooks
 
 ## I. Growth
-- [ ] I1 Coupons / discount codes: `coupons` table (percent or fixed cents, expiry, usage limit), applied at checkout, discount snapshot on the order
+- [x] I1 Coupons / discount codes: `coupons` table (percent or fixed cents, expiry, usage limit), applied at checkout, discount snapshot on the order
 - [ ] I2 Completion certificates: PDF (km / en) issued when course progress reaches 100%, listed in `/account/library`
 - [ ] I3 Wishlist for logged-in users (heart on cards and detail pages, `/account/wishlist`)
 - [ ] I4 Lesson Q&A / comments: enrolled users ask, instructors / admins answer

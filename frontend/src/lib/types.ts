@@ -140,9 +140,34 @@ export interface CartItem {
 	sale_price_cents: number | null;
 }
 
+export interface AppliedCoupon {
+	code: string;
+	percent_off: number | null;
+	amount_off_cents: number | null;
+	discount_cents: number;
+}
+
 export interface Cart {
 	items: CartItem[];
+	subtotal_cents: number;
+	discount_cents: number;
+	/** Subtotal minus the coupon's discount: what checkout charges. */
 	total_cents: number;
+	coupon: AppliedCoupon | null;
+}
+
+/** `GET /api/admin/coupons`. */
+export interface AdminCoupon {
+	id: string;
+	code: string;
+	percent_off: number | null;
+	amount_off_cents: number | null;
+	expires_at: string | null;
+	max_uses: number | null;
+	active: boolean;
+	created_at: string;
+	uses: number;
+	discount_given_cents: number;
 }
 
 export interface PaymentMethod {
@@ -168,6 +193,9 @@ export interface OrderSummary {
 	id: string;
 	status: OrderStatus;
 	total_cents: number;
+	/** Coupon discount already taken off `total_cents`. */
+	discount_cents: number;
+	coupon_code: string | null;
 	payment_method_code: string | null;
 	payment_ref: string | null;
 	admin_note: string | null;

@@ -6,6 +6,7 @@ mod admin_stats;
 mod auth;
 mod cart;
 mod categories;
+mod coupons;
 mod courses;
 mod ebooks;
 mod home;
@@ -64,6 +65,8 @@ pub fn router(state: AppState) -> Router {
         )
         .route("/api/telegram/webhook", post(media::webhook))
         .route("/api/media/{token}", get(media::stream))
+        .route("/api/admin/coupons", get(coupons::list).post(coupons::create))
+        .route("/api/admin/coupons/{id}", put(coupons::update).delete(coupons::delete))
         .route("/api/admin/categories", get(admin_catalog::list_categories).post(admin_catalog::create_category))
         .route(
             "/api/admin/categories/{id}",

@@ -1,12 +1,15 @@
 use axum::{
     Json,
-    extract::{Path, State},
+    extract::{Path, Query, State},
 };
 use serde::Deserialize;
 use sqlx::PgExecutor;
 use uuid::Uuid;
 
-use super::orders::{IN_OPEN_ORDER, PAYABLE_STATUSES};
+use super::{
+    coupons,
+    orders::{IN_OPEN_ORDER, PAYABLE_STATUSES},
+};
 use crate::{
     AppState,
     auth::CurrentUser,
@@ -39,8 +42,26 @@ pub async fn load_cart(db: impl PgExecutor<'_>, user_id: Uuid) -> sqlx::Result<C
     Ok(Cart::new(items))
 }
 
-pub async fn get(State(st): State<AppState>, current: CurrentUser) -> AppResult<Json<Cart>> {
-    Ok(Json(load_cart(&st.db, current.user.id).await?))
+#[derive(Deserialize)]
+pub struct CartParams {
+    /// Preview a discount code (checked like checkout does; 422 when it can't be used).
+    coupon: Option<String>,
+}
+
+pub async fn get(
+    State(st): State<AppState>,
+    current: CurrentUser,
+    Query(p): Query<CartParams>,
+) -> AppResult<Json<Cart>> {
+    let cart = load_cart(&st.db, current.user.id).await?;
+    match p.coupon.as_deref().map(str::trim).filter(|c| !c.is_empty()) {
+        None => Ok(Json(cart)),
+        Some(code) => {
+            let mut conn = st.db.acquire().await?;
+            let coupon = coupons::redeemable(&mut conn, code, cart.subtotal_cents, false).await?;
+            Ok(Json(cart.with_coupon(coupon.applied)))
+        }
+    }
 }
 
 #[derive(Deserialize)]

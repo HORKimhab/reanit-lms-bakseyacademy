@@ -2,6 +2,7 @@
 //! creates it on the server in `DATABASE_URL` and applies `migrations/`).
 
 mod access;
+mod coupons;
 mod orders;
 
 use axum::{

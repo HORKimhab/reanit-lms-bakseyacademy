@@ -271,5 +271,17 @@
 	"notifications_mark_read": "Mark all as read",
 	"notifications_see_all": "See all",
 	"notification_order_paid": "Order {order} was approved — you can start learning or reading now",
-	"notification_order_rejected": "Order {order} was rejected: {note}"
+	"notification_order_rejected": "Order {order} was rejected: {note}",
+	"coupon_label": "Discount code",
+	"coupon_apply": "Apply",
+	"coupon_applied": "Code {code} applied",
+	"coupon_remove": "Remove",
+	"subtotal": "Subtotal",
+	"discount": "Discount",
+	"error_invalid_coupon": "This discount code isn't valid",
+	"error_coupon_expired": "This discount code has expired",
+	"error_coupon_used_up": "This discount code has been used up",
+	"error_invalid_discount": "Enter either a percentage (1–100) or an amount",
+	"error_invalid_max_uses": "Maximum uses must be above 0",
+	"error_code_taken": "This code already exists"
 }
