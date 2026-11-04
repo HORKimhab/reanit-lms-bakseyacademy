@@ -1,13 +1,20 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { apiResult } from '$lib/server/api';
 import { clearSession, safeRedirect, setSession } from '$lib/server/session';
-import type { AuthResponse } from '$lib/types';
+import type { AuthOptions, AuthResponse } from '$lib/types';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = ({ locals, url }) => {
+export const load: PageServerLoad = async ({ locals, url, fetch }) => {
 	const redirectTo = safeRedirect(url.searchParams.get('redirectTo'));
 	if (locals.user) redirect(303, redirectTo);
-	return { tab: url.searchParams.get('tab') === 'register' ? 'register' : 'login', redirectTo };
+	const options = await apiResult<AuthOptions>(fetch, '/api/auth/options');
+	return {
+		tab: url.searchParams.get('tab') === 'register' ? 'register' : 'login',
+		redirectTo,
+		options: options.ok ? options.data : { google: false, password_reset: false },
+		// Set by the Google callback (`?error=google_failed`, …).
+		oauthError: url.searchParams.get('error')
+	};
 };
 
 const field = (data: FormData, name: string) => String(data.get(name) ?? '');

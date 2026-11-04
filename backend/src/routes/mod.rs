@@ -12,6 +12,7 @@ mod certificates;
 mod coupons;
 mod courses;
 mod ebooks;
+mod google;
 mod home;
 mod lessons;
 mod library;
@@ -49,6 +50,10 @@ pub fn router(state: AppState) -> Router {
         .route("/api/auth/register", post(auth::register))
         .route("/api/auth/login", post(auth::login))
         .route("/api/auth/logout", post(auth::logout))
+        .route("/api/auth/options", get(google::options))
+        .route("/api/auth/google/url", post(google::url))
+        .route("/api/auth/google", post(google::sign_in))
+        .route("/api/me/google", post(google::link).delete(google::unlink))
         .route("/api/auth/password-reset", post(password_reset::request))
         .route("/api/auth/password-reset/confirm", post(password_reset::confirm))
         .route("/api/me", get(auth::me).patch(auth::update_me))

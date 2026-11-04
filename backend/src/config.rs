@@ -3,6 +3,7 @@ use anyhow::Context;
 use std::sync::Arc;
 
 use crate::{
+    google::{Google, HttpTokens},
     sms::{DevLog, SmsSender, Twilio, TwilioSender},
     payments::{self, Payments, bakong, khqr, payway},
     storage::ObjectStorage,
@@ -29,6 +30,18 @@ pub struct Config {
     pub payments: Payments,
     /// Password-reset texts: Twilio, or `SMS_DEV_LOG=true` to log them (development only).
     pub sms: Option<Arc<dyn SmsSender>>,
+    /// Google sign-in (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `SITE_URL`).
+    pub google: Option<Google>,
+}
+
+fn google_from_env() -> anyhow::Result<Option<Google>> {
+    let Some(client_id) = optional("GOOGLE_CLIENT_ID") else { return Ok(None) };
+    let client_secret = optional("GOOGLE_CLIENT_SECRET").context("GOOGLE_CLIENT_SECRET must be set with GOOGLE_CLIENT_ID")?;
+    Ok(Some(Google {
+        redirect_uri: format!("{}/auth/google/callback", site_url()?),
+        tokens: Arc::new(HttpTokens::new(client_id.clone(), client_secret)),
+        client_id,
+    }))
 }
 
 fn sms_from_env() -> anyhow::Result<Option<Arc<dyn SmsSender>>> {
@@ -51,7 +64,7 @@ fn sms_from_env() -> anyhow::Result<Option<Arc<dyn SmsSender>>> {
 /// `SITE_URL`: the public storefront origin providers send buyers and pushbacks back to.
 /// Must be `https://` (plain `http://` only for localhost while developing).
 fn site_url() -> anyhow::Result<String> {
-    let url = optional("SITE_URL").context("SITE_URL must be set with PAYWAY_MERCHANT_ID (e.g. https://reanit.com)")?;
+    let url = optional("SITE_URL").context("SITE_URL must be set with PAYWAY_MERCHANT_ID / GOOGLE_CLIENT_ID (e.g. https://reanit.com)")?;
     let url = url.trim_end_matches('/').to_owned();
     let local = url.starts_with("http://localhost") || url.starts_with("http://127.0.0.1");
     if !(url.starts_with("https://") || local) || url.contains(char::is_whitespace) {
@@ -133,6 +146,7 @@ impl Config {
         Ok(Self {
             payments: payments_from_env()?,
             sms: sms_from_env()?,
+            google: google_from_env()?,
             order_abandon_days,
             media_key: media_key.map(String::into_bytes).unwrap_or_else(|| {
                 use argon2::password_hash::rand_core::{OsRng, RngCore};

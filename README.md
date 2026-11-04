@@ -74,6 +74,10 @@ Security model: the API never trusts the browser or a pushback. An order is paid
 
 `/auth/forgot` texts a 6-digit code to the account's phone. Configure Twilio: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, and `TWILIO_FROM` (number or approved sender id) or `TWILIO_MESSAGING_SERVICE_SID`. For local development `SMS_DEV_LOG=true` writes the texts to the API log instead (never in production). Codes are stored as an HMAC keyed with `MEDIA_SIGNING_KEY` (a random key when unset, so pending codes die on restart). Only Cambodian (+855) numbers are accepted, which also bounds SMS cost.
 
+## Google sign-in
+
+Create an OAuth client (type *Web application*) in Google Cloud, add the authorized redirect URI `{SITE_URL}/auth/google/callback`, and set `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` and `SITE_URL` on the API. The storefront's `/auth/google` keeps `state`, `nonce` and the PKCE verifier in a 10-minute HttpOnly cookie and sends the browser to Google; `/auth/google/callback` checks `state` and hands the code to the API, which exchanges it and checks the ID token. A Google account never takes over an existing account by matching email (emails here are self-entered, so that would allow pre-registration takeover): new Google users get a new account, existing users link Google from `/account`. Google-only accounts have no phone or password, so they can't use the SMS password reset.
+
 ## i18n
 
 Khmer by default; the header button switches to English (cookie `PARAGLIDE_LOCALE`). Copy lives in `frontend/messages/km.json` / `en.json`; Paraglide compiles it into `src/lib/paraglide/` on `bun run dev` / `build` (it fetches its inlang plugins from jsDelivr on first compile). The admin area is Khmer-only.
@@ -119,8 +123,12 @@ Authenticated routes take `Authorization: Bearer <token>` (the token from regist
 | POST | `/api/auth/login` | `{phone, password}` → `{token, max_age, user}`; 401 `invalid_credentials`; 429 `too_many_attempts` after 10 wrong passwords for a number within 15 min |
 | POST | `/api/auth/password-reset` | `{phone}` → 202, and a 6-digit code is texted if the number has an account (same answer either way); 3 per number per hour → 429 `too_many_attempts`; 422 `invalid_phone`, 503 `sms_unavailable` |
 | POST | `/api/auth/password-reset/confirm` | `{phone, code, new_password}` → `{token, max_age, user}` (signed in; every other session signed out); 422 `invalid_code` (wrong, expired after 10 min, already used, or burned after 5 wrong guesses — all alike) / `weak_password` |
+| GET | `/api/auth/options` | `{google, password_reset}`: which sign-in helpers are configured |
+| POST | `/api/auth/google/url` | `{state, nonce, code_challenge}` (43–128 URL-safe chars; S256 challenge) → `{url}` (Google consent, `redirect_uri` = `{SITE_URL}/auth/google/callback`); 422 `invalid_oauth_params`, 503 `google_unavailable` |
+| POST | `/api/auth/google` | `{code, code_verifier, nonce}` → `{token, max_age, user}`: signs into the user linked to that Google account, or creates one from a verified, unused email. The API exchanges the code (client secret stays server-side) and checks the ID token's `iss`, `aud`, `exp`, `nonce`; 401 `google_failed`, 409 `google_email_in_use` (never auto-linked by email: sign in and link from `/account`), 422 `google_email_unverified` |
+| POST / DELETE | `/api/me/google` | Bearer; POST `{code, code_verifier, nonce}` links Google to this account → 204 (409 `google_account_in_use` / `google_already_linked`); DELETE unlinks → 204 (409 `last_login_method` when there is no password) |
 | POST | `/api/auth/logout` | Bearer → 204, deletes the session |
-| GET | `/api/me` | Bearer → user; 401 `unauthorized` |
+| GET | `/api/me` | Bearer → user (`google_linked`); 401 `unauthorized` |
 | PATCH | `/api/me` | Bearer, `{full_name, email}` (empty email clears it) → user; 409 `email_taken`, 422 `invalid_email` / `invalid_name` |
 | POST | `/api/me/password` | Bearer, `{current_password, new_password}` → 204, signs out other sessions; 422 `wrong_password` / `weak_password` |
 | GET | `/api/me/orders` | Bearer → own orders with items, newest first |

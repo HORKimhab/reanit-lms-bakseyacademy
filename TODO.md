@@ -78,4 +78,4 @@ Constraints that shape the design:
 - [x] Automatic payment confirmation: Bakong KHQR dynamic QR + status check, ABA PayWay checkout + pushback webhook (same grant path as admin approval)
 - [x] Payment screenshot upload: the user attaches a screenshot on `/orders/{id}`; the bot posts it (with order id, buyer, amount, reference) to a private **admin** Telegram channel/group, which also notifies admins; `orders.payment_proof_media_id` → shown in `/admin/orders` through the G5/G6 proxy (builds on G1–G2)
 - [x] Self-service password reset (SMS OTP)
-- [ ] Google sign-in (server-side OAuth; `users.google_sub`)
+- [x] Google sign-in (server-side OAuth; `users.google_sub`)

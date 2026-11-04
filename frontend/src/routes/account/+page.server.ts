@@ -1,16 +1,30 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { apiResult } from '$lib/server/api';
-import type { User } from '$lib/types';
+import type { AuthOptions, User } from '$lib/types';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = ({ locals }) => {
+export const load: PageServerLoad = async ({ locals, url, fetch }) => {
 	if (!locals.user) redirect(303, '/auth?redirectTo=/account');
-	return { user: locals.user };
+	const options = await apiResult<AuthOptions>(fetch, '/api/auth/options');
+	return {
+		user: locals.user,
+		google: options.ok && options.data.google,
+		// From the Google link callback.
+		googleLinked: url.searchParams.get('google') === 'linked',
+		oauthError: url.searchParams.get('error')
+	};
 };
 
 const field = (data: FormData, name: string) => String(data.get(name) ?? '');
 
 export const actions: Actions = {
+	unlinkGoogle: async ({ fetch, locals }) => {
+		if (!locals.token) redirect(303, '/auth?redirectTo=/account');
+		const res = await apiResult(fetch, '/api/me/google', { method: 'DELETE', token: locals.token });
+		if (!res.ok) return fail(res.status, { form: 'google' as const, code: res.code });
+		return { form: 'google' as const, saved: true };
+	},
+
 	profile: async ({ request, fetch, locals }) => {
 		if (!locals.token) redirect(303, '/auth?redirectTo=/account');
 		const data = await request.formData();

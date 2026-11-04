@@ -2,6 +2,7 @@ mod auth;
 mod cleanup;
 mod config;
 mod error;
+mod google;
 mod http_range;
 mod media_token;
 mod models;
@@ -39,6 +40,8 @@ pub struct AppState {
     /// Password-reset texts; `None` without an SMS provider (reset then answers 503).
     pub sms: Option<std::sync::Arc<dyn sms::SmsSender>>,
     pub reset_throttle: std::sync::Arc<throttle::ResetThrottle>,
+    /// Google sign-in; `None` without `GOOGLE_CLIENT_ID`.
+    pub google: Option<google::Google>,
 }
 
 #[tokio::main]
@@ -93,6 +96,7 @@ async fn main() -> anyhow::Result<()> {
         payments: config.payments,
         sms: config.sms,
         reset_throttle: Default::default(),
+        google: config.google,
     };
     routes::spawn_payment_poller(state.clone());
     let app = routes::router(state)

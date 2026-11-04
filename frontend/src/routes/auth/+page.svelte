@@ -8,7 +8,7 @@
 
 	// After a failed submit, stay on the tab that was submitted.
 	const tab = $derived(form?.form ?? data.tab);
-	const error = $derived(form?.form === tab ? errorMessage(form.code) : null);
+	const error = $derived(form?.form === tab ? errorMessage(form.code) : data.oauthError ? errorMessage(data.oauthError) : null);
 	const query = $derived(data.redirectTo === '/' ? '' : `redirectTo=${encodeURIComponent(data.redirectTo)}`);
 	const tabHref = (t: string) => `/auth?${[t === 'register' ? 'tab=register' : '', query].filter(Boolean).join('&')}`;
 	const action = (name: string) => `?/${name}${query ? `&${query}` : ''}`;
@@ -48,9 +48,11 @@
 					<span class="mb-1 block text-sm font-medium">{m.field_password()}</span>
 					<input name="password" type="password" required autocomplete="current-password" class={input} />
 				</label>
-				<p class="-mt-2 text-right text-sm">
-					<a href="/auth/forgot" class="text-brand-600 hover:underline">{m.auth_forgot_password()}</a>
-				</p>
+				{#if data.options.password_reset}
+					<p class="-mt-2 text-right text-sm">
+						<a href="/auth/forgot" class="text-brand-600 hover:underline">{m.auth_forgot_password()}</a>
+					</p>
+				{/if}
 				<button disabled={pending} class="w-full rounded-lg bg-brand-600 py-2.5 font-semibold text-white hover:bg-brand-700 disabled:opacity-60">
 					{m.auth_login_submit()}
 				</button>
@@ -81,6 +83,26 @@
 					{m.auth_register()}
 				</button>
 			</form>
+		{/if}
+
+		{#if data.options.google}
+			<div class="my-5 flex items-center gap-3 text-xs text-slate-400"><span class="h-px flex-1 bg-slate-200"></span>{m.auth_or()}<span class="h-px flex-1 bg-slate-200"></span></div>
+			<a
+				href="/auth/google{query ? `?${query}` : ''}"
+				data-sveltekit-reload
+				class="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 py-2.5 font-semibold hover:bg-slate-50"
+			>
+				<svg viewBox="0 0 24 24" class="h-5 w-5" aria-hidden="true"
+					><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5a5.6 5.6 0 0 1-2.4 3.6v3h3.9c2.3-2.1 3.5-5.2 3.5-8.8Z" /><path
+						fill="#34A853"
+						d="M12 24c3.2 0 6-1.1 8-2.9l-3.9-3c-1.1.7-2.5 1.2-4.1 1.2-3.1 0-5.8-2.1-6.7-5H1.3v3.1A12 12 0 0 0 12 24Z"
+					/><path fill="#FBBC05" d="M5.3 14.3a7.2 7.2 0 0 1 0-4.6V6.6h-4a12 12 0 0 0 0 10.8l4-3.1Z" /><path
+						fill="#EA4335"
+						d="M12 4.8c1.8 0 3.3.6 4.6 1.8l3.4-3.4A12 12 0 0 0 1.3 6.6l4 3.1c.9-2.9 3.6-4.9 6.7-4.9Z"
+					/></svg
+				>
+				{m.auth_google()}
+			</a>
 		{/if}
 	</div>
 

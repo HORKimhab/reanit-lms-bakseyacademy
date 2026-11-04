@@ -122,6 +122,14 @@ export interface User {
 	phone: string | null;
 	email: string | null;
 	role: 'student' | 'instructor' | 'admin';
+	/** Google sign-in is linked. */
+	google_linked: boolean;
+}
+
+/** `GET /api/auth/options`: sign-in helpers the API has configured. */
+export interface AuthOptions {
+	google: boolean;
+	password_reset: boolean;
 }
 
 export interface AuthResponse {

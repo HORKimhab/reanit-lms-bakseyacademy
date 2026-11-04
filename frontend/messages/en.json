@@ -350,5 +350,21 @@
 	"reset_resend": "Send a new code",
 	"reset_need_help": "Need help?",
 	"error_invalid_code": "That code is wrong or has expired — request a new one",
-	"error_sms_unavailable": "SMS isn't available right now, please contact support"
+	"error_sms_unavailable": "SMS isn't available right now, please contact support",
+	"auth_or": "or",
+	"auth_google": "Continue with Google",
+	"account_google_hint": "Link your Google account to log in without a password.",
+	"account_google_link": "Link Google",
+	"account_google_linked": "Google is linked — you can log in with Google.",
+	"account_google_linked_done": "Google linked",
+	"account_google_unlink": "Unlink Google",
+	"error_google_failed": "Google sign-in didn't work, please try again",
+	"error_google_cancelled": "Google sign-in was cancelled",
+	"error_google_unavailable": "Google sign-in isn't available",
+	"error_google_email_in_use": "An account already uses this Google email — log in with your phone, then link Google under My account",
+	"error_google_email_unverified": "This Google email isn't verified",
+	"error_google_account_in_use": "This Google account is linked to another account",
+	"error_google_already_linked": "This account is linked to a different Google account — unlink it first",
+	"error_last_login_method": "Can't unlink: Google is your only way to log in",
+	"error_invalid_oauth_params": "Google sign-in didn't work, please try again"
 }

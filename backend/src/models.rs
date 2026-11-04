@@ -18,6 +18,9 @@ pub struct User {
     pub phone: Option<String>,
     pub email: Option<String>,
     pub role: String,
+    /// A Google account is linked (Google sign-in works).
+    #[sqlx(default)]
+    pub google_linked: bool,
 }
 
 /// Returned by register/login. `token` goes into the frontend's HttpOnly cookie.

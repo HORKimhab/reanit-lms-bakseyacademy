@@ -171,7 +171,7 @@ impl CurrentUser {
         };
         let token_hash = hash_token(token);
         let user = sqlx::query_as::<_, User>(
-            "SELECT u.id, u.full_name, u.phone, u.email, u.role \
+            "SELECT u.id, u.full_name, u.phone, u.email, u.role, u.google_sub IS NOT NULL AS google_linked \
              FROM sessions s JOIN users u ON u.id = s.user_id \
              WHERE s.token_hash = $1 AND s.expires_at > now()",
         )

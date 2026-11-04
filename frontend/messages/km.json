@@ -266,5 +266,21 @@
 	"reset_resend": "ផ្ញើលេខកូដម្តងទៀត",
 	"reset_need_help": "ត្រូវការជំនួយ?",
 	"error_invalid_code": "លេខកូដមិនត្រឹមត្រូវ ឬផុតកំណត់ហើយ — សូមស្នើលេខកូដថ្មី",
-	"error_sms_unavailable": "ការផ្ញើ SMS មិនទាន់ដំណើរការ សូមទាក់ទងផ្នែកជំនួយ"
+	"error_sms_unavailable": "ការផ្ញើ SMS មិនទាន់ដំណើរការ សូមទាក់ទងផ្នែកជំនួយ",
+	"auth_or": "ឬ",
+	"auth_google": "បន្តជាមួយ Google",
+	"account_google_hint": "ភ្ជាប់គណនី Google ដើម្បីចូលបានដោយមិនចាំបាច់ពាក្យសម្ងាត់។",
+	"account_google_link": "ភ្ជាប់ Google",
+	"account_google_linked": "បានភ្ជាប់គណនី Google — អ្នកអាចចូលដោយ Google បាន។",
+	"account_google_linked_done": "បានភ្ជាប់ Google រួចរាល់",
+	"account_google_unlink": "ផ្តាច់ Google",
+	"error_google_failed": "ចូលដោយ Google មិនបានសម្រេច សូមព្យាយាមម្តងទៀត",
+	"error_google_cancelled": "អ្នកបានបោះបង់ការចូលដោយ Google",
+	"error_google_unavailable": "ការចូលដោយ Google មិនទាន់ដំណើរការ",
+	"error_google_email_in_use": "អ៊ីមែល Google នេះមានគណនីរួចហើយ — ចូលដោយលេខទូរស័ព្ទ ហើយភ្ជាប់ Google នៅទំព័រ «គណនីរបស់ខ្ញុំ»",
+	"error_google_email_unverified": "អ៊ីមែល Google នេះមិនទាន់បានផ្ទៀងផ្ទាត់",
+	"error_google_account_in_use": "គណនី Google នេះភ្ជាប់ជាមួយគណនីផ្សេងរួចហើយ",
+	"error_google_already_linked": "គណនីនេះភ្ជាប់ Google ផ្សេងរួចហើយ — ផ្តាច់វាមុនសិន",
+	"error_last_login_method": "មិនអាចផ្តាច់បានទេ៖ Google ជាវិធីចូលតែមួយគត់របស់អ្នក",
+	"error_invalid_oauth_params": "ចូលដោយ Google មិនបានសម្រេច សូមព្យាយាមម្តងទៀត"
 }

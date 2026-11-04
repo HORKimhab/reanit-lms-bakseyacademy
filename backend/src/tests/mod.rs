@@ -6,6 +6,7 @@ mod admin_users;
 mod bundles;
 mod certificates;
 mod coupons;
+mod google;
 mod orders;
 mod password_reset;
 mod payment_flow;
@@ -80,6 +81,26 @@ pub static SMS: LazyLock<Arc<FakeSms>> = LazyLock::new(Default::default);
 /// Production keeps one throttle per process; requests here each build a state, so share one.
 static RESET_THROTTLE: LazyLock<Arc<crate::throttle::ResetThrottle>> = LazyLock::new(Default::default);
 
+/// Stands in for Google's token endpoint: authorization code → ID token.
+#[derive(Default)]
+pub struct FakeGoogle(pub Mutex<HashMap<String, String>>);
+
+impl crate::google::GoogleTokens for FakeGoogle {
+    fn exchange<'a>(&'a self, code: &'a str, verifier: &'a str, redirect_uri: &'a str) -> BoxFuture<'a, anyhow::Result<String>> {
+        let found = self.0.lock().unwrap().get(code).cloned();
+        let ok = verifier.len() >= 43 && redirect_uri == format!("{SITE_URL}/auth/google/callback");
+        Box::pin(async move {
+            match (found, ok) {
+                (Some(id_token), true) => Ok(id_token),
+                _ => anyhow::bail!("invalid_grant"),
+            }
+        })
+    }
+}
+
+pub static GOOGLE: LazyLock<Arc<FakeGoogle>> = LazyLock::new(Default::default);
+pub const GOOGLE_CLIENT_ID: &str = "test-client.apps.googleusercontent.com";
+
 pub const BAKONG_ACCOUNT: &str = "reanit@aclb";
 pub const SITE_URL: &str = "https://shop.example";
 
@@ -119,6 +140,11 @@ pub fn state(db: PgPool) -> AppState {
         payments: test_payments(),
         sms: Some(SMS.clone()),
         reset_throttle: RESET_THROTTLE.clone(),
+        google: Some(crate::google::Google {
+            client_id: GOOGLE_CLIENT_ID.into(),
+            redirect_uri: format!("{SITE_URL}/auth/google/callback"),
+            tokens: GOOGLE.clone(),
+        }),
     }
 }
 

@@ -10,7 +10,7 @@ use crate::{
     models::{AuthResponse, User},
 };
 
-pub(crate) const USER_COLUMNS: &str = "id, full_name, phone, email, role";
+pub(crate) const USER_COLUMNS: &str = "id, full_name, phone, email, role, google_sub IS NOT NULL AS google_linked";
 
 #[derive(Deserialize)]
 pub struct RegisterBody {

@@ -6,10 +6,14 @@
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
-	const status = (name: 'profile' | 'password') => {
+	const status = (name: 'profile' | 'password' | 'google') => {
 		if (form?.form !== name) return null;
 		return form.code ? { ok: false, text: errorMessage(form.code) } : { ok: true, text: m.saved() };
 	};
+	const googleStatus = $derived(
+		status('google') ??
+			(data.oauthError ? { ok: false, text: errorMessage(data.oauthError) } : data.googleLinked ? { ok: true, text: m.account_google_linked_done() } : null)
+	);
 
 	const input =
 		'w-full rounded-lg border border-slate-200 px-3 py-2 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20';
@@ -66,6 +70,24 @@
 		</form>
 	</section>
 </div>
+
+{#if data.google}
+	<section class="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:max-w-xl">
+		<h2 class="text-xl font-semibold">Google</h2>
+		{@render notice(googleStatus)}
+		{#if data.user.google_linked}
+			<p class="mt-2 text-sm text-slate-600">✓ {m.account_google_linked()}</p>
+			<form method="POST" action="?/unlinkGoogle" use:enhance class="mt-4">
+				<button class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-50">{m.account_google_unlink()}</button>
+			</form>
+		{:else}
+			<p class="mt-2 text-sm text-slate-600">{m.account_google_hint()}</p>
+			<a href="/auth/google?mode=link" data-sveltekit-reload class="mt-4 inline-block rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-50">
+				{m.account_google_link()}
+			</a>
+		{/if}
+	</section>
+{/if}
 
 <form method="POST" action="/auth?/logout" class="mt-8">
 	<button class="text-sm text-red-600 hover:underline">{m.nav_logout()}</button>
